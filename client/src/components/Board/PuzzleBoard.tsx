@@ -222,9 +222,8 @@ export default function PuzzleBoard({
     return processMove(sourceSquare, targetSquare, piece)
   }
 
-  // Handler para tap (móvil): clic en una casilla
+  // Handler para click/tap en cualquier dispositivo
   function onSquareClick(square: string) {
-    if (!isMobile) return
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
 
     const currentPiece = game.get(square as any)
@@ -324,15 +323,15 @@ export default function PuzzleBoard({
         )}
       </div>
 
-      {/* Hint tap en móvil */}
-      {isMobile && isPlayerTurn && !selectedSquare && (
+      {/* Hint de selección */}
+      {isPlayerTurn && !selectedSquare && (
         <p className="font-mono text-xs text-bone-3 mb-2 text-center">
-          Toca una pieza para seleccionarla
+          Haz clic en una pieza para seleccionarla
         </p>
       )}
-      {isMobile && isPlayerTurn && selectedSquare && (
+      {isPlayerTurn && selectedSquare && (
         <p className="font-mono text-xs text-amber mb-2 text-center">
-          Pieza seleccionada — toca la casilla destino
+          Pieza seleccionada — haz clic en la casilla destino
         </p>
       )}
 
@@ -350,14 +349,7 @@ export default function PuzzleBoard({
             boardOrientation={boardOrientation}
             customSquareStyles={highlightSquares}
             boardWidth={boardSize}
-            isDraggablePiece={({ piece }) => {
-              // En móvil deshabilitamos el drag para favorecer tap-to-move
-              if (isMobile) return false
-              if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
-              return playerColor === 'white'
-                ? piece.startsWith('w')
-                : piece.startsWith('b')
-            }}
+            isDraggablePiece={() => false}
             customBoardStyle={{
               borderRadius: '2px',
             }}
