@@ -123,7 +123,7 @@ export default function PuzzleBoard({
     [puzzle.solution, errors, onSolved]
   )
 
-  // Lógica central de movimiento
+  // Lógica central de movimiento (coexisten drag y tap)
   function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
 
@@ -201,12 +201,12 @@ export default function PuzzleBoard({
     return true
   }
 
-  // Handler para drag (desktop/móvil drag)
+  // Handler para arrastre (Drag)
   function onDrop(sourceSquare: string, targetSquare: string, piece: string): boolean {
     return processMove(sourceSquare, targetSquare, piece)
   }
 
-  // Handler para click/tap
+  // Handler para selección y toque (Tap/Click)
   function onSquareClick(square: string) {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
 
@@ -263,17 +263,17 @@ export default function PuzzleBoard({
 
   const boardOrientation = playerColor === 'white' ? 'white' : 'black'
   const isPlayerTurn = feedback !== 'opponent' && feedback !== 'skipping' && solutionIndex < puzzle.solution.length
-  
+
   const turnLabel =
     feedback === 'skipping'
       ? 'Pasando al siguiente...'
       : feedback === 'opponent'
       ? 'Rival respondiendo...'
       : Tu turno · ${playerColor === 'white' ? '♔ Blancas' : '♚ Negras'}
-  
+
   const turnDot =
     feedback === 'skipping' || feedback === 'opponent' ? 'bg-bone-3' : 'bg-amber animate-pulse'
-  
+
   const turnText =
     feedback === 'skipping'
       ? 'text-red-400'
@@ -293,6 +293,7 @@ export default function PuzzleBoard({
   return (
     <div className="w-full flex flex-col items-center justify-center">
       <div style={{ width: ${boardSize}px }} className="max-w-full">
+        
         {/* Indicador de turno */}
         <div className={font-mono text-xs uppercase tracking-widest mb-3 flex items-center gap-2 ${turnText}}>
           <span className={w-2 h-2 rounded-full inline-block ${turnDot}} />
@@ -354,6 +355,7 @@ export default function PuzzleBoard({
             </div>
           )}
         </div>
+
       </div>
     </div>
   )
