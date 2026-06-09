@@ -3,8 +3,8 @@
   "private": true,
   "workspaces": ["client", "server"],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
-    "install:all": "npm install && npm install --workspace=client && npm install --workspace=server"
+    "build": "cd client && npm install && npm run build",
+    "start": "node server/src/index.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
