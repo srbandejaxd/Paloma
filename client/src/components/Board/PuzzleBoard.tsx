@@ -346,6 +346,7 @@ export default function PuzzleBoard({
             position={game.fen()}
             onPieceDrop={onDrop}
             onSquareClick={onSquareClick}
+            onPieceClick={(piece, square) => onSquareClick(square)}
             boardOrientation={boardOrientation}
             customSquareStyles={highlightSquares}
             boardWidth={boardSize}
