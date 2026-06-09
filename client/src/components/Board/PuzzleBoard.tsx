@@ -25,12 +25,26 @@ function moveFromSAN(game: Chess, san: string): { from: string; to: string; prom
   }
 }
 
+// Hook para detectar si estamos en móvil
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isMobile
+}
+
+// Hook para obtener el tamaño óptimo del tablero
 function useBoardSize() {
   const [size, setSize] = useState(480)
   useEffect(() => {
     const calc = () => {
       const vw = window.innerWidth
       if (vw < 640) {
+        // Móvil: ancho total menos padding mínimo (16px cada lado)
         setSize(Math.min(vw - 32, 480))
       } else {
         setSize(480)
@@ -59,9 +73,10 @@ export default function PuzzleBoard({
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
 
-  // Estado para tap-to-move
+  // Estado para tap-to-move en móvil
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
 
+  const isMobile = useIsMobile()
   const boardSize = useBoardSize()
 
   const playerColor = (() => {
@@ -123,7 +138,7 @@ export default function PuzzleBoard({
     [puzzle.solution, errors, onSolved]
   )
 
-  // Lógica central de movimiento (coexisten drag y tap)
+  // Lógica central de movimiento (compartida por drag y tap)
   function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
 
@@ -186,6 +201,7 @@ export default function PuzzleBoard({
         setFeedback('skipping')
         feedbackTimeout.current = setTimeout(() => {
           setHighlightSquares({})
+          const elapsed = Date.now() - startTimeRef.current
           onSkip?.(newErrors)
         }, 900)
       } else {
@@ -201,12 +217,12 @@ export default function PuzzleBoard({
     return true
   }
 
-  // Handler para arrastre (Drag)
+  // Handler para drag (desktop)
   function onDrop(sourceSquare: string, targetSquare: string, piece: string): boolean {
     return processMove(sourceSquare, targetSquare, piece)
   }
 
-  // Handler para selección y toque (Tap/Click)
+  // Handler para click/tap en cualquier dispositivo
   function onSquareClick(square: string) {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
 
@@ -216,8 +232,10 @@ export default function PuzzleBoard({
       (playerColor === 'white' ? currentPiece.color === 'w' : currentPiece.color === 'b')
 
     if (selectedSquare === null) {
+      // Primera tap: seleccionar pieza propia
       if (isOwnPiece) {
         setSelectedSquare(square)
+        // Resaltar casillas legales
         const moves = game.moves({ square: square as any, verbose: true })
         const highlights: Record<string, { background: string }> = {
           [square]: { background: 'rgba(212,160,23,0.5)' },
@@ -228,13 +246,16 @@ export default function PuzzleBoard({
         setHighlightSquares(highlights)
       }
     } else {
+      // Segunda tap: intentar mover
       if (square === selectedSquare) {
+        // Deseleccionar
         setSelectedSquare(null)
         setHighlightSquares({})
         return
       }
 
       if (isOwnPiece) {
+        // Cambiar selección a otra pieza propia
         setSelectedSquare(square)
         const moves = game.moves({ square: square as any, verbose: true })
         const highlights: Record<string, { background: string }> = {
@@ -247,6 +268,7 @@ export default function PuzzleBoard({
         return
       }
 
+      // Intentar el movimiento
       const pieceOnSelected = game.get(selectedSquare as any)
       if (!pieceOnSelected) {
         setSelectedSquare(null)
@@ -262,18 +284,16 @@ export default function PuzzleBoard({
   }
 
   const boardOrientation = playerColor === 'white' ? 'white' : 'black'
-  const isPlayerTurn = feedback !== 'opponent' && feedback !== 'skipping' && solutionIndex < puzzle.solution.length
 
+  const isPlayerTurn = feedback !== 'opponent' && feedback !== 'skipping' && solutionIndex < puzzle.solution.length
   const turnLabel =
     feedback === 'skipping'
       ? 'Pasando al siguiente...'
       : feedback === 'opponent'
       ? 'Rival respondiendo...'
-      : Tu turno · ${playerColor === 'white' ? '♔ Blancas' : '♚ Negras'}
-
+      : `Tu turno · ${playerColor === 'white' ? '♔ Blancas' : '♚ Negras'}`
   const turnDot =
     feedback === 'skipping' || feedback === 'opponent' ? 'bg-bone-3' : 'bg-amber animate-pulse'
-
   const turnText =
     feedback === 'skipping'
       ? 'text-red-400'
@@ -291,71 +311,67 @@ export default function PuzzleBoard({
       : 'rgba(212,160,23,0.12)'
 
   return (
-    <div className="w-full flex flex-col items-center justify-center">
-      <div style={{ width: ${boardSize}px }} className="max-w-full">
-        
-        {/* Indicador de turno */}
-        <div className={font-mono text-xs uppercase tracking-widest mb-3 flex items-center gap-2 ${turnText}}>
-          <span className={w-2 h-2 rounded-full inline-block ${turnDot}} />
-          {turnLabel}
-          {!isPlayerTurn && feedback !== 'skipping' && (
-            <span className="text-bone-3 normal-case tracking-normal ml-1">
-              (rival: {playerColor === 'white' ? '♚ Negras' : '♔ Blancas'})
-            </span>
-          )}
-        </div>
+    <div>
+      {/* Indicador de turno */}
+      <div className={`font-mono text-xs uppercase tracking-widest mb-3 flex items-center gap-2 ${turnText}`}>
+        <span className={`w-2 h-2 rounded-full inline-block ${turnDot}`} />
+        {turnLabel}
+        {!isPlayerTurn && feedback !== 'skipping' && (
+          <span className="text-bone-3 normal-case tracking-normal ml-1">
+            (rival: {playerColor === 'white' ? '♚ Negras' : '♔ Blancas'})
+          </span>
+        )}
+      </div>
 
-        {/* Hint de selección */}
-        <div className="h-6 mb-2 flex items-center justify-center">
-          {isPlayerTurn && !selectedSquare && (
-            <p className="font-mono text-xs text-bone-3 text-center">
-              Arrastra una pieza o haz clic para seleccionarla
-            </p>
-          )}
-          {isPlayerTurn && selectedSquare && (
-            <p className="font-mono text-xs text-amber text-center">
-              Pieza seleccionada — haz clic en la casilla destino
-            </p>
-          )}
-        </div>
+      {/* Hint de selección */}
+      {isPlayerTurn && !selectedSquare && (
+        <p className="font-mono text-xs text-bone-3 mb-2 text-center">
+          Haz clic en una pieza para seleccionarla
+        </p>
+      )}
+      {isPlayerTurn && selectedSquare && (
+        <p className="font-mono text-xs text-amber mb-2 text-center">
+          Pieza seleccionada — haz clic en la casilla destino
+        </p>
+      )}
 
-        <div className="relative w-full aspect-square">
-          <div
-            className="board-shadow rounded-sm overflow-hidden transition-all duration-300 w-full h-full"
-            style={{
-              boxShadow: 0 0 0 2px ${borderColor}, 0 0 60px ${borderColor},
+      <div className="relative" style={{ width: boardSize }}>
+        <div
+          className="board-shadow rounded-sm overflow-hidden transition-all duration-300"
+          style={{
+            width: boardSize,
+            boxShadow: `0 0 0 2px ${borderColor}, 0 0 60px ${borderColor}`,
+          }}
+        >
+          <Chessboard
+            position={game.fen()}
+            onPieceDrop={onDrop}
+            onSquareClick={onSquareClick}
+            onPieceClick={(piece, square) => onSquareClick(square)}
+            boardOrientation={boardOrientation}
+            customSquareStyles={highlightSquares}
+            boardWidth={boardSize}
+            isDraggablePiece={() => !disabled && feedback !== 'opponent' && feedback !== 'skipping'}
+            customBoardStyle={{
+              borderRadius: '2px',
             }}
-          >
-            <Chessboard
-              position={game.fen()}
-              onPieceDrop={onDrop}
-              onSquareClick={onSquareClick}
-              boardOrientation={boardOrientation}
-              customSquareStyles={highlightSquares}
-              boardWidth={boardSize}
-              arePiecesDraggable={isPlayerTurn}
-              customBoardStyle={{
-                borderRadius: '2px',
-              }}
-              customDarkSquareStyle={{ backgroundColor: '#2C2C3E' }}
-              customLightSquareStyle={{ backgroundColor: '#4A4A60' }}
-              animationDuration={200}
-            />
-          </div>
-
-          {/* Feedback overlays */}
-          {feedback === 'wrong' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-              <span className="font-mono text-red-400 text-4xl font-bold opacity-90 animate-bounce">✗</span>
-            </div>
-          )}
-          {feedback === 'skipping' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-red-900/20 rounded-sm z-10">
-              <span className="font-mono text-red-400 text-lg font-bold opacity-90">Siguiente →</span>
-            </div>
-          )}
+            customDarkSquareStyle={{ backgroundColor: '#2C2C3E' }}
+            customLightSquareStyle={{ backgroundColor: '#4A4A60' }}
+            animationDuration={200}
+          />
         </div>
 
+        {/* Feedback overlay */}
+        {feedback === 'wrong' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="font-mono text-red-400 text-4xl font-bold opacity-90 animate-bounce">✗</span>
+          </div>
+        )}
+        {feedback === 'skipping' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-red-900/20 rounded-sm">
+            <span className="font-mono text-red-400 text-lg font-bold opacity-90">Siguiente →</span>
+          </div>
+        )}
       </div>
     </div>
   )
