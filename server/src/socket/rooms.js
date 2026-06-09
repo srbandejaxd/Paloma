@@ -148,7 +148,7 @@ module.exports = function setupSockets(io) {
             players: room.players,
             status: room.status,
         })
-        console.log(${nickname} joined ${code})
+        console.log(`${nickname} joined ${code}`)
     })
 
     socket.on('start_race', ({ code }) => {
