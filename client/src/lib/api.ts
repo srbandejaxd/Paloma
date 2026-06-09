@@ -27,7 +27,7 @@ export async function fetchPuzzlesByIds(ids: number[]): Promise<Puzzle[]> {
 }
 
 export async function fetchPuzzlesForBlock(blockId: number): Promise<Puzzle[]> {
-  const res = await fetch(`${BASE}/blocks/${blockId}/puzzles`)
+  const res = await fetch(`${BASE}/api/blocks/${blockId}/puzzles`)
   if (!res.ok) throw new Error('Failed to fetch puzzles')
   return res.json()
 }
