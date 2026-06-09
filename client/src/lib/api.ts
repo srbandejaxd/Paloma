@@ -1,16 +1,16 @@
 import { AttemptRecord, Block, Puzzle } from '../types'
 
-const BASE = '/api'
+const BASE = import.meta.env.VITE_SERVER_URL
 
-export async function fetchBlocks(): Promise<Block[]> {
-  const res = await fetch(`${BASE}/blocks`)
+export async function fetchBlocks() {
+  const res = await fetch(`${BASE}/api/blocks`)
   if (!res.ok) throw new Error('Failed to fetch blocks')
   return res.json()
 }
 
 // [NUEVO] Todos los puzzles de todos los bloques con blockName incluido
-export async function fetchAllPuzzles(): Promise<Puzzle[]> {
-  const res = await fetch(`${BASE}/puzzles`)
+export async function fetchAllPuzzles() {
+  const res = await fetch(`${BASE}/api/puzzles`)
   if (!res.ok) throw new Error('Failed to fetch puzzles')
   return res.json()
 }
