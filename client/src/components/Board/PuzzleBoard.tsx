@@ -73,10 +73,8 @@ export default function PuzzleBoard({
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
 
-  // Estado para tap-to-move en móvil
+  // Estado para selección click/tap
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
-  // Ref para detectar si se está arrastrando y no disparar click
-  const isDraggingRef = useRef(false)
 
   const isMobile = useIsMobile()
   const boardSize = useBoardSize()
@@ -140,6 +138,23 @@ export default function PuzzleBoard({
     [puzzle.solution, errors, onSolved]
   )
 
+  // Highlight legal moves for a square
+  function highlightMoves(square: string) {
+    const moves = game.moves({ square: square as any, verbose: true })
+    const highlights: Record<string, { background: string }> = {
+      [square]: { background: 'rgba(212,160,23,0.5)' },
+    }
+    moves.forEach((m: any) => {
+      highlights[m.to] = { background: 'rgba(212,160,23,0.2)' }
+    })
+    setHighlightSquares(highlights)
+  }
+
+  function isOwnPiece(square: string): boolean {
+    const p = game.get(square as any)
+    return !!p && (playerColor === 'white' ? p.color === 'w' : p.color === 'b')
+  }
+
   // Lógica central de movimiento (compartida por drag y tap)
   function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
@@ -166,11 +181,12 @@ export default function PuzzleBoard({
     if (!moveResult) return false
 
     const expectedMove = moveFromSAN(new Chess(game.fen()), expectedSAN)
-
     const isCorrect =
       expectedMove &&
       expectedMove.from === moveResult.from &&
       expectedMove.to === moveResult.to
+
+    setSelectedSquare(null)
 
     if (isCorrect) {
       setHighlightSquares({
@@ -179,7 +195,6 @@ export default function PuzzleBoard({
       })
       setFeedback('correct')
       setGame(gameCopy)
-      setSelectedSquare(null)
 
       clearTimeout(feedbackTimeout.current)
       feedbackTimeout.current = setTimeout(() => {
@@ -194,7 +209,6 @@ export default function PuzzleBoard({
         [targetSquare]: { background: 'rgba(231,76,60,0.4)' },
       })
       setFeedback('wrong')
-      setSelectedSquare(null)
       onError?.()
 
       clearTimeout(feedbackTimeout.current)
@@ -219,75 +233,62 @@ export default function PuzzleBoard({
     return true
   }
 
-  // Handler para drag
+  // Handler para drag — siempre limpia selección click antes de procesar
   function onDrop(sourceSquare: string, targetSquare: string, piece: string): boolean {
-    isDraggingRef.current = true
     setSelectedSquare(null)
-    setHighlightSquares({})
-    const result = processMove(sourceSquare, targetSquare, piece)
-    setTimeout(() => { isDraggingRef.current = false }, 50)
-    return result
+    return processMove(sourceSquare, targetSquare, piece)
   }
 
-  // Handler para click/tap en cualquier dispositivo
+  // Handler para click/tap — lógica tipo lichess:
+  // 1) sin selección: selecciona pieza propia
+  // 2) misma casilla: deselecciona
+  // 3) otra pieza propia: cambia selección
+  // 4) casilla destino: intenta mover; si falla (ilegal), deselecciona
   function onSquareClick(square: string) {
-    if (isDraggingRef.current) return
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
 
-    const currentPiece = game.get(square as any)
-    const isOwnPiece =
-      currentPiece &&
-      (playerColor === 'white' ? currentPiece.color === 'w' : currentPiece.color === 'b')
-
+    // Sin selección activa
     if (selectedSquare === null) {
-      // Primera tap: seleccionar pieza propia
-      if (isOwnPiece) {
+      if (isOwnPiece(square)) {
         setSelectedSquare(square)
-        // Resaltar casillas legales
-        const moves = game.moves({ square: square as any, verbose: true })
-        const highlights: Record<string, { background: string }> = {
-          [square]: { background: 'rgba(212,160,23,0.5)' },
-        }
-        moves.forEach((m: any) => {
-          highlights[m.to] = { background: 'rgba(212,160,23,0.2)' }
-        })
-        setHighlightSquares(highlights)
+        highlightMoves(square)
       }
-    } else {
-      // Segunda tap: intentar mover
-      if (square === selectedSquare) {
-        // Deseleccionar
-        setSelectedSquare(null)
-        setHighlightSquares({})
-        return
-      }
+      return
+    }
 
-      if (isOwnPiece) {
-        // Cambiar selección a otra pieza propia
-        setSelectedSquare(square)
-        const moves = game.moves({ square: square as any, verbose: true })
-        const highlights: Record<string, { background: string }> = {
-          [square]: { background: 'rgba(212,160,23,0.5)' },
-        }
-        moves.forEach((m: any) => {
-          highlights[m.to] = { background: 'rgba(212,160,23,0.2)' }
-        })
-        setHighlightSquares(highlights)
-        return
-      }
+    // Misma casilla → deseleccionar
+    if (square === selectedSquare) {
+      setSelectedSquare(null)
+      setHighlightSquares({})
+      return
+    }
 
-      // Intentar el movimiento
-      const pieceOnSelected = game.get(selectedSquare as any)
-      if (!pieceOnSelected) {
-        setSelectedSquare(null)
-        setHighlightSquares({})
-        return
-      }
+    // Otra pieza propia → cambiar selección
+    if (isOwnPiece(square)) {
+      setSelectedSquare(square)
+      highlightMoves(square)
+      return
+    }
 
-      const pieceStr =
-        (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
+    // Intentar mover; processMove siempre limpia selectedSquare ahora
+    // Si el movimiento es ilegal para chess.js (casilla vacía no destino), limpiar manualmente
+    const pieceOnSelected = game.get(selectedSquare as any)
+    if (!pieceOnSelected) {
+      setSelectedSquare(null)
+      setHighlightSquares({})
+      return
+    }
 
-      processMove(selectedSquare, square, pieceStr)
+    const pieceStr =
+      (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
+
+    const moved = processMove(selectedSquare, square, pieceStr)
+    // Si processMove retornó false por movimiento ilegal (no por wrong puzzle),
+    // el selectedSquare ya fue limpiado dentro de processMove
+    if (!moved && feedback === 'idle') {
+      // Movimiento ilegal en chess.js (casilla inválida) — deseleccionar
+      setSelectedSquare(null)
+      setHighlightSquares({})
     }
   }
 
@@ -355,10 +356,15 @@ export default function PuzzleBoard({
             position={game.fen()}
             onPieceDrop={onDrop}
             onSquareClick={onSquareClick}
-            onPieceClick={(piece, square) => {
-              if (!isDraggingRef.current) onSquareClick(square)
+            onPieceDragBegin={() => {
+              setSelectedSquare(null)
+              setHighlightSquares({})
             }}
-            onPieceDragBegin={() => { isDraggingRef.current = true }}
+            onPieceDragEnd={() => {
+              // Si el drag no terminó en un drop válido, asegurarse de limpiar
+              setSelectedSquare(null)
+              setHighlightSquares({})
+            }}
             boardOrientation={boardOrientation}
             customSquareStyles={highlightSquares}
             boardWidth={boardSize}
