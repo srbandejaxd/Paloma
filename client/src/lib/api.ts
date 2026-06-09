@@ -17,7 +17,7 @@ export async function fetchAllPuzzles() {
 
 // [NUEVO] Puzzles por lista de IDs (para la carrera con selección custom)
 export async function fetchPuzzlesByIds(ids: number[]): Promise<Puzzle[]> {
-  const res = await fetch(`${BASE}/puzzles/by-ids`, {
+  const res = await fetch(`${BASE}/api/puzzles/by-ids`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ids }),
