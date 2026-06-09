@@ -17,7 +17,7 @@ export default function Lobby() {
   useEffect(() => {
     const socket = getSocket()
     if (!isHost) {
-        socket.emit('join_room', { code, nickname })
+      socket.emit('join_room', { code, nickname })
     }
 
     socket.on('room_state', (roomData: Room) => setRoom(roomData))
@@ -37,7 +37,17 @@ export default function Lobby() {
     })
 
     socket.on('race_starting', () => {
-      navigate(`/race/${code}?nickname=${encodeURIComponent(nickname)}`)
+      // Pasamos puzzleIds y totalPuzzles en el state de navegación
+      // para que Race.tsx no dependa del evento race_data
+      setRoom(prev => {
+        navigate(`/race/${code}?nickname=${encodeURIComponent(nickname)}`, {
+          state: {
+            puzzleIds: prev?.puzzleIds ?? [],
+            totalPuzzles: prev?.totalPuzzles ?? 0,
+          },
+        })
+        return prev
+      })
     })
 
     socket.on('join_error', (msg: string) => setError(msg))
@@ -49,14 +59,13 @@ export default function Lobby() {
       socket.off('race_starting')
       socket.off('join_error')
     }
-  }, [code, nickname, navigate])
+  }, [code, nickname, navigate, isHost])
 
   function startRace() {
     getSocket().emit('start_race', { code })
   }
 
   function copyLink() {
-    // Copia el link completo para compartir
     const url = `${window.location.origin}/room/${code}?nickname=Invitado`
     navigator.clipboard.writeText(url)
     setCopied(true)
@@ -101,7 +110,6 @@ export default function Lobby() {
             {room.totalPuzzles} ejercicios
             {timeLimitLabel && <> · <span className="text-amber">{timeLimitLabel}</span></>}
           </div>
-          {/* Botón para copiar link completo */}
           <button
             onClick={copyLink}
             className="mt-3 text-bone-3 font-mono text-xs hover:text-bone underline transition-colors"

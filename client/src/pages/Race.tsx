@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { getSocket } from '../lib/socket'
 import { fetchPuzzlesByIds } from '../lib/api'
-import { Puzzle, Player, RaceResult } from '../types'
+import { Puzzle, RaceResult } from '../types'
 import { useTimer } from '../hooks/useTimer'
 import { formatTimerDisplay } from '../lib/time'
 import PuzzleBoard from '../components/Board/PuzzleBoard'
@@ -14,7 +14,6 @@ interface LivePlayer {
   finished: boolean
 }
 
-// [CAMBIO 3] Registro de un puzzle fallado
 interface FailedPuzzle {
   idx: number
   orderInBlock: number
@@ -26,6 +25,8 @@ export default function Race() {
   const [params] = useSearchParams()
   const nickname = params.get('nickname') || 'Anon'
   const navigate = useNavigate()
+  const location = useLocation()
+  const navState = location.state as { puzzleIds?: number[]; totalPuzzles?: number } | null
 
   const [puzzles, setPuzzles] = useState<Puzzle[]>([])
   const [currentIdx, setCurrentIdx] = useState(0)
@@ -42,26 +43,42 @@ export default function Race() {
   const puzzleStartRef = useRef<number>(Date.now())
   const solvedRef = useRef(0)
   const totalErrorsRef = useRef(0)
+  const puzzlesLoadedRef = useRef(false)
 
   const { elapsed, reset: resetTimer } = useTimer(racing && !finished)
 
   useEffect(() => { solvedRef.current = solved }, [solved])
   useEffect(() => { totalErrorsRef.current = totalErrors }, [totalErrors])
 
+  // Función compartida para cargar puzzles y arrancar la carrera
+  const loadAndStart = useCallback(async (puzzleIds: number[], total: number) => {
+    if (puzzlesLoadedRef.current) return  // evitar doble carga si llegan ambas señales
+    puzzlesLoadedRef.current = true
+    setTotalPuzzles(total)
+    try {
+      const fetched = await fetchPuzzlesByIds(puzzleIds)
+      setPuzzles(fetched)
+      setRacing(true)
+      resetTimer()
+      puzzleStartRef.current = Date.now()
+    } catch (e) {
+      console.error('Failed to load puzzles', e)
+      puzzlesLoadedRef.current = false  // permitir reintento si falla el fetch
+    }
+  }, [resetTimer])
+
   useEffect(() => {
     const socket = getSocket()
 
-    socket.on('race_data', async (data: { puzzleIds: number[]; totalPuzzles: number }) => {
-      setTotalPuzzles(data.totalPuzzles)
-      try {
-        const fetchedPuzzles = await fetchPuzzlesByIds(data.puzzleIds)
-        setPuzzles(fetchedPuzzles)
-        setRacing(true)
-        resetTimer()
-        puzzleStartRef.current = Date.now()
-      } catch (e) {
-        console.error('Failed to load puzzles', e)
-      }
+    // Arranque rápido: si el Lobby nos pasó los puzzleIds por navegación, usarlos directamente
+    // sin esperar el evento race_data (que puede llegar antes de que este componente monte)
+    if (navState?.puzzleIds?.length) {
+      loadAndStart(navState.puzzleIds, navState.totalPuzzles ?? navState.puzzleIds.length)
+    }
+
+    // Fallback: escuchar race_data por si no llegaron datos por navegación
+    socket.on('race_data', (data: { puzzleIds: number[]; totalPuzzles: number }) => {
+      loadAndStart(data.puzzleIds, data.totalPuzzles)
     })
 
     socket.on('progress_update', (updates: LivePlayer[]) => {
@@ -79,7 +96,7 @@ export default function Race() {
       socket.off('progress_update')
       socket.off('race_finished')
     }
-  }, [code, nickname, navigate, resetTimer])
+  }, [code, nickname, navigate, navState, loadAndStart])
 
   const advancePuzzle = useCallback(
     (timeMs: number, errors: number, idxOverride?: number) => {
@@ -129,9 +146,7 @@ export default function Race() {
   )
 
   const handlePuzzleSolved = useCallback(
-    (timeMs: number, errors: number) => {
-      advancePuzzle(timeMs, errors)
-    },
+    (timeMs: number, errors: number) => advancePuzzle(timeMs, errors),
     [advancePuzzle]
   )
 
@@ -165,15 +180,13 @@ export default function Race() {
 
   const currentPuzzle = puzzles[currentIdx]
   const progress = (solved / (totalPuzzles || puzzles.length)) * 100
-
   const sortedPlayers = [...players].sort((a, b) => b.solved - a.solved)
 
   return (
     <div className="min-h-screen bg-void flex flex-col">
-      {/* Top bar: timer + progress */}
+      {/* Top bar */}
       <div className="border-b border-void-4 bg-void-2">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between">
-          {/* Big timer */}
           <div className="flex items-center gap-4">
             <div>
               <div className="text-3xl font-mono font-bold text-amber tracking-tight">
@@ -188,7 +201,6 @@ export default function Race() {
             )}
           </div>
 
-          {/* Progress */}
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-xl font-mono font-bold text-bone">
@@ -209,11 +221,9 @@ export default function Race() {
 
       {/* Main area */}
       <div className="flex-1 flex gap-0 max-w-6xl mx-auto w-full px-0 sm:px-4 py-4 sm:py-6">
-        {/* Board */}
         <div className="flex-1 flex items-start justify-center">
           {currentPuzzle && (
             <div className="w-full max-w-[540px]">
-              {/* Puzzle counter */}
               <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
                 <span className="font-mono text-bone-3 text-xs uppercase tracking-widest">
                   Puzzle {currentIdx + 1}
@@ -273,7 +283,7 @@ export default function Race() {
           )}
         </div>
 
-        {/* Live scoreboard - hidden on mobile */}
+        {/* Live scoreboard */}
         <div className="hidden sm:block w-56 ml-8 flex-shrink-0">
           <div className="sticky top-6">
             <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-3">
