@@ -16,9 +16,9 @@ export default function Lobby() {
 
   useEffect(() => {
     const socket = getSocket()
-    if (!isHost) {
-      socket.emit('join_room', { code, nickname })
-    }
+    // El host también emite join_room para recibir room_state al montar.
+    // El servidor ya maneja el caso de jugador duplicado sin problema.
+    socket.emit('join_room', { code, nickname })
 
     socket.on('room_state', (roomData: Room) => setRoom(roomData))
 
@@ -59,7 +59,7 @@ export default function Lobby() {
       socket.off('race_starting')
       socket.off('join_error')
     }
-  }, [code, nickname, navigate, isHost])
+  }, [code, nickname, navigate])
 
   function startRace() {
     getSocket().emit('start_race', { code })
