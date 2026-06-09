@@ -34,22 +34,24 @@ export default function Race() {
   const [players, setPlayers] = useState<LivePlayer[]>([])
   const [racing, setRacing] = useState(false)
   const [finished, setFinished] = useState(false)
-  // blockId removed from state
   const [totalPuzzles, setTotalPuzzles] = useState(0)
   const [puzzleErrors, setPuzzleErrors] = useState(0)
-  // [CAMBIO 3] Puzzles fallados
   const [failedPuzzles, setFailedPuzzles] = useState<FailedPuzzle[]>([])
 
   const puzzleTimesRef = useRef<{ puzzleId: number; orderInBlock: number; timeMs: number; errors: number }[]>([])
   const puzzleStartRef = useRef<number>(Date.now())
+  const solvedRef = useRef(0)
+  const totalErrorsRef = useRef(0)
 
   const { elapsed, reset: resetTimer } = useTimer(racing && !finished)
+
+  useEffect(() => { solvedRef.current = solved }, [solved])
+  useEffect(() => { totalErrorsRef.current = totalErrors }, [totalErrors])
 
   useEffect(() => {
     const socket = getSocket()
 
     socket.on('race_data', async (data: { puzzleIds: number[]; totalPuzzles: number }) => {
-      // blockId removed
       setTotalPuzzles(data.totalPuzzles)
       try {
         const fetchedPuzzles = await fetchPuzzlesByIds(data.puzzleIds)
@@ -79,7 +81,6 @@ export default function Race() {
     }
   }, [code, nickname, navigate, resetTimer])
 
-  // Avanza al siguiente puzzle, compartido entre onSolved y onSkip
   const advancePuzzle = useCallback(
     (timeMs: number, errors: number, idxOverride?: number) => {
       if (finished || !puzzles[idxOverride ?? currentIdx]) return
@@ -93,8 +94,8 @@ export default function Race() {
         errors,
       })
 
-      const newSolved = solved + 1
-      const newErrors = totalErrors + errors
+      const newSolved = solvedRef.current + 1
+      const newErrors = totalErrorsRef.current + errors
       setSolved(newSolved)
       setTotalErrors(newErrors)
       setPuzzleErrors(0)
@@ -124,7 +125,7 @@ export default function Race() {
         puzzleStartRef.current = Date.now()
       }
     },
-    [solved, totalErrors, currentIdx, puzzles, finished, elapsed, nickname]
+    [currentIdx, puzzles, finished, elapsed, nickname]
   )
 
   const handlePuzzleSolved = useCallback(
@@ -134,7 +135,6 @@ export default function Race() {
     [advancePuzzle]
   )
 
-  // [CAMBIO 3] Skip automático
   const handleSkip = useCallback(
     (errors: number) => {
       const timeMs = Date.now() - puzzleStartRef.current
@@ -243,7 +243,6 @@ export default function Race() {
                 {solved} puzzles · {totalErrors} errores
               </p>
 
-              {/* [CAMBIO 3] Resumen de puzzles fallados */}
               {failedPuzzles.length > 0 ? (
                 <div className="text-left bg-void-2 border border-red-900/40 rounded-sm px-4 py-3 mb-4">
                   <p className="font-mono text-xs text-red-400 uppercase tracking-widest mb-2">
