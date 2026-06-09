@@ -128,24 +128,27 @@ module.exports = function setupSockets(io) {
     })
 
     socket.on('join_room', ({ code, nickname }) => {
-      const room = rooms.get(code)
-      if (!room) { socket.emit('join_error', `Sala "${code}" no encontrada`); return }
-      if (room.status === 'racing') { socket.emit('join_error', 'La carrera ya comenzó'); return }
+        const room = rooms.get(code)
+        if (!room) { socket.emit('join_error', Sala "${code}" no encontrada); return }
+        if (room.status === 'racing') { socket.emit('join_error', 'La carrera ya comenzó'); return }
 
-      const player = { id: socket.id, nickname, solved: 0, errors: 0, finished: false }
-      room.players.push(player)
-      socket.join(code)
-      socket.emit('room_state', {
-        code: room.code,
-        hostId: room.hostId,
-        puzzleIds: room.puzzleIds,
-        totalPuzzles: room.totalPuzzles,
-        timeLimit: room.timeLimit,
-        players: room.players,
-        status: room.status,
-      })
-      socket.to(code).emit('player_joined', player)
-      console.log(`${nickname} joined ${code}`)
+        const alreadyIn = room.players.find(p => p.id === socket.id)
+        if (!alreadyIn) {
+            const player = { id: socket.id, nickname, solved: 0, errors: 0, finished: false }
+            room.players.push(player)
+            socket.to(code).emit('player_joined', player)
+        }
+        socket.join(code)
+        socket.emit('room_state', {
+            code: room.code,
+            hostId: room.hostId,
+            puzzleIds: room.puzzleIds,
+            totalPuzzles: room.totalPuzzles,
+            timeLimit: room.timeLimit,
+            players: room.players,
+            status: room.status,
+        })
+        console.log(${nickname} joined ${code})
     })
 
     socket.on('start_race', ({ code }) => {
