@@ -75,6 +75,8 @@ export default function PuzzleBoard({
 
   // Estado para tap-to-move en móvil
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
+  // Ref para detectar si se está arrastrando y no disparar click
+  const isDraggingRef = useRef(false)
 
   const isMobile = useIsMobile()
   const boardSize = useBoardSize()
@@ -217,13 +219,19 @@ export default function PuzzleBoard({
     return true
   }
 
-  // Handler para drag (desktop)
+  // Handler para drag
   function onDrop(sourceSquare: string, targetSquare: string, piece: string): boolean {
-    return processMove(sourceSquare, targetSquare, piece)
+    isDraggingRef.current = true
+    setSelectedSquare(null)
+    setHighlightSquares({})
+    const result = processMove(sourceSquare, targetSquare, piece)
+    setTimeout(() => { isDraggingRef.current = false }, 50)
+    return result
   }
 
   // Handler para click/tap en cualquier dispositivo
   function onSquareClick(square: string) {
+    if (isDraggingRef.current) return
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
 
     const currentPiece = game.get(square as any)
@@ -347,7 +355,10 @@ export default function PuzzleBoard({
             position={game.fen()}
             onPieceDrop={onDrop}
             onSquareClick={onSquareClick}
-            onPieceClick={(piece, square) => onSquareClick(square)}
+            onPieceClick={(piece, square) => {
+              if (!isDraggingRef.current) onSquareClick(square)
+            }}
+            onPieceDragBegin={() => { isDraggingRef.current = true }}
             boardOrientation={boardOrientation}
             customSquareStyles={highlightSquares}
             boardWidth={boardSize}
