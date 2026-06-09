@@ -132,12 +132,20 @@ module.exports = function setupSockets(io) {
         if (!room) { socket.emit('join_error', `Sala "${code}" no encontrada`); return }
         if (room.status === 'racing') { socket.emit('join_error', 'La carrera ya comenzó'); return }
 
-        const alreadyIn = room.players.find(p => p.id === socket.id)
-        if (!alreadyIn) {
+        const alreadyById = room.players.find(p => p.id === socket.id)
+        const alreadyByNickname = room.players.find(p => p.nickname === nickname)
+
+        if (!alreadyById && alreadyByNickname) {
+            // Reconexión: mismo nickname, nuevo socket.id — actualizar id
+            if (room.hostId === alreadyByNickname.id) room.hostId = socket.id
+            alreadyByNickname.id = socket.id
+        } else if (!alreadyById && !alreadyByNickname) {
+            // Jugador nuevo
             const player = { id: socket.id, nickname, solved: 0, errors: 0, finished: false }
             room.players.push(player)
             socket.to(code).emit('player_joined', player)
         }
+        // Si alreadyById: ya está con este id, no hacer nada
         socket.join(code)
         socket.emit('room_state', {
             code: room.code,
