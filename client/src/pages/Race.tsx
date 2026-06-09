@@ -172,7 +172,7 @@ export default function Race() {
     <div className="min-h-screen bg-void flex flex-col">
       {/* Top bar: timer + progress */}
       <div className="border-b border-void-4 bg-void-2">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between">
           {/* Big timer */}
           <div className="flex items-center gap-4">
             <div>
@@ -208,13 +208,13 @@ export default function Race() {
       </div>
 
       {/* Main area */}
-      <div className="flex-1 flex gap-0 max-w-6xl mx-auto w-full px-4 py-6">
+      <div className="flex-1 flex gap-0 max-w-6xl mx-auto w-full px-0 sm:px-4 py-4 sm:py-6">
         {/* Board */}
         <div className="flex-1 flex items-start justify-center">
           {currentPuzzle && (
             <div className="w-full max-w-[540px]">
               {/* Puzzle counter */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
                 <span className="font-mono text-bone-3 text-xs uppercase tracking-widest">
                   Puzzle {currentIdx + 1}
                 </span>
@@ -274,8 +274,8 @@ export default function Race() {
           )}
         </div>
 
-        {/* Live scoreboard */}
-        <div className="w-56 ml-8 flex-shrink-0">
+        {/* Live scoreboard - hidden on mobile */}
+        <div className="hidden sm:block w-56 ml-8 flex-shrink-0">
           <div className="sticky top-6">
             <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-3">
               En vivo

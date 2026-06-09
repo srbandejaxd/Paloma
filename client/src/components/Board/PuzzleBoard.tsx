@@ -7,14 +7,13 @@ interface PuzzleBoardProps {
   puzzle: Puzzle
   onSolved: (timeMs: number, errors: number) => void
   onError?: () => void
-  onSkip?: (errors: number) => void   // [NUEVO] skip automático por demasiados errores
+  onSkip?: (errors: number) => void
   disabled?: boolean
-  autoSkipAfterErrors?: number         // [NUEVO] cuántos errores antes de auto-skip (default: 1)
+  autoSkipAfterErrors?: number
 }
 
 type FeedbackState = 'idle' | 'correct' | 'wrong' | 'opponent' | 'skipping'
 
-// Parse UCI or SAN move - react-chessboard uses UCI (e2e4 style)
 function moveFromSAN(game: Chess, san: string): { from: string; to: string; promotion?: string } | null {
   try {
     const result = game.move(san)
@@ -24,6 +23,38 @@ function moveFromSAN(game: Chess, san: string): { from: string; to: string; prom
   } catch {
     return null
   }
+}
+
+// Hook para detectar si estamos en móvil
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isMobile
+}
+
+// Hook para obtener el tamaño óptimo del tablero
+function useBoardSize() {
+  const [size, setSize] = useState(480)
+  useEffect(() => {
+    const calc = () => {
+      const vw = window.innerWidth
+      if (vw < 640) {
+        // Móvil: ancho total menos padding mínimo (16px cada lado)
+        setSize(Math.min(vw - 32, 480))
+      } else {
+        setSize(480)
+      }
+    }
+    calc()
+    window.addEventListener('resize', calc)
+    return () => window.removeEventListener('resize', calc)
+  }, [])
+  return size
 }
 
 export default function PuzzleBoard({
@@ -42,7 +73,12 @@ export default function PuzzleBoard({
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
 
-  // [CAMBIO 1] Determina el color del jugador para mostrar de quién es el turno
+  // Estado para tap-to-move en móvil
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
+
+  const isMobile = useIsMobile()
+  const boardSize = useBoardSize()
+
   const playerColor = (() => {
     const parts = puzzle.fen.split(' ')
     return parts[1] === 'w' ? 'white' : 'black'
@@ -60,6 +96,7 @@ export default function PuzzleBoard({
     setErrors(0)
     setFeedback('idle')
     setHighlightSquares({})
+    setSelectedSquare(null)
     startTimeRef.current = Date.now()
   }, [puzzle])
 
@@ -67,7 +104,6 @@ export default function PuzzleBoard({
     (currentGame: Chess, currentIndex: number) => {
       const nextIndex = currentIndex + 1
       if (nextIndex >= puzzle.solution.length) {
-        // Puzzle complete
         const elapsed = Date.now() - startTimeRef.current
         setTimeout(() => {
           onSolved(elapsed, errors)
@@ -102,7 +138,8 @@ export default function PuzzleBoard({
     [puzzle.solution, errors, onSolved]
   )
 
-  function onDrop(sourceSquare: string, targetSquare: string, piece: string): boolean {
+  // Lógica central de movimiento (compartida por drag y tap)
+  function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
 
     const expectedSAN = puzzle.solution[solutionIndex]
@@ -140,6 +177,7 @@ export default function PuzzleBoard({
       })
       setFeedback('correct')
       setGame(gameCopy)
+      setSelectedSquare(null)
 
       clearTimeout(feedbackTimeout.current)
       feedbackTimeout.current = setTimeout(() => {
@@ -147,7 +185,6 @@ export default function PuzzleBoard({
         playOpponentMove(gameCopy, solutionIndex)
       }, 400)
     } else {
-      // Movimiento incorrecto
       const newErrors = errors + 1
       setErrors(newErrors)
       setHighlightSquares({
@@ -155,11 +192,11 @@ export default function PuzzleBoard({
         [targetSquare]: { background: 'rgba(231,76,60,0.4)' },
       })
       setFeedback('wrong')
+      setSelectedSquare(null)
       onError?.()
 
       clearTimeout(feedbackTimeout.current)
 
-      // [CAMBIO 3] Auto-skip si se superó el límite de errores
       if (autoSkipAfterErrors > 0 && newErrors >= autoSkipAfterErrors) {
         setFeedback('skipping')
         feedbackTimeout.current = setTimeout(() => {
@@ -180,9 +217,75 @@ export default function PuzzleBoard({
     return true
   }
 
+  // Handler para drag (desktop)
+  function onDrop(sourceSquare: string, targetSquare: string, piece: string): boolean {
+    return processMove(sourceSquare, targetSquare, piece)
+  }
+
+  // Handler para tap (móvil): clic en una casilla
+  function onSquareClick(square: string) {
+    if (!isMobile) return
+    if (disabled || feedback === 'opponent' || feedback === 'skipping') return
+
+    const currentPiece = game.get(square as any)
+    const isOwnPiece =
+      currentPiece &&
+      (playerColor === 'white' ? currentPiece.color === 'w' : currentPiece.color === 'b')
+
+    if (selectedSquare === null) {
+      // Primera tap: seleccionar pieza propia
+      if (isOwnPiece) {
+        setSelectedSquare(square)
+        // Resaltar casillas legales
+        const moves = game.moves({ square: square as any, verbose: true })
+        const highlights: Record<string, { background: string }> = {
+          [square]: { background: 'rgba(212,160,23,0.5)' },
+        }
+        moves.forEach((m: any) => {
+          highlights[m.to] = { background: 'rgba(212,160,23,0.2)' }
+        })
+        setHighlightSquares(highlights)
+      }
+    } else {
+      // Segunda tap: intentar mover
+      if (square === selectedSquare) {
+        // Deseleccionar
+        setSelectedSquare(null)
+        setHighlightSquares({})
+        return
+      }
+
+      if (isOwnPiece) {
+        // Cambiar selección a otra pieza propia
+        setSelectedSquare(square)
+        const moves = game.moves({ square: square as any, verbose: true })
+        const highlights: Record<string, { background: string }> = {
+          [square]: { background: 'rgba(212,160,23,0.5)' },
+        }
+        moves.forEach((m: any) => {
+          highlights[m.to] = { background: 'rgba(212,160,23,0.2)' }
+        })
+        setHighlightSquares(highlights)
+        return
+      }
+
+      // Intentar el movimiento
+      const pieceOnSelected = game.get(selectedSquare as any)
+      if (!pieceOnSelected) {
+        setSelectedSquare(null)
+        setHighlightSquares({})
+        return
+      }
+
+      const pieceStr =
+        (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
+
+      processMove(selectedSquare, square, pieceStr)
+    }
+  }
+
   const boardOrientation = playerColor === 'white' ? 'white' : 'black'
 
-  // [CAMBIO 1] Calcular turno actual
   const isPlayerTurn = feedback !== 'opponent' && feedback !== 'skipping' && solutionIndex < puzzle.solution.length
   const turnLabel =
     feedback === 'skipping'
@@ -210,7 +313,7 @@ export default function PuzzleBoard({
 
   return (
     <div>
-      {/* [CAMBIO 1] Indicador de turno */}
+      {/* Indicador de turno */}
       <div className={`font-mono text-xs uppercase tracking-widest mb-3 flex items-center gap-2 ${turnText}`}>
         <span className={`w-2 h-2 rounded-full inline-block ${turnDot}`} />
         {turnLabel}
@@ -220,6 +323,18 @@ export default function PuzzleBoard({
           </span>
         )}
       </div>
+
+      {/* Hint tap en móvil */}
+      {isMobile && isPlayerTurn && !selectedSquare && (
+        <p className="font-mono text-xs text-bone-3 mb-2 text-center">
+          Toca una pieza para seleccionarla
+        </p>
+      )}
+      {isMobile && isPlayerTurn && selectedSquare && (
+        <p className="font-mono text-xs text-amber mb-2 text-center">
+          Pieza seleccionada — toca la casilla destino
+        </p>
+      )}
 
       <div className="relative">
         <div
@@ -231,9 +346,13 @@ export default function PuzzleBoard({
           <Chessboard
             position={game.fen()}
             onPieceDrop={onDrop}
+            onSquareClick={onSquareClick}
             boardOrientation={boardOrientation}
             customSquareStyles={highlightSquares}
+            boardWidth={boardSize}
             isDraggablePiece={({ piece }) => {
+              // En móvil deshabilitamos el drag para favorecer tap-to-move
+              if (isMobile) return false
               if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
               return playerColor === 'white'
                 ? piece.startsWith('w')
