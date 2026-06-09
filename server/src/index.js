@@ -35,11 +35,11 @@ app.use('/api', apiRouter)
 setupSockets(io)
 
 // Sirve el build del cliente en producción
-const clientDist = path.join(__dirname, '../../client/dist')
-app.use(express.static(clientDist))
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientDist, 'index.html'))
-})
+//const clientDist = path.join(__dirname, '../../client/dist')
+//app.use(express.static(clientDist))
+//app.get('*', (req, res) => {
+  //res.sendFile(path.join(clientDist, 'index.html'))
+//})
 
 server.listen(PORT, () => {
   console.log(`\n🪃  Woodpecker server → http://localhost:${PORT}`)
