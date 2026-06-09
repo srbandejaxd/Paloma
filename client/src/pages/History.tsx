@@ -30,8 +30,12 @@ export default function History() {
 
   // Group attempts by block
   const attemptsByBlock = attempts.reduce<Record<number, AttemptRecord[]>>((acc, a) => {
-    if (!acc[a.blockId]) acc[a.blockId] = []
-    acc[a.blockId].push(a)
+    const blockId = a.blockId
+    if (blockId == null) return acc
+    
+    if (!acc[blockId]) acc[blockId] = []
+    acc[blockId].push(a)
+  
     return acc
   }, {})
 
