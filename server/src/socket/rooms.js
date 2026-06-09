@@ -129,7 +129,7 @@ module.exports = function setupSockets(io) {
 
     socket.on('join_room', ({ code, nickname }) => {
         const room = rooms.get(code)
-        if (!room) { socket.emit('join_error', Sala "${code}" no encontrada); return }
+        if (!room) { socket.emit('join_error', 'Sala "${code}" no encontrada'); return }
         if (room.status === 'racing') { socket.emit('join_error', 'La carrera ya comenzó'); return }
 
         const alreadyIn = room.players.find(p => p.id === socket.id)
