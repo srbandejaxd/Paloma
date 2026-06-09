@@ -16,7 +16,9 @@ export default function Lobby() {
 
   useEffect(() => {
     const socket = getSocket()
-    socket.emit('join_room', { code, nickname })
+    if (!isHost) {
+        socket.emit('join_room', { code, nickname })
+    }
 
     socket.on('room_state', (roomData: Room) => setRoom(roomData))
 
