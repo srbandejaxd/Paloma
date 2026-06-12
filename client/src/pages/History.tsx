@@ -1,41 +1,36 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { fetchBlocks, fetchAttempts } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { Block, AttemptRecord } from '../types'
-import { formatTimeLong, improvementPct } from '../lib/time'
+import { formatTimeLong } from '../lib/time'
 
 export default function History() {
-  const [searchParams] = useSearchParams()
-  const nickname = searchParams.get('nickname') || ''
+  const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [inputNick, setInputNick] = useState(nickname)
   const [blocks, setBlocks] = useState<Block[]>([])
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
   const [attempts, setAttempts] = useState<AttemptRecord[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    if (!user) { navigate('/'); return }
     fetchBlocks().then(setBlocks).catch(console.error)
-  }, [])
+  }, [user, navigate])
 
   useEffect(() => {
-    if (!inputNick) return
+    if (!user) return
     setLoading(true)
-    fetchAttempts(inputNick, selectedBlock ?? undefined)
+    fetchAttempts(selectedBlock ?? undefined)
       .then(setAttempts)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [inputNick, selectedBlock])
+  }, [user, selectedBlock])
 
-  // Group attempts by block
   const attemptsByBlock = attempts.reduce<Record<number, AttemptRecord[]>>((acc, a) => {
-    const blockId = a.blockId
-    if (blockId == null) return acc
-    
-    if (!acc[blockId]) acc[blockId] = []
-    acc[blockId].push(a)
-  
+    if (!acc[a.blockId]) acc[a.blockId] = []
+    acc[a.blockId].push(a)
     return acc
   }, {})
 
@@ -44,147 +39,108 @@ export default function History() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <button
-              onClick={() => navigate('/')}
-              className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-3 block"
-            >
-              ← Inicio
-            </button>
+            <button onClick={() => navigate('/solo')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-3 block">← Inicio</button>
             <h2 className="text-2xl font-mono font-bold text-bone">Historial</h2>
             <p className="text-bone-3 font-mono text-sm mt-1">
-              El tiempo disminuye. Eso es el método.
+              <span className="text-amber">{user?.nickname}</span> — el tiempo baja, eso es el método
             </p>
           </div>
         </div>
 
-        {/* Nickname input */}
-        <div className="flex gap-3 mb-8">
-          <input
-            type="text"
-            value={inputNick}
-            onChange={e => setInputNick(e.target.value)}
-            placeholder="Tu nickname..."
-            className="flex-1 bg-void-2 border border-void-4 text-bone font-mono text-sm px-4 py-3 rounded-sm focus:outline-none focus:border-amber transition-colors placeholder:text-bone-3"
-          />
-          <div className="flex gap-2">
+        {/* Filtro por bloque */}
+        <div className="flex gap-2 mb-8 flex-wrap">
+          <button
+            onClick={() => setSelectedBlock(null)}
+            className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedBlock === null ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+          >
+            Todos
+          </button>
+          {blocks.map(b => (
             <button
-              onClick={() => setSelectedBlock(null)}
-              className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${
-                selectedBlock === null
-                  ? 'border-amber bg-amber/10 text-amber'
-                  : 'border-void-4 text-bone-3 hover:border-bone-3'
-              }`}
+              key={b.id}
+              onClick={() => setSelectedBlock(b.id)}
+              className={`px-3 py-2 font-mono text-xs border rounded-sm transition-all ${selectedBlock === b.id ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
             >
-              Todos
+              {b.name}
             </button>
-            {blocks.map(b => (
-              <button
-                key={b.id}
-                onClick={() => setSelectedBlock(b.id)}
-                className={`px-3 py-2 font-mono text-xs border rounded-sm transition-all ${
-                  selectedBlock === b.id
-                    ? 'border-amber bg-amber/10 text-amber'
-                    : 'border-void-4 text-bone-3 hover:border-bone-3'
-                }`}
-              >
-                B{b.id}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
 
-        {loading && (
-          <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>
-        )}
+        {loading && <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>}
 
-        {!loading && inputNick && attempts.length === 0 && (
+        {!loading && attempts.length === 0 && (
           <div className="text-center py-16 border border-void-4 rounded-sm">
-            <p className="text-bone-3 font-mono text-sm">
-              Sin intentos registrados para <span className="text-amber">{inputNick}</span>
-            </p>
+            <p className="text-bone-3 font-mono text-sm">Sin cycles registrados todavía</p>
+            <button onClick={() => navigate('/solo')} className="mt-4 text-amber font-mono text-sm hover:underline">Iniciar primer cycle →</button>
           </div>
         )}
 
-        {/* Blocks with attempts */}
         {Object.entries(attemptsByBlock).map(([blockId, blockAttempts]) => {
           const block = blocks.find(b => b.id === parseInt(blockId))
           const sorted = [...blockAttempts].sort((a, b) => a.attemptNumber - b.attemptNumber)
-          const best = Math.min(...sorted.map(a => a.totalTimeMs))
-          const latest = sorted[sorted.length - 1]
-          const first = sorted[0]
-          const totalImprovement = improvementPct(first.totalTimeMs, latest.totalTimeMs)
+          const completedCycles = sorted.filter(a => a.solved === a.totalPuzzles)
+          const bestTime = completedCycles.length ? Math.min(...completedCycles.map(a => a.totalTimeMs)) : null
+          const bestPpm = completedCycles.length ? Math.max(...completedCycles.map(a => a.ppm)) : null
+          const totalCycles = sorted.length
 
           return (
-            <div key={blockId} className="mb-8">
+            <div key={blockId} className="mb-10">
+              {/* Block header */}
               <div className="flex items-end justify-between mb-4">
                 <div>
-                  <h3 className="font-mono text-base font-semibold text-bone">
-                    {block?.name || `Bloque ${blockId}`}
-                  </h3>
+                  <h3 className="font-mono text-base font-semibold text-bone">{block?.name || `Bloque ${blockId}`}</h3>
                   <p className="font-mono text-xs text-bone-3 mt-0.5">
-                    {sorted.length} intento{sorted.length !== 1 ? 's' : ''}
-                    {totalImprovement > 0 && (
-                      <span className="text-green ml-2">
-                        ↓ {totalImprovement}% más rápido
-                      </span>
+                    {totalCycles} cycle{totalCycles !== 1 ? 's' : ''}
+                    {completedCycles.length < totalCycles && (
+                      <span className="ml-2 text-amber">{completedCycles.length} completados</span>
                     )}
                   </p>
                 </div>
-                <div className="text-right">
-                  <div className="font-mono text-xs text-bone-3">mejor tiempo</div>
-                  <div className="font-mono text-sm font-bold text-amber">{formatTimeLong(best)}</div>
+                <div className="text-right flex gap-6">
+                  {bestTime && (
+                    <div>
+                      <div className="font-mono text-xs text-bone-3">mejor tiempo</div>
+                      <div className="font-mono text-sm font-bold text-amber">{formatTimeLong(bestTime)}</div>
+                    </div>
+                  )}
+                  {bestPpm && (
+                    <div>
+                      <div className="font-mono text-xs text-bone-3">mejor PPM</div>
+                      <div className="font-mono text-sm font-bold text-amber">{bestPpm}</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Speed curve — the signature element */}
-              <SpeedCurve attempts={sorted} />
+              {/* PPM chart */}
+              {sorted.length >= 2 && <PpmChart attempts={sorted} />}
 
-              {/* Attempt list */}
+              {/* Cycle list */}
               <div className="mt-3 space-y-1">
                 {sorted.map((attempt, i) => {
-                  const prevTime = i > 0 ? sorted[i - 1].totalTimeMs : null
-                  const improved = prevTime && attempt.totalTimeMs < prevTime
-                  const pct = prevTime ? improvementPct(prevTime, attempt.totalTimeMs) : null
+                  const prev = i > 0 ? sorted[i - 1] : null
+                  const isComplete = attempt.solved === attempt.totalPuzzles
+                  const timeDiff = prev ? attempt.totalTimeMs - prev.totalTimeMs : null
+                  const improved = timeDiff !== null && timeDiff < 0
 
                   return (
-                    <div
-                      key={attempt.id}
-                      className="flex items-center gap-4 px-4 py-2.5 bg-void-2 border border-void-4 rounded-sm"
-                    >
-                      <span className="font-mono text-xs text-bone-3 w-16">
-                        #{attempt.attemptNumber}
-                      </span>
-                      <span className="font-mono text-sm font-semibold text-bone flex-1">
+                    <div key={attempt.id} className="flex items-center gap-3 px-4 py-2.5 bg-void-2 border border-void-4 rounded-sm">
+                      <span className="font-mono text-xs text-bone-3 w-20">Cycle {attempt.attemptNumber}</span>
+                      <span className={`font-mono text-sm font-semibold flex-1 ${isComplete ? 'text-bone' : 'text-bone-3'}`}>
                         {formatTimeLong(attempt.totalTimeMs)}
+                        {!isComplete && <span className="text-xs font-normal ml-1">({attempt.solved}/{attempt.totalPuzzles})</span>}
                       </span>
-                      <span className="font-mono text-xs text-bone-3">
-                        {attempt.solved}/{attempt.totalPuzzles}
-                      </span>
-                      <span className="font-mono text-xs text-bone-3">
-                        {attempt.errors} err
-                      </span>
-                      <span
-                        className={`font-mono text-xs w-16 text-right ${
-                          attempt.accuracy >= 90
-                            ? 'text-green'
-                            : attempt.accuracy >= 70
-                            ? 'text-amber'
-                            : 'text-red-400'
-                        }`}
-                      >
+                      <span className="font-mono text-xs text-bone-3 w-16">{attempt.ppm} PPM</span>
+                      <span className="font-mono text-xs text-bone-3 w-12">{attempt.errors} err</span>
+                      <span className={`font-mono text-xs w-10 text-right ${attempt.accuracy >= 90 ? 'text-green-400' : attempt.accuracy >= 70 ? 'text-amber' : 'text-red-400'}`}>
                         {attempt.accuracy}%
                       </span>
-                      {pct !== null && pct > 0 && (
-                        <span className="font-mono text-xs text-green w-14 text-right">
-                          ↓{pct}%
+                      {timeDiff !== null && (
+                        <span className={`font-mono text-xs w-16 text-right ${improved ? 'text-green-400' : 'text-red-400'}`}>
+                          {improved ? '↓' : '↑'}{formatTimeLong(Math.abs(timeDiff))}
                         </span>
                       )}
-                      {pct !== null && pct <= 0 && (
-                        <span className="font-mono text-xs text-red-400 w-14 text-right">
-                          ↑{Math.abs(pct)}%
-                        </span>
-                      )}
-                      {pct === null && <span className="w-14" />}
+                      {timeDiff === null && <span className="w-16" />}
                     </div>
                   )
                 })}
@@ -197,62 +153,43 @@ export default function History() {
   )
 }
 
-// The signature visual: speed improvement as an SVG spark line
-function SpeedCurve({ attempts }: { attempts: AttemptRecord[] }) {
-  if (attempts.length < 2) return null
-
-  const times = attempts.map(a => a.totalTimeMs)
-  const min = Math.min(...times)
-  const max = Math.max(...times)
+function PpmChart({ attempts }: { attempts: AttemptRecord[] }) {
+  const ppms = attempts.map(a => a.ppm)
+  const min = Math.min(...ppms)
+  const max = Math.max(...ppms)
   const range = max - min || 1
 
   const W = 600
-  const H = 56
-  const PAD = 8
+  const H = 64
+  const PAD = 10
 
-  const points = times.map((t, i) => {
-    const x = PAD + (i / (times.length - 1)) * (W - PAD * 2)
-    // Invert: lower time = higher on chart (better)
-    const y = PAD + ((t - min) / range) * (H - PAD * 2)
-    return { x, y, t }
-  })
+  const points = ppms.map((ppm, i) => ({
+    x: PAD + (i / (ppms.length - 1)) * (W - PAD * 2),
+    y: PAD + (1 - (ppm - min) / range) * (H - PAD * 2),
+    ppm,
+  }))
 
-  const pathD = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
-    .join(' ')
-
-  // Fill path
+  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
   const fillD = `${pathD} L ${points[points.length - 1].x} ${H} L ${points[0].x} ${H} Z`
 
   return (
     <div className="bg-void-2 border border-void-4 rounded-sm overflow-hidden">
+      <div className="px-4 pt-3 pb-1 flex justify-between">
+        <span className="font-mono text-xs text-bone-3 uppercase tracking-widest">PPM por cycle</span>
+        <span className="font-mono text-xs text-amber">↑ más alto = más rápido</span>
+      </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block">
-        {/* Fill */}
-        <path d={fillD} fill="rgba(212,160,23,0.06)" />
-        {/* Line */}
-        <path
-          d={pathD}
-          fill="none"
-          stroke="#D4A017"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {/* Dots */}
+        <path d={fillD} fill="rgba(212,160,23,0.07)" />
+        <path d={pathD} fill="none" stroke="#D4A017" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         {points.map((p, i) => (
-          <circle
-            key={i}
-            cx={p.x}
-            cy={p.y}
-            r="3"
+          <circle key={i} cx={p.x} cy={p.y} r="3"
             fill={i === points.length - 1 ? '#D4A017' : '#1C1C28'}
-            stroke="#D4A017"
-            strokeWidth="1.5"
+            stroke="#D4A017" strokeWidth="1.5"
           />
         ))}
       </svg>
-      <div className="flex justify-between px-2 pb-2">
-        <span className="font-mono text-xs text-bone-3">Intento 1</span>
+      <div className="flex justify-between px-3 pb-2">
+        <span className="font-mono text-xs text-bone-3">Cycle 1</span>
         <span className="font-mono text-xs text-bone-3">Más reciente</span>
       </div>
     </div>

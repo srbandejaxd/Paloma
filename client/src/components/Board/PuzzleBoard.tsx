@@ -25,7 +25,6 @@ function moveFromSAN(game: Chess, san: string): { from: string; to: string; prom
   }
 }
 
-// Hook para detectar si estamos en móvil
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false)
   useEffect(() => {
@@ -37,14 +36,12 @@ function useIsMobile() {
   return isMobile
 }
 
-// Hook para obtener el tamaño óptimo del tablero
 function useBoardSize() {
   const [size, setSize] = useState(480)
   useEffect(() => {
     const calc = () => {
       const vw = window.innerWidth
       if (vw < 640) {
-        // Móvil: ancho total menos padding mínimo (16px cada lado)
         setSize(Math.min(vw - 32, 480))
       } else {
         setSize(480)
@@ -73,7 +70,10 @@ export default function PuzzleBoard({
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
 
-  // Estado para selección click/tap
+  // ✅ Ref para leer errors siempre actualizado dentro de callbacks/timeouts
+  const errorsRef = useRef(0)
+  useEffect(() => { errorsRef.current = errors }, [errors])
+
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
 
   const isMobile = useIsMobile()
@@ -94,6 +94,7 @@ export default function PuzzleBoard({
     setGame(newGame)
     setSolutionIndex(0)
     setErrors(0)
+    errorsRef.current = 0  // ✅ reset también la ref al cambiar puzzle
     setFeedback('idle')
     setHighlightSquares({})
     setSelectedSquare(null)
@@ -106,7 +107,7 @@ export default function PuzzleBoard({
       if (nextIndex >= puzzle.solution.length) {
         const elapsed = Date.now() - startTimeRef.current
         setTimeout(() => {
-          onSolved(elapsed, errors)
+          onSolved(elapsed, errorsRef.current)  // ✅ leer de ref
         }, 300)
         return
       }
@@ -130,15 +131,14 @@ export default function PuzzleBoard({
 
           if (nextPlayerIndex >= puzzle.solution.length) {
             const elapsed = Date.now() - startTimeRef.current
-            setTimeout(() => onSolved(elapsed, errors), 400)
+            setTimeout(() => onSolved(elapsed, errorsRef.current), 400)  // ✅ leer de ref
           }
         }
       }, 500)
     },
-    [puzzle.solution, errors, onSolved]
+    [puzzle.solution, onSolved]  // ✅ "errors" ya no es dependencia
   )
 
-  // Highlight legal moves for a square
   function highlightMoves(square: string) {
     const moves = game.moves({ square: square as any, verbose: true })
     const highlights: Record<string, { background: string }> = {
@@ -155,7 +155,6 @@ export default function PuzzleBoard({
     return !!p && (playerColor === 'white' ? p.color === 'w' : p.color === 'b')
   }
 
-  // Lógica central de movimiento (compartida por drag y tap)
   function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
 
@@ -204,6 +203,7 @@ export default function PuzzleBoard({
     } else {
       const newErrors = errors + 1
       setErrors(newErrors)
+      errorsRef.current = newErrors  // ✅ actualizar ref inmediatamente, sin esperar el useEffect
       setHighlightSquares({
         [sourceSquare]: { background: 'rgba(231,76,60,0.3)' },
         [targetSquare]: { background: 'rgba(231,76,60,0.4)' },
@@ -233,21 +233,14 @@ export default function PuzzleBoard({
     return true
   }
 
-  // Handler para drag — siempre limpia selección click antes de procesar
   function onDrop(sourceSquare: string, targetSquare: string, piece: string): boolean {
     setSelectedSquare(null)
     return processMove(sourceSquare, targetSquare, piece)
   }
 
-  // Handler para click/tap — lógica tipo lichess:
-  // 1) sin selección: selecciona pieza propia
-  // 2) misma casilla: deselecciona
-  // 3) otra pieza propia: cambia selección
-  // 4) casilla destino: intenta mover; si falla (ilegal), deselecciona
   function onSquareClick(square: string) {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
 
-    // Sin selección activa
     if (selectedSquare === null) {
       if (isOwnPiece(square)) {
         setSelectedSquare(square)
@@ -256,22 +249,18 @@ export default function PuzzleBoard({
       return
     }
 
-    // Misma casilla → deseleccionar
     if (square === selectedSquare) {
       setSelectedSquare(null)
       setHighlightSquares({})
       return
     }
 
-    // Otra pieza propia → cambiar selección
     if (isOwnPiece(square)) {
       setSelectedSquare(square)
       highlightMoves(square)
       return
     }
 
-    // Intentar mover; processMove siempre limpia selectedSquare ahora
-    // Si el movimiento es ilegal para chess.js (casilla vacía no destino), limpiar manualmente
     const pieceOnSelected = game.get(selectedSquare as any)
     if (!pieceOnSelected) {
       setSelectedSquare(null)
@@ -283,10 +272,7 @@ export default function PuzzleBoard({
       (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
 
     const moved = processMove(selectedSquare, square, pieceStr)
-    // Si processMove retornó false por movimiento ilegal (no por wrong puzzle),
-    // el selectedSquare ya fue limpiado dentro de processMove
     if (!moved && feedback === 'idle') {
-      // Movimiento ilegal en chess.js (casilla inválida) — deseleccionar
       setSelectedSquare(null)
       setHighlightSquares({})
     }
@@ -321,7 +307,6 @@ export default function PuzzleBoard({
 
   return (
     <div>
-      {/* Indicador de turno */}
       <div className={`font-mono text-xs uppercase tracking-widest mb-3 flex items-center gap-2 ${turnText}`}>
         <span className={`w-2 h-2 rounded-full inline-block ${turnDot}`} />
         {turnLabel}
@@ -332,7 +317,6 @@ export default function PuzzleBoard({
         )}
       </div>
 
-      {/* Hint de selección */}
       {isPlayerTurn && !selectedSquare && (
         <p className="font-mono text-xs text-bone-3 mb-2 text-center">
           Haz clic en una pieza para seleccionarla
@@ -361,7 +345,6 @@ export default function PuzzleBoard({
               setHighlightSquares({})
             }}
             onPieceDragEnd={() => {
-              // Si el drag no terminó en un drop válido, asegurarse de limpiar
               setSelectedSquare(null)
               setHighlightSquares({})
             }}
@@ -378,7 +361,6 @@ export default function PuzzleBoard({
           />
         </div>
 
-        {/* Feedback overlay */}
         {feedback === 'wrong' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className="font-mono text-red-400 text-4xl font-bold opacity-90 animate-bounce">✗</span>

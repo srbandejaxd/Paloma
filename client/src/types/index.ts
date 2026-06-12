@@ -14,32 +14,11 @@ export interface Block {
   puzzleCount: number
 }
 
-export interface Player {
-  id: string
-  nickname: string
-  solved: number
-  errors: number
-  totalPuzzles: number
-  finished: boolean
-  finishedAt?: number
-  startedAt?: number
-}
-
-export interface Room {
-  code: string
-  hostId: string
-  puzzleIds: number[]      // ← ahora son IDs de puzzles específicos (no blockId)
-  totalPuzzles: number
-  players: Player[]
-  status: 'waiting' | 'racing' | 'finished'
-  startedAt?: number
-  timeLimit?: number
-}
-
 export interface AttemptRecord {
   id: number
+  userId?: number
   nickname: string
-  blockId?: number
+  blockId: number
   blockName?: string
   attemptNumber: number
   totalTimeMs: number
@@ -47,8 +26,8 @@ export interface AttemptRecord {
   totalPuzzles: number
   errors: number
   accuracy: number
+  ppm: number
   createdAt: string
-  puzzleTimes?: PuzzleTimeRecord[]
 }
 
 export interface PuzzleTimeRecord {
@@ -56,26 +35,4 @@ export interface PuzzleTimeRecord {
   orderInBlock: number
   timeMs: number
   errors: number
-}
-
-export interface CreateRoomPayload {
-  nickname: string
-  puzzleIds: number[]
-  timeLimit?: number
-}
-
-export interface PuzzleSolvedPayload {
-  solved: number
-  errors: number
-  puzzleTimeMs: number
-}
-
-export interface RaceResult {
-  position: number
-  nickname: string
-  solved: number
-  totalPuzzles: number
-  totalTimeMs: number
-  errors: number
-  accuracy: number
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { fetchBlocks, fetchPuzzlesForBlock, saveAttempt } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { Block, Puzzle } from '../types'
 import { useTimer } from '../hooks/useTimer'
 import { formatTimerDisplay, formatTimeLong, calcAccuracy } from '../lib/time'
@@ -8,16 +9,15 @@ import PuzzleBoard from '../components/Board/PuzzleBoard'
 
 type Phase = 'select' | 'racing' | 'done'
 
-// [CAMBIO 3] Registro de un puzzle fallado
 interface FailedPuzzle {
+  puzzleId: number
   idx: number
   orderInBlock: number
   errors: number
 }
 
 export default function Solo() {
-  const [searchParams] = useSearchParams()
-  const nickname = searchParams.get('nickname') || 'Anon'
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   const [phase, setPhase] = useState<Phase>('select')
@@ -29,129 +29,125 @@ export default function Solo() {
   const [totalErrors, setTotalErrors] = useState(0)
   const [puzzleErrors, setPuzzleErrors] = useState(0)
   const [finalTime, setFinalTime] = useState(0)
-  // [CAMBIO 3] Puzzles en los que el usuario falló
+  const [finalPpm, setFinalPpm] = useState(0)
   const [failedPuzzles, setFailedPuzzles] = useState<FailedPuzzle[]>([])
 
   const puzzleTimesRef = useRef<{ puzzleId: number; orderInBlock: number; timeMs: number; errors: number }[]>([])
   const puzzleStartRef = useRef<number>(Date.now())
+  const solvedRef = useRef(0)
+  const totalErrorsRef = useRef(0)
 
   const { elapsed, reset: resetTimer } = useTimer(phase === 'racing')
 
+  useEffect(() => { solvedRef.current = solved }, [solved])
+  useEffect(() => { totalErrorsRef.current = totalErrors }, [totalErrors])
+
   useEffect(() => {
+    if (!user) { navigate('/'); return }
     fetchBlocks().then(setBlocks).catch(console.error)
-  }, [])
+  }, [user, navigate])
 
   async function startSolo(block: Block) {
     setSelectedBlock(block)
-    const fetchedPuzzles = await fetchPuzzlesForBlock(block.id)
-    setPuzzles(fetchedPuzzles)
+    const fetched = await fetchPuzzlesForBlock(block.id)
+    setPuzzles(fetched)
     setCurrentIdx(0)
     setSolved(0)
     setTotalErrors(0)
     setFailedPuzzles([])
     puzzleTimesRef.current = []
     puzzleStartRef.current = Date.now()
+    solvedRef.current = 0
+    totalErrorsRef.current = 0
     resetTimer()
     setPhase('racing')
   }
 
-  // Avanza al siguiente puzzle (compartido por onSolved y onSkip)
-  const advancePuzzle = useCallback(
-    async (
-      timeMs: number,
-      errors: number,
-      idxOverride?: number,
-      skipped?: boolean
-    ) => {
-      if (!selectedBlock) return
-      const idx = idxOverride ?? currentIdx
-      const puzzle = puzzles[idx]
-      if (!puzzle) return
+  const advancePuzzle = useCallback(async (timeMs: number, errors: number, idxOverride?: number) => {
+    if (!selectedBlock) return
+    const idx = idxOverride ?? currentIdx
+    const puzzle = puzzles[idx]
+    if (!puzzle) return
 
-      puzzleTimesRef.current.push({
-        puzzleId: puzzle.id,
-        orderInBlock: puzzle.orderInBlock,
-        timeMs,
-        errors,
-      })
+    puzzleTimesRef.current.push({ puzzleId: puzzle.id, orderInBlock: puzzle.orderInBlock, timeMs, errors })
 
-      const newSolved = solved + 1
-      const newErrors = totalErrors + errors
-      setSolved(newSolved)
-      setTotalErrors(newErrors)
-      setPuzzleErrors(0)
+    const newSolved = solvedRef.current + 1
+    const newErrors = totalErrorsRef.current + errors
+    setSolved(newSolved)
+    setTotalErrors(newErrors)
+    setPuzzleErrors(0)
 
-      const nextIdx = idx + 1
-      if (nextIdx >= puzzles.length) {
-        const total = elapsed
-        setFinalTime(total)
-        setPhase('done')
-        try {
-          await saveAttempt({
-            nickname,
-            blockId: selectedBlock.id,
-            totalTimeMs: total,
-            solved: newSolved,
-            totalPuzzles: puzzles.length,
-            errors: newErrors,
-            puzzleTimes: puzzleTimesRef.current,
-          })
-        } catch (e) {
-          console.error('Failed to save attempt', e)
-        }
-      } else {
-        setCurrentIdx(nextIdx)
-        puzzleStartRef.current = Date.now()
-      }
-    },
-    [solved, totalErrors, currentIdx, puzzles, elapsed, selectedBlock, nickname]
-  )
+    const nextIdx = idx + 1
+    if (nextIdx >= puzzles.length) {
+      const total = elapsed
+      const ppm = total > 0 ? Math.round((newSolved / (total / 60000)) * 100) / 100 : 0
+      setFinalTime(total)
+      setFinalPpm(ppm)
+      setPhase('done')
+      try {
+        await saveAttempt({
+          blockId: selectedBlock.id,
+          totalTimeMs: total,
+          solved: newSolved,
+          totalPuzzles: puzzles.length,
+          errors: newErrors,
+          puzzleTimes: puzzleTimesRef.current,
+        })
+      } catch (e) { console.error('Failed to save attempt', e) }
+    } else {
+      setCurrentIdx(nextIdx)
+      puzzleStartRef.current = Date.now()
+    }
+  }, [currentIdx, puzzles, elapsed, selectedBlock])
 
-  const handleSolved = useCallback(
-    (timeMs: number, errors: number) => {
-      advancePuzzle(timeMs, errors)
-    },
-    [advancePuzzle]
-  )
+  const handleSolved = useCallback((timeMs: number, errors: number) => advancePuzzle(timeMs, errors), [advancePuzzle])
 
-  // [CAMBIO 3] Skip automático cuando se superan los errores permitidos
-  const handleSkip = useCallback(
-    (errors: number) => {
-      const timeMs = Date.now() - puzzleStartRef.current
-      // Registrar como fallado
-      setFailedPuzzles(prev => [
-        ...prev,
-        {
-          idx: currentIdx,
-          orderInBlock: puzzles[currentIdx]?.orderInBlock ?? currentIdx + 1,
-          errors,
-        },
-      ])
-      advancePuzzle(timeMs, errors, currentIdx, true)
-    },
-    [currentIdx, puzzles, advancePuzzle]
-  )
+  const handleSkip = useCallback((errors: number) => {
+    const timeMs = Date.now() - puzzleStartRef.current
+    const puzzle = puzzles[currentIdx]
+    setFailedPuzzles(prev => [...prev, {
+      puzzleId: puzzle?.id ?? 0,
+      idx: currentIdx,
+      orderInBlock: puzzle?.orderInBlock ?? currentIdx + 1,
+      errors,
+    }])
+    advancePuzzle(timeMs, errors, currentIdx)
+  }, [currentIdx, puzzles, advancePuzzle])
 
-  const handleError = useCallback(() => {
-    setPuzzleErrors(prev => prev + 1)
-  }, [])
+  const handleError = useCallback(() => setPuzzleErrors(prev => prev + 1), [])
 
+  // ── SELECT ──────────────────────────────────────────────────────────────────
   if (phase === 'select') {
     return (
       <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md animate-slide-up">
-          <button
-            onClick={() => navigate('/')}
-            className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-8 block"
-          >
-            ← Inicio
-          </button>
-          <div className="mb-8">
-            <h2 className="text-2xl font-mono font-bold text-bone">Práctica individual</h2>
-            <p className="text-bone-3 font-mono text-sm mt-1">
-              <span className="text-amber">{nickname}</span> — elige un bloque
-            </p>
+          {/* Nav */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <p className="text-bone-3 font-mono text-xs">Bienvenido,</p>
+              <p className="text-amber font-mono font-bold">{user?.nickname}</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => navigate('/puzzles')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">
+                Puzzles
+              </button>
+              <button onClick={() => navigate('/history')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">
+                Historial
+              </button>
+              <button onClick={() => navigate('/leaderboard')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">
+                Ranking
+              </button>
+              <button onClick={logout} className="text-bone-3 font-mono text-xs hover:text-red-400 transition-colors">
+                Salir
+              </button>
+            </div>
           </div>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-mono font-bold text-bone">Elige un bloque</h2>
+            <p className="text-bone-3 font-mono text-sm mt-1">Cada repetición del bloque es un cycle</p>
+          </div>
+
           <div className="space-y-2">
             {blocks.map(block => (
               <button
@@ -160,18 +156,12 @@ export default function Solo() {
                 className="w-full flex items-center justify-between px-5 py-4 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
               >
                 <div>
-                  <div className="font-mono text-sm text-bone group-hover:text-amber transition-colors">
-                    {block.name}
-                  </div>
-                  {block.description && (
-                    <div className="font-mono text-xs text-bone-3 mt-0.5">{block.description}</div>
-                  )}
+                  <div className="font-mono text-sm text-bone group-hover:text-amber transition-colors">{block.name}</div>
+                  {block.description && <div className="font-mono text-xs text-bone-3 mt-0.5">{block.description}</div>}
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-xs text-bone-3">{block.puzzleCount} puzzles</div>
-                  <div className="font-mono text-xs text-amber opacity-0 group-hover:opacity-100 transition-opacity">
-                    Iniciar →
-                  </div>
+                  <div className="font-mono text-xs text-amber opacity-0 group-hover:opacity-100 transition-opacity">Iniciar →</div>
                 </div>
               </button>
             ))}
@@ -181,62 +171,53 @@ export default function Solo() {
     )
   }
 
+  // ── DONE ───────────────────────────────────────────────────────────────────
   if (phase === 'done') {
     const accuracy = calcAccuracy(solved, totalErrors)
     return (
       <div className="min-h-screen bg-void flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center animate-slide-up">
-          <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-6">Bloque completado</p>
-          <div className="text-6xl font-mono font-bold text-amber mb-2">
-            {formatTimeLong(finalTime)}
-          </div>
+          <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-6">Cycle completado</p>
+
+          <div className="text-6xl font-mono font-bold text-amber mb-1">{formatTimeLong(finalTime)}</div>
+          <div className="text-2xl font-mono font-bold text-bone mb-1">{finalPpm} <span className="text-bone-3 text-base font-normal">PPM</span></div>
           <p className="text-bone-3 font-mono text-sm mb-6">
             {solved}/{puzzles.length} puzzles · {totalErrors} errores · {accuracy}% precisión
           </p>
 
-          {/* [CAMBIO 3] Resumen de puzzles fallados */}
           {failedPuzzles.length > 0 ? (
             <div className="mb-6 text-left bg-void-2 border border-red-900/40 rounded-sm px-4 py-3">
               <p className="font-mono text-xs text-red-400 uppercase tracking-widest mb-2">
-                ✗ Ejercicios con errores ({failedPuzzles.length})
+                ✗ Puzzles con errores ({failedPuzzles.length})
               </p>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {failedPuzzles.map((fp, i) => (
-                  <div key={i} className="flex items-center justify-between font-mono text-sm">
-                    <span className="text-bone">
-                      Puzzle {fp.idx + 1}
-                      <span className="text-bone-3 ml-1">(#{fp.orderInBlock} del bloque)</span>
-                    </span>
-                    <span className="text-red-400">{fp.errors} error{fp.errors !== 1 ? 'es' : ''}</span>
+                  <div key={i} className="flex items-center justify-between">
+                    <button
+                      onClick={() => navigate(`/puzzles?blockId=${selectedBlock?.id}&puzzleId=${fp.puzzleId}`)}
+                      className="font-mono text-sm text-amber hover:underline text-left"
+                    >
+                      Puzzle #{fp.orderInBlock} del bloque →
+                    </button>
+                    <span className="font-mono text-xs text-red-400">{fp.errors} error{fp.errors !== 1 ? 'es' : ''}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
             <div className="mb-6 bg-void-2 border border-green-900/40 rounded-sm px-4 py-3">
-              <p className="font-mono text-xs text-green-400 uppercase tracking-widest">
-                ✓ ¡Sin errores de skip!
-              </p>
+              <p className="font-mono text-xs text-green-400 uppercase tracking-widest">✓ ¡Sin errores!</p>
             </div>
           )}
 
           <div className="space-y-3">
-            <button
-              onClick={() => startSolo(selectedBlock!)}
-              className="w-full py-4 bg-amber text-void font-mono font-bold text-sm tracking-widest uppercase hover:bg-amber-glow transition-colors rounded-sm"
-            >
+            <button onClick={() => startSolo(selectedBlock!)} className="w-full py-4 bg-amber text-void font-mono font-bold text-sm tracking-widest uppercase hover:bg-amber-glow transition-colors rounded-sm">
               Repetir bloque
             </button>
-            <button
-              onClick={() => navigate(`/history?nickname=${encodeURIComponent(nickname)}`)}
-              className="w-full py-3 bg-void-3 text-bone font-mono text-sm border border-void-4 hover:border-bone-3 transition-colors rounded-sm"
-            >
+            <button onClick={() => navigate('/history')} className="w-full py-3 bg-void-3 text-bone font-mono text-sm border border-void-4 hover:border-bone-3 transition-colors rounded-sm">
               Ver historial
             </button>
-            <button
-              onClick={() => setPhase('select')}
-              className="w-full py-3 text-bone-3 font-mono text-sm hover:text-bone transition-colors"
-            >
+            <button onClick={() => setPhase('select')} className="w-full py-3 text-bone-3 font-mono text-sm hover:text-bone transition-colors">
               Elegir otro bloque
             </button>
           </div>
@@ -245,52 +226,33 @@ export default function Solo() {
     )
   }
 
-  // Racing phase
+  // ── RACING ─────────────────────────────────────────────────────────────────
   const currentPuzzle = puzzles[currentIdx]
   const progress = (solved / puzzles.length) * 100
 
   return (
     <div className="min-h-screen bg-void flex flex-col">
-      {/* Header */}
       <div className="border-b border-void-4 bg-void-2">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between">
           <div>
-            <div className="text-3xl font-mono font-bold text-amber tracking-tight">
-              {formatTimerDisplay(elapsed)}
-            </div>
-            <div className="text-bone-3 font-mono text-xs">
-              {selectedBlock?.name}
-            </div>
+            <div className="text-3xl font-mono font-bold text-amber tracking-tight">{formatTimerDisplay(elapsed)}</div>
+            <div className="text-bone-3 font-mono text-xs">{selectedBlock?.name}</div>
           </div>
           <div className="text-right">
-            <div className="text-xl font-mono font-bold text-bone">
-              {solved}<span className="text-bone-3">/{puzzles.length}</span>
-            </div>
-            {puzzleErrors > 0 && (
-              <div className="text-red-400 font-mono text-xs">
-                {puzzleErrors} error{puzzleErrors !== 1 ? 'es' : ''} aquí
-              </div>
-            )}
+            <div className="text-xl font-mono font-bold text-bone">{solved}<span className="text-bone-3">/{puzzles.length}</span></div>
+            {puzzleErrors > 0 && <div className="text-red-400 font-mono text-xs">{puzzleErrors} error{puzzleErrors !== 1 ? 'es' : ''}</div>}
           </div>
         </div>
         <div className="h-1 bg-void-4">
-          <div
-            className="h-full bg-amber transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="h-full bg-amber transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
-      {/* Board */}
       <div className="flex-1 flex items-start justify-center pt-4 sm:pt-8 px-0 sm:px-4">
         <div className="w-full max-w-[540px]">
           <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
-            <span className="font-mono text-bone-3 text-xs uppercase tracking-widest">
-              Puzzle {currentIdx + 1}
-            </span>
-            <span className="font-mono text-bone-3 text-xs">
-              #{currentPuzzle?.orderInBlock} del bloque
-            </span>
+            <span className="font-mono text-bone-3 text-xs uppercase tracking-widest">Puzzle {currentIdx + 1}</span>
+            <span className="font-mono text-bone-3 text-xs">#{currentPuzzle?.orderInBlock} del bloque</span>
           </div>
           {currentPuzzle && (
             <PuzzleBoard
