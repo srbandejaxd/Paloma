@@ -40,7 +40,7 @@ export default function Leaderboard() {
 
         <div className="mb-8">
           <h2 className="text-2xl font-mono font-bold text-bone">Ranking</h2>
-          <p className="text-bone-3 font-mono text-sm mt-1">Mejor tiempo por bloque — solo cycles completados</p>
+          <p className="text-bone-3 font-mono text-sm mt-1">Mejor score por bloque — solo cycles completados</p>
         </div>
 
         {/* Block selector */}
@@ -71,8 +71,8 @@ export default function Leaderboard() {
             <div className="flex items-center gap-3 px-4 py-2 font-mono text-xs text-bone-3 uppercase tracking-widest">
               <span className="w-8">#</span>
               <span className="flex-1">Jugador</span>
+              <span className="w-28 text-right">Score</span>
               <span className="w-24 text-right">Mejor tiempo</span>
-              <span className="w-20 text-right">Mejor PPM</span>
               <span className="w-16 text-right">Cycles</span>
             </div>
 
@@ -92,8 +92,8 @@ export default function Leaderboard() {
                   {entry.nickname}
                   {entry.nickname === user?.nickname && <span className="text-xs font-normal ml-2 text-bone-3">(tú)</span>}
                 </span>
+                <span className="w-28 font-mono text-sm font-bold text-amber text-right">{entry.bestScore.toLocaleString()} pts</span>
                 <span className="w-24 font-mono text-sm text-bone text-right">{formatTimeLong(entry.bestTimeMs)}</span>
-                <span className="w-20 font-mono text-sm text-amber text-right">{entry.bestPpm} PPM</span>
                 <span className="w-16 font-mono text-xs text-bone-3 text-right">{entry.totalCycles}x</span>
               </div>
             ))}

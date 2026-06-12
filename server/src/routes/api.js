@@ -91,7 +91,7 @@ router.get('/attempts', authMiddleware, async (req, res) => {
       SELECT a.id, a.user_id as userId, u.nickname, a.block_id as blockId,
              b.name as blockName, a.attempt_number as attemptNumber,
              a.total_time_ms as totalTimeMs, a.solved, a.total_puzzles as totalPuzzles,
-             a.errors, a.accuracy, a.ppm, a.created_at as createdAt
+             a.errors, a.accuracy, a.ppm, a.score, a.created_at as createdAt
       FROM attempts a
       JOIN users u ON u.id = a.user_id
       LEFT JOIN blocks b ON b.id = a.block_id
@@ -112,6 +112,7 @@ router.post('/attempts', authMiddleware, async (req, res) => {
     const db = getDb()
     const accuracy = solved > 0 ? Math.round((solved / (solved + (errors || 0))) * 100) : 0
     const ppm = totalTimeMs > 0 ? Math.round((solved / (totalTimeMs / 60000)) * 100) / 100 : 0
+    const score = solved * 1000 - Math.round(totalTimeMs / 1000)
 
     const prevResult = await db.execute({
       sql: 'SELECT MAX(attempt_number) as maxAttempt FROM attempts WHERE user_id = ? AND block_id = ?',
@@ -120,9 +121,9 @@ router.post('/attempts', authMiddleware, async (req, res) => {
     const attemptNumber = (Number(prevResult.rows[0].maxAttempt) || 0) + 1
 
     const insertResult = await db.execute({
-      sql: `INSERT INTO attempts (user_id, block_id, attempt_number, total_time_ms, solved, total_puzzles, errors, accuracy, ppm)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [req.user.userId, blockId, attemptNumber, totalTimeMs, solved, totalPuzzles, errors || 0, accuracy, ppm],
+      sql: `INSERT INTO attempts (user_id, block_id, attempt_number, total_time_ms, solved, total_puzzles, errors, accuracy, ppm, score)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [req.user.userId, blockId, attemptNumber, totalTimeMs, solved, totalPuzzles, errors || 0, accuracy, ppm, score],
     })
     const attemptId = Number(insertResult.lastInsertRowid)
 
@@ -138,7 +139,7 @@ router.post('/attempts', authMiddleware, async (req, res) => {
     const final = await db.execute({
       sql: `SELECT a.id, u.nickname, a.block_id as blockId, b.name as blockName,
                    a.attempt_number as attemptNumber, a.total_time_ms as totalTimeMs,
-                   a.solved, a.total_puzzles as totalPuzzles, a.errors, a.accuracy, a.ppm,
+                   a.solved, a.total_puzzles as totalPuzzles, a.errors, a.accuracy, a.ppm, a.score,
                    a.created_at as createdAt
             FROM attempts a JOIN users u ON u.id = a.user_id LEFT JOIN blocks b ON b.id = a.block_id
             WHERE a.id = ?`,
@@ -155,6 +156,7 @@ router.get('/leaderboard/:blockId', async (req, res) => {
     const db = getDb()
     const result = await db.execute({
       sql: `SELECT u.nickname,
+                   MAX(a.score) as bestScore,
                    MIN(a.total_time_ms) as bestTimeMs,
                    MAX(a.ppm) as bestPpm,
                    COUNT(a.id) as totalCycles,
@@ -162,7 +164,7 @@ router.get('/leaderboard/:blockId', async (req, res) => {
             FROM attempts a JOIN users u ON u.id = a.user_id
             WHERE a.block_id = ? AND a.solved = a.total_puzzles
             GROUP BY a.user_id
-            ORDER BY bestTimeMs ASC
+            ORDER BY bestScore DESC
             LIMIT 20`,
       args: [req.params.blockId],
     })

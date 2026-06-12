@@ -97,6 +97,7 @@ export async function fetchLeaderboard(blockId: number): Promise<LeaderboardEntr
 
 export interface LeaderboardEntry {
   nickname: string
+  bestScore: number
   bestTimeMs: number
   bestPpm: number
   totalCycles: number

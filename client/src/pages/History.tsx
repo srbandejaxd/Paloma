@@ -81,6 +81,7 @@ export default function History() {
           const completedCycles = sorted.filter(a => a.solved === a.totalPuzzles)
           const bestTime = completedCycles.length ? Math.min(...completedCycles.map(a => a.totalTimeMs)) : null
           const bestPpm = completedCycles.length ? Math.max(...completedCycles.map(a => a.ppm)) : null
+          const bestScore = completedCycles.length ? Math.max(...completedCycles.map(a => a.score)) : null
           const totalCycles = sorted.length
 
           return (
@@ -97,6 +98,12 @@ export default function History() {
                   </p>
                 </div>
                 <div className="text-right flex gap-6">
+                  {bestScore !== null && (
+                    <div>
+                      <div className="font-mono text-xs text-bone-3">mejor score</div>
+                      <div className="font-mono text-sm font-bold text-amber">{bestScore.toLocaleString()} pts</div>
+                    </div>
+                  )}
                   {bestTime && (
                     <div>
                       <div className="font-mono text-xs text-bone-3">mejor tiempo</div>
@@ -126,9 +133,12 @@ export default function History() {
                   return (
                     <div key={attempt.id} className="flex items-center gap-3 px-4 py-2.5 bg-void-2 border border-void-4 rounded-sm">
                       <span className="font-mono text-xs text-bone-3 w-20">Cycle {attempt.attemptNumber}</span>
-                      <span className={`font-mono text-sm font-semibold flex-1 ${isComplete ? 'text-bone' : 'text-bone-3'}`}>
+                      <span className={`font-mono text-sm font-semibold w-24 ${isComplete ? 'text-bone' : 'text-bone-3'}`}>
                         {formatTimeLong(attempt.totalTimeMs)}
                         {!isComplete && <span className="text-xs font-normal ml-1">({attempt.solved}/{attempt.totalPuzzles})</span>}
+                      </span>
+                      <span className="font-mono text-sm font-bold text-amber flex-1">
+                        {isComplete ? `${attempt.score.toLocaleString()} pts` : '—'}
                       </span>
                       <span className="font-mono text-xs text-bone-3 w-16">{attempt.ppm} PPM</span>
                       <span className="font-mono text-xs text-bone-3 w-12">{attempt.errors} err</span>

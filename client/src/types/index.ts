@@ -27,6 +27,7 @@ export interface AttemptRecord {
   errors: number
   accuracy: number
   ppm: number
+  score: number
   createdAt: string
 }
 

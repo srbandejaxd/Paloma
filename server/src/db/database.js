@@ -46,6 +46,7 @@ async function initSchema() {
       errors INTEGER NOT NULL DEFAULT 0,
       accuracy INTEGER NOT NULL DEFAULT 100,
       ppm REAL NOT NULL DEFAULT 0,
+      score INTEGER NOT NULL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS puzzle_times (
