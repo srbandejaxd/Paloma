@@ -160,9 +160,11 @@ router.get('/leaderboard/:blockId', async (req, res) => {
                    MIN(a.total_time_ms) as bestTimeMs,
                    MAX(a.ppm) as bestPpm,
                    COUNT(a.id) as totalCycles,
-                   MIN(a.errors) as bestErrors
+                   MIN(a.errors) as bestErrors,
+                   (SELECT a2.solved FROM attempts a2 WHERE a2.user_id = a.user_id AND a2.block_id = a.block_id ORDER BY a2.score DESC LIMIT 1) as bestSolved,
+                   a.total_puzzles as totalPuzzles
             FROM attempts a JOIN users u ON u.id = a.user_id
-            WHERE a.block_id = ? AND a.solved = a.total_puzzles
+            WHERE a.block_id = ?
             GROUP BY a.user_id
             ORDER BY bestScore DESC
             LIMIT 20`,

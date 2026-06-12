@@ -73,6 +73,7 @@ export default function Leaderboard() {
               <span className="flex-1">Jugador</span>
               <span className="w-28 text-right">Score</span>
               <span className="w-24 text-right">Mejor tiempo</span>
+              <span className="w-20 text-right">Puzzles</span>
               <span className="w-16 text-right">Cycles</span>
             </div>
 
@@ -94,6 +95,7 @@ export default function Leaderboard() {
                 </span>
                 <span className="w-28 font-mono text-sm font-bold text-amber text-right">{entry.bestScore.toLocaleString()} pts</span>
                 <span className="w-24 font-mono text-sm text-bone text-right">{formatTimeLong(entry.bestTimeMs)}</span>
+                <span className="w-20 font-mono text-sm text-bone-3 text-right">{entry.bestSolved}/{entry.totalPuzzles}</span>
                 <span className="w-16 font-mono text-xs text-bone-3 text-right">{entry.totalCycles}x</span>
               </div>
             ))}

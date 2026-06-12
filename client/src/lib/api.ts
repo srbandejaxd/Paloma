@@ -102,4 +102,6 @@ export interface LeaderboardEntry {
   bestPpm: number
   totalCycles: number
   bestErrors: number
+  bestSolved: number
+  totalPuzzles: number
 }
