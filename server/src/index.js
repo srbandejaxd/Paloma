@@ -1,8 +1,7 @@
 const express = require('express')
 const cors = require('cors')
-const path = require('path')
 const apiRouter = require('./routes/api')
-const { getDb } = require('./db/database')
+const { initDb } = require('./db/database')
 
 const app = express()
 const PORT = process.env.PORT || 3002
@@ -15,12 +14,15 @@ const allowedOrigins = [
 
 app.use(cors({ origin: allowedOrigins }))
 app.use(express.json())
-
-getDb()
-
 app.use('/api', apiRouter)
 
-app.listen(PORT, () => {
-  console.log(`\n🪃  Woodpecker server → http://localhost:${PORT}`)
-  console.log(`   API: http://localhost:${PORT}/api/blocks`)
-})
+initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`🪃  Woodpecker → http://localhost:${PORT}`)
+    })
+  })
+  .catch(err => {
+    console.error('Failed to init DB:', err)
+    process.exit(1)
+  })

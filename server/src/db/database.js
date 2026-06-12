@@ -1,53 +1,32 @@
-const Database = require('better-sqlite3')
-const path = require('path')
-const fs = require('fs')
+const { createClient } = require('@libsql/client')
 
-const DB_PATH = path.join(__dirname, '../../woodpecker.db')
-const DB_VERSION = 2 // incrementar esto fuerza recrear la BD
-
-function nukeIfOutdated() {
-  const versionFile = path.join(__dirname, '../../.db_version')
-  let current = 0
-  try { current = parseInt(fs.readFileSync(versionFile, 'utf8')) } catch {}
-  if (current < DB_VERSION) {
-    for (const ext of ['', '-shm', '-wal']) {
-      try { fs.unlinkSync(DB_PATH + ext) } catch {}
-    }
-    fs.writeFileSync(versionFile, String(DB_VERSION))
-    console.log(`✓ DB recreada (v${DB_VERSION})`)
-  }
-}
-
-let db
+let client
 
 function getDb() {
-  if (!db) {
-    nukeIfOutdated()
-    db = new Database(DB_PATH)
-    db.pragma('journal_mode = WAL')
-    db.pragma('foreign_keys = ON')
-    initSchema()
-    seedIfEmpty()
+  if (!client) {
+    client = createClient({
+      url: process.env.TURSO_URL,
+      authToken: process.env.TURSO_TOKEN,
+    })
   }
-  return db
+  return client
 }
 
-function initSchema() {
-  db.exec(`
+async function initSchema() {
+  const db = getDb()
+  await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nickname TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
-
     CREATE TABLE IF NOT EXISTS blocks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
-
     CREATE TABLE IF NOT EXISTS puzzles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       block_id INTEGER NOT NULL REFERENCES blocks(id),
@@ -56,7 +35,6 @@ function initSchema() {
       solution TEXT NOT NULL,
       UNIQUE(block_id, order_in_block)
     );
-
     CREATE TABLE IF NOT EXISTS attempts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id),
@@ -70,7 +48,6 @@ function initSchema() {
       ppm REAL NOT NULL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
-
     CREATE TABLE IF NOT EXISTS puzzle_times (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       attempt_id INTEGER NOT NULL REFERENCES attempts(id),
@@ -79,7 +56,6 @@ function initSchema() {
       time_ms INTEGER NOT NULL,
       errors INTEGER NOT NULL DEFAULT 0
     );
-
     CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
     CREATE INDEX IF NOT EXISTS idx_attempts_user ON attempts(user_id);
     CREATE INDEX IF NOT EXISTS idx_attempts_block ON attempts(block_id);
@@ -87,34 +63,32 @@ function initSchema() {
   `)
 }
 
-function seedIfEmpty() {
-  const count = db.prepare('SELECT COUNT(*) as c FROM blocks').get()
-  if (count.c > 0) return
+async function seedIfEmpty() {
+  const db = getDb()
+  const { rows } = await db.execute('SELECT COUNT(*) as c FROM blocks')
+  if (rows[0].c > 0) return
 
-  const insertBlock = db.prepare('INSERT INTO blocks (name, description) VALUES (?, ?)')
-  const insertPuzzle = db.prepare(
-    'INSERT INTO puzzles (block_id, order_in_block, fen, solution) VALUES (?, ?, ?, ?)'
-  )
-
-  const blocks = [
-    { name: 'Bloque 1', description: 'Puzzles 1–20', puzzles: PUZZLES_BLOCK_1 },
-    { name: 'Bloque 2', description: 'Puzzles 21–40', puzzles: PUZZLES_BLOCK_2 },
-    { name: 'Bloque 3', description: 'Puzzles 41–60', puzzles: PUZZLES_BLOCK_3 },
-    { name: 'Bloque 4', description: 'Puzzles 61–80', puzzles: PUZZLES_BLOCK_4 },
-  ]
-
-  const seedAll = db.transaction(() => {
-    blocks.forEach(block => {
-      const result = insertBlock.run(block.name, block.description)
-      const blockId = result.lastInsertRowid
-      block.puzzles.forEach((puzzle, i) => {
-        insertPuzzle.run(blockId, i + 1, puzzle.fen, JSON.stringify(puzzle.solution))
-      })
+  for (const block of SEED_BLOCKS) {
+    const r = await db.execute({
+      sql: 'INSERT INTO blocks (name, description) VALUES (?, ?)',
+      args: [block.name, block.description],
     })
-  })
-
-  seedAll()
+    const blockId = r.lastInsertRowid
+    for (let i = 0; i < block.puzzles.length; i++) {
+      const p = block.puzzles[i]
+      await db.execute({
+        sql: 'INSERT INTO puzzles (block_id, order_in_block, fen, solution) VALUES (?, ?, ?, ?)',
+        args: [blockId, i + 1, p.fen, JSON.stringify(p.solution)],
+      })
+    }
+  }
   console.log('✓ Database seeded')
+}
+
+async function initDb() {
+  await initSchema()
+  await seedIfEmpty()
+  console.log('✓ Turso DB ready')
 }
 
 const PUZZLES_BLOCK_1 = [
@@ -166,4 +140,11 @@ const PUZZLES_BLOCK_2 = [
 const PUZZLES_BLOCK_3 = PUZZLES_BLOCK_1.map(p => ({ fen: p.fen, solution: [...p.solution] }))
 const PUZZLES_BLOCK_4 = PUZZLES_BLOCK_2.map(p => ({ fen: p.fen, solution: [...p.solution] }))
 
-module.exports = { getDb }
+const SEED_BLOCKS = [
+  { name: 'Bloque 1', description: 'Puzzles 1–20', puzzles: PUZZLES_BLOCK_1 },
+  { name: 'Bloque 2', description: 'Puzzles 21–40', puzzles: PUZZLES_BLOCK_2 },
+  { name: 'Bloque 3', description: 'Puzzles 41–60', puzzles: PUZZLES_BLOCK_3 },
+  { name: 'Bloque 4', description: 'Puzzles 61–80', puzzles: PUZZLES_BLOCK_4 },
+]
+
+module.exports = { getDb, initDb }
