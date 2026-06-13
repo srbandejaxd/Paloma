@@ -14,6 +14,11 @@ interface PuzzleBoardProps {
 
 type FeedbackState = 'idle' | 'correct' | 'wrong' | 'opponent' | 'skipping'
 
+const moveSound = new Audio('/sounds/move.mp3')
+const captureSound = new Audio('/sounds/capture.mp3')
+moveSound.preload = 'auto'
+captureSound.preload = 'auto'
+
 function moveFromSAN(game: Chess, san: string): { from: string; to: string; promotion?: string } | null {
   try {
     const result = game.move(san)
@@ -118,12 +123,14 @@ export default function PuzzleBoard({
       const gameCopy = new Chess()
       gameCopy.loadPgn(currentGame.pgn())
       const moveResult = gameCopy.move(opponentSAN)
-      if (moveResult) {
-        setHighlightSquares({
-          [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
-          [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
-        })
-        setGame(gameCopy)
+        if (moveResult) {
+          if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
+          else { moveSound.currentTime = 0; moveSound.play() }
+          setHighlightSquares({
+            [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
+            [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
+          })
+          setGame(gameCopy)
         const nextPlayerIndex = nextIndex + 1
         setSolutionIndex(nextPlayerIndex)
         setFeedback('idle')
@@ -186,6 +193,8 @@ export default function PuzzleBoard({
     setSelectedSquare(null)
 
     if (isCorrect) {
+      if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
+      else { moveSound.currentTime = 0; moveSound.play() }
       setHighlightSquares({
         [moveResult.from]: { background: 'rgba(46,204,113,0.25)' },
         [moveResult.to]: { background: 'rgba(46,204,113,0.4)' },
