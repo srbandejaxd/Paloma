@@ -29,7 +29,6 @@ export default function Solo() {
   const [totalErrors, setTotalErrors] = useState(0)
   const [puzzleErrors, setPuzzleErrors] = useState(0)
   const [finalTime, setFinalTime] = useState(0)
-  const [finalPpm, setFinalPpm] = useState(0)
   const [failedPuzzles, setFailedPuzzles] = useState<FailedPuzzle[]>([])
 
   const puzzleTimesRef = useRef<{ puzzleId: number; orderInBlock: number; timeMs: number; errors: number }[]>([])
@@ -80,9 +79,7 @@ export default function Solo() {
     const nextIdx = idx + 1
     if (nextIdx >= puzzles.length) {
       const total = elapsed
-      const ppm = total > 0 ? Math.round((newSolved / (total / 60000)) * 100) / 100 : 0
       setFinalTime(total)
-      setFinalPpm(ppm)
       setPhase('done')
       try {
         await saveAttempt({
@@ -173,42 +170,15 @@ export default function Solo() {
 
   // ── DONE ───────────────────────────────────────────────────────────────────
   if (phase === 'done') {
-    const accuracy = calcAccuracy(solved, totalErrors)
     return (
       <div className="min-h-screen bg-void flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center animate-slide-up">
           <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-6">Cycle completado</p>
 
           <div className="text-6xl font-mono font-bold text-amber mb-1">{formatTimeLong(finalTime)}</div>
-          <div className="text-2xl font-mono font-bold text-bone mb-1">{finalPpm} <span className="text-bone-3 text-base font-normal">PPM</span></div>
           <p className="text-bone-3 font-mono text-sm mb-6">
-            {solved}/{puzzles.length} puzzles · {totalErrors} errores · {accuracy}% precisión
+            {totalErrors} errores
           </p>
-
-          {failedPuzzles.length > 0 ? (
-            <div className="mb-6 text-left bg-void-2 border border-red-900/40 rounded-sm px-4 py-3">
-              <p className="font-mono text-xs text-red-400 uppercase tracking-widest mb-2">
-                ✗ Puzzles con errores ({failedPuzzles.length})
-              </p>
-              <div className="space-y-1.5">
-                {failedPuzzles.map((fp, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <button
-                      onClick={() => navigate(`/puzzles?blockId=${selectedBlock?.id}&puzzleId=${fp.puzzleId}`)}
-                      className="font-mono text-sm text-amber hover:underline text-left"
-                    >
-                      Puzzle #{fp.orderInBlock} del bloque →
-                    </button>
-                    <span className="font-mono text-xs text-red-400">{fp.errors} error{fp.errors !== 1 ? 'es' : ''}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="mb-6 bg-void-2 border border-green-900/40 rounded-sm px-4 py-3">
-              <p className="font-mono text-xs text-green-400 uppercase tracking-widest">✓ ¡Sin errores!</p>
-            </div>
-          )}
 
           <div className="space-y-3">
             <button onClick={() => startSolo(selectedBlock!)} className="w-full py-4 bg-amber text-void font-mono font-bold text-sm tracking-widest uppercase hover:bg-amber-glow transition-colors rounded-sm">

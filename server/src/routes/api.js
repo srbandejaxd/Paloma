@@ -101,7 +101,22 @@ router.get('/attempts', authMiddleware, async (req, res) => {
     if (blockId) { sql += ' AND a.block_id = ?'; args.push(blockId) }
     sql += ' ORDER BY a.created_at ASC'
     const result = await db.execute({ sql, args })
-    res.json(result.rows)
+    const attempts = result.rows
+
+    const failedResult = await db.execute({
+      sql: `SELECT pt.attempt_id as attemptId, pt.puzzle_id as puzzleId, pt.order_in_block as orderInBlock, pt.errors
+            FROM puzzle_times pt
+            WHERE pt.attempt_id IN (${attempts.map(() => '?').join(',') || 'NULL'}) AND pt.errors > 0`,
+      args: attempts.map(a => a.id)
+    })
+
+    const failedByAttempt = failedResult.rows.reduce((acc, row) => {
+      if (!acc[row.attemptId]) acc[row.attemptId] = []
+      acc[row.attemptId].push({ puzzleId: row.puzzleId, orderInBlock: row.orderInBlock, errors: row.errors })
+      return acc
+    }, {})
+
+    res.json(attempts.map(a => ({ ...a, failedPuzzles: failedByAttempt[a.id] || [] })))
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 

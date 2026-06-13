@@ -13,6 +13,7 @@ export default function History() {
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
   const [attempts, setAttempts] = useState<AttemptRecord[]>([])
   const [loading, setLoading] = useState(false)
+  const [expandedCycle, setExpandedCycle] = useState<number | null>(null)
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
@@ -125,25 +126,46 @@ export default function History() {
                   const improved = timeDiff !== null && timeDiff < 0
 
                   return (
-                    <div key={attempt.id} className="flex items-center gap-3 px-4 py-2.5 bg-void-2 border border-void-4 rounded-sm">
-                      <span className="font-mono text-xs text-bone-3 w-20">Cycle {attempt.attemptNumber}</span>
-                      <span className={`font-mono text-sm font-semibold w-24 ${isComplete ? 'text-bone' : 'text-bone-3'}`}>
-                        {formatTimeLong(attempt.totalTimeMs)}
-                        {!isComplete && <span className="text-xs font-normal ml-1">({attempt.solved}/{attempt.totalPuzzles})</span>}
-                      </span>
-                      <span className="font-mono text-sm font-bold text-amber flex-1">
-                        {isComplete ? `${attempt.score.toLocaleString()} pts` : '—'}
-                      </span>
-                      <span className="font-mono text-xs text-bone-3 w-12">{attempt.errors} err</span>
-                      <span className={`font-mono text-xs w-10 text-right ${attempt.accuracy >= 90 ? 'text-green-400' : attempt.accuracy >= 70 ? 'text-amber' : 'text-red-400'}`}>
-                        {attempt.accuracy}%
-                      </span>
-                      {timeDiff !== null && (
-                        <span className={`font-mono text-xs w-16 text-right ${improved ? 'text-green-400' : 'text-red-400'}`}>
-                          {improved ? '↓' : '↑'}{formatTimeLong(Math.abs(timeDiff))}
+                    <div key={attempt.id}>
+                      <div
+                        onClick={() => setExpandedCycle(expandedCycle === attempt.id ? null : attempt.id)}
+                        className="flex items-center gap-3 px-4 py-2.5 bg-void-2 border border-void-4 rounded-sm cursor-pointer hover:border-bone-3 transition-colors"
+                      >
+                        <span className="font-mono text-xs text-bone-3 w-20">Cycle {attempt.attemptNumber}</span>
+                        <span className="font-mono text-sm font-semibold w-24 text-bone">
+                          {formatTimeLong(attempt.totalTimeMs)}
                         </span>
+                        <span className="font-mono text-sm font-bold text-amber flex-1">
+                          {attempt.score.toLocaleString()} pts
+                        </span>
+                        <span className="font-mono text-xs text-bone-3 w-12">{attempt.errors} err</span>
+                        {timeDiff !== null && (
+                          <span className={`font-mono text-xs w-16 text-right ${improved ? 'text-green-400' : 'text-red-400'}`}>
+                            {improved ? '↓' : '↑'}{formatTimeLong(Math.abs(timeDiff))}
+                          </span>
+                        )}
+                        {timeDiff === null && <span className="w-16" />}
+                        <span className="font-mono text-xs text-bone-3 w-4 text-right">
+                          {expandedCycle === attempt.id ? '▲' : '▼'}
+                        </span>
+                      </div>
+                      {expandedCycle === attempt.id && (
+                        <div className="border border-t-0 border-void-4 bg-void rounded-b-sm px-4 py-3">
+                          {attempt.failedPuzzles.length === 0 ? (
+                            <p className="font-mono text-xs text-green-400">✓ Sin errores en este cycle</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              <p className="font-mono text-xs text-red-400 uppercase tracking-widest mb-2">✗ Puzzles con errores ({attempt.failedPuzzles.length})</p>
+                              {attempt.failedPuzzles.map((fp, fi) => (
+                                <div key={fi} className="flex items-center justify-between">
+                                  <span className="font-mono text-sm text-bone">Puzzle #{fp.orderInBlock} del bloque</span>
+                                  <span className="font-mono text-xs text-red-400">{fp.errors} error{fp.errors !== 1 ? 'es' : ''}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
-                      {timeDiff === null && <span className="w-16" />}
                     </div>
                   )
                 })}

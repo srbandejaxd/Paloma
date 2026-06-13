@@ -29,6 +29,7 @@ export interface AttemptRecord {
   ppm: number
   score: number
   createdAt: string
+  failedPuzzles: { puzzleId: number; orderInBlock: number; errors: number }[]
 }
 
 export interface PuzzleTimeRecord {
