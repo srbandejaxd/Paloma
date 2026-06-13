@@ -602,7 +602,8 @@ const MATE_PUZZLES_BLOCK_2 = [
 ]
 
 const SEED_BLOCKS_MATE = [
-  // { name: 'Mate Bloque 1', description: 'Mates 1–20', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_1 },
+   { name: 'Mate Bloque 1', description: 'Mates 1–20', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_1 },
+   { name: 'Mate Bloque 2', description: 'Mates 21–40', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_2 },
 ]
 
 const SEED_BLOCKS = [
