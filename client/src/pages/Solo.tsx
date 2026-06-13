@@ -4,10 +4,15 @@ import { fetchBlocks, fetchPuzzlesForBlock, saveAttempt } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { Block, Puzzle } from '../types'
 import { useTimer } from '../hooks/useTimer'
-import { formatTimerDisplay, formatTimeLong, calcAccuracy } from '../lib/time'
+import { formatTimerDisplay, formatTimeLong } from '../lib/time'
 import PuzzleBoard from '../components/Board/PuzzleBoard'
 
-type Phase = 'select' | 'racing' | 'done'
+type Phase = 'category' | 'select' | 'racing' | 'done'
+
+const CATEGORIES = [
+  { id: 'woodpecker', label: 'Woodpecker', description: 'Método de repetición de puzzles tácticos' },
+  { id: 'mate', label: 'Patrones de mate', description: 'Patrones clásicos de jaque mate' },
+]
 
 interface FailedPuzzle {
   puzzleId: number
@@ -20,7 +25,8 @@ export default function Solo() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
-  const [phase, setPhase] = useState<Phase>('select')
+  const [phase, setPhase] = useState<Phase>('category')
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [blocks, setBlocks] = useState<Block[]>([])
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null)
   const [puzzles, setPuzzles] = useState<Puzzle[]>([])
@@ -46,6 +52,8 @@ export default function Solo() {
     fetchBlocks().then(setBlocks).catch(console.error)
   }, [user, navigate])
 
+  const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
+
   async function startSolo(block: Block) {
     setSelectedBlock(block)
     const fetched = await fetchPuzzlesForBlock(block.id)
@@ -62,7 +70,7 @@ export default function Solo() {
     setPhase('racing')
   }
 
-  const advancePuzzle = useCallback(async (timeMs: number, errors: number, idxOverride?: number) => {
+  const advancePuzzle = useCallback(async (timeMs: number, errors: number, skipped: boolean, idxOverride?: number) => {
     if (!selectedBlock) return
     const idx = idxOverride ?? currentIdx
     const puzzle = puzzles[idx]
@@ -70,7 +78,7 @@ export default function Solo() {
 
     puzzleTimesRef.current.push({ puzzleId: puzzle.id, orderInBlock: puzzle.orderInBlock, timeMs, errors })
 
-    const newSolved = solvedRef.current + 1
+    const newSolved = skipped ? solvedRef.current : solvedRef.current + 1
     const newErrors = totalErrorsRef.current + errors
     setSolved(newSolved)
     setTotalErrors(newErrors)
@@ -97,7 +105,7 @@ export default function Solo() {
     }
   }, [currentIdx, puzzles, elapsed, selectedBlock])
 
-  const handleSolved = useCallback((timeMs: number, errors: number) => advancePuzzle(timeMs, errors), [advancePuzzle])
+  const handleSolved = useCallback((timeMs: number, errors: number) => advancePuzzle(timeMs, errors, false), [advancePuzzle])
 
   const handleSkip = useCallback((errors: number) => {
     const timeMs = Date.now() - puzzleStartRef.current
@@ -108,45 +116,69 @@ export default function Solo() {
       orderInBlock: puzzle?.orderInBlock ?? currentIdx + 1,
       errors,
     }])
-    advancePuzzle(timeMs, errors, currentIdx)
+    advancePuzzle(timeMs, errors, true, currentIdx)
   }, [currentIdx, puzzles, advancePuzzle])
 
   const handleError = useCallback(() => setPuzzleErrors(prev => prev + 1), [])
 
-  // ── SELECT ──────────────────────────────────────────────────────────────────
-  if (phase === 'select') {
+  // ── CATEGORY ─────────────────────────────────────────────────────────────────
+  if (phase === 'category') {
     return (
       <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md animate-slide-up">
-          {/* Nav */}
           <div className="flex items-center justify-between mb-8">
             <div>
               <p className="text-bone-3 font-mono text-xs">Bienvenido,</p>
               <p className="text-amber font-mono font-bold">{user?.nickname}</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => navigate('/puzzles')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">
-                Puzzles
-              </button>
-              <button onClick={() => navigate('/history')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">
-                Historial
-              </button>
-              <button onClick={() => navigate('/leaderboard')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">
-                Ranking
-              </button>
-              <button onClick={logout} className="text-bone-3 font-mono text-xs hover:text-red-400 transition-colors">
-                Salir
-              </button>
+              <button onClick={() => navigate('/history')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Historial</button>
+              <button onClick={() => navigate('/leaderboard')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Ranking</button>
+              <button onClick={logout} className="text-bone-3 font-mono text-xs hover:text-red-400 transition-colors">Salir</button>
             </div>
           </div>
 
           <div className="mb-8">
+            <h2 className="text-2xl font-mono font-bold text-bone">Elige una categoría</h2>
+            <p className="text-bone-3 font-mono text-sm mt-1">¿Qué quieres entrenar hoy?</p>
+          </div>
+
+          <div className="space-y-3">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => { setSelectedCategory(cat.id); setPhase('select') }}
+                className="w-full flex items-center justify-between px-5 py-5 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
+              >
+                <div className="text-left">
+                  <div className="font-mono text-base font-bold text-bone group-hover:text-amber transition-colors">{cat.label}</div>
+                  <div className="font-mono text-xs text-bone-3 mt-1">{cat.description}</div>
+                </div>
+                <span className="font-mono text-amber text-lg opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── SELECT ──────────────────────────────────────────────────────────────────
+  if (phase === 'select') {
+    const catLabel = CATEGORIES.find(c => c.id === selectedCategory)?.label
+    return (
+      <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md animate-slide-up">
+          <button onClick={() => setPhase('category')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-6 block">← Categorías</button>
+
+          <div className="mb-8">
+            <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-1">{catLabel}</p>
             <h2 className="text-2xl font-mono font-bold text-bone">Elige un bloque</h2>
             <p className="text-bone-3 font-mono text-sm mt-1">Cada repetición del bloque es un cycle</p>
           </div>
 
           <div className="space-y-2">
-            {blocks.map(block => (
+            {blocksForCategory.map(block => (
               <button
                 key={block.id}
                 onClick={() => startSolo(block)}
@@ -174,12 +206,8 @@ export default function Solo() {
       <div className="min-h-screen bg-void flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center animate-slide-up">
           <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-6">Cycle completado</p>
-
           <div className="text-6xl font-mono font-bold text-amber mb-1">{formatTimeLong(finalTime)}</div>
-          <p className="text-bone-3 font-mono text-sm mb-6">
-            {totalErrors} errores
-          </p>
-
+          <p className="text-bone-3 font-mono text-sm mb-8">{totalErrors} errores</p>
           <div className="space-y-3">
             <button onClick={() => startSolo(selectedBlock!)} className="w-full py-4 bg-amber text-void font-mono font-bold text-sm tracking-widest uppercase hover:bg-amber-glow transition-colors rounded-sm">
               Repetir bloque
@@ -187,8 +215,8 @@ export default function Solo() {
             <button onClick={() => navigate('/history')} className="w-full py-3 bg-void-3 text-bone font-mono text-sm border border-void-4 hover:border-bone-3 transition-colors rounded-sm">
               Ver historial
             </button>
-            <button onClick={() => setPhase('select')} className="w-full py-3 text-bone-3 font-mono text-sm hover:text-bone transition-colors">
-              Elegir otro bloque
+            <button onClick={() => setPhase('category')} className="w-full py-3 text-bone-3 font-mono text-sm hover:text-bone transition-colors">
+              Elegir otra categoría
             </button>
           </div>
         </div>

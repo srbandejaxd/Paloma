@@ -25,6 +25,7 @@ async function initSchema() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
+      category TEXT NOT NULL DEFAULT 'woodpecker',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS puzzles (
@@ -71,8 +72,8 @@ async function seedIfEmpty() {
 
   for (const block of SEED_BLOCKS) {
     const r = await db.execute({
-      sql: 'INSERT INTO blocks (name, description) VALUES (?, ?)',
-      args: [block.name, block.description],
+      sql: 'INSERT INTO blocks (name, description, category) VALUES (?, ?, ?)',
+      args: [block.name, block.description, block.category ?? 'woodpecker'],
     })
     const blockId = r.lastInsertRowid
     for (let i = 0; i < block.puzzles.length; i++) {
@@ -86,8 +87,20 @@ async function seedIfEmpty() {
   console.log('✓ Database seeded')
 }
 
+async function migrateDb() {
+  const db = getDb()
+  // Add category column if it doesn't exist (safe to run on existing DBs)
+  try {
+    await db.execute(`ALTER TABLE blocks ADD COLUMN category TEXT NOT NULL DEFAULT 'woodpecker'`)
+    console.log('✓ Migration: added category column to blocks')
+  } catch {
+    // Column already exists, no-op
+  }
+}
+
 async function initDb() {
   await initSchema()
+  await migrateDb()
   await seedIfEmpty()
   console.log('✓ Turso DB ready')
 }
@@ -423,11 +436,19 @@ const PUZZLES_BLOCK_4 = [
     solution: ["Rxg2", "Rxg2", "Qh3+"]
   }
 ]
+// ─── PATRONES DE MATE ─────────────────────────────────────────────────────────
+// Agrega tus bloques aquí cuando estén listos, siguiendo el mismo formato:
+// { name: 'Mate Bloque 1', description: 'Mates 1–20', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_1 }
+const SEED_BLOCKS_MATE = [
+  // { name: 'Mate Bloque 1', description: 'Mates 1–20', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_1 },
+]
+
 const SEED_BLOCKS = [
-  { name: 'Bloque 1', description: 'Puzzles 1–20', puzzles: PUZZLES_BLOCK_1 },
-  { name: 'Bloque 2', description: 'Puzzles 21–40', puzzles: PUZZLES_BLOCK_2 },
-  { name: 'Bloque 3', description: 'Puzzles 41–60', puzzles: PUZZLES_BLOCK_3 },
-  { name: 'Bloque 4', description: 'Puzzles 61–80', puzzles: PUZZLES_BLOCK_4 },
+  { name: 'Bloque 1', description: 'Puzzles 1–20', category: 'woodpecker', puzzles: PUZZLES_BLOCK_1 },
+  { name: 'Bloque 2', description: 'Puzzles 21–40', category: 'woodpecker', puzzles: PUZZLES_BLOCK_2 },
+  { name: 'Bloque 3', description: 'Puzzles 41–60', category: 'woodpecker', puzzles: PUZZLES_BLOCK_3 },
+  { name: 'Bloque 4', description: 'Puzzles 61–80', category: 'woodpecker', puzzles: PUZZLES_BLOCK_4 },
+  ...SEED_BLOCKS_MATE,
 ]
 
 module.exports = { getDb, initDb }

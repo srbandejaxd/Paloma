@@ -5,11 +5,17 @@ import { useAuth } from '../lib/auth'
 import { Block } from '../types'
 import { formatTimeLong } from '../lib/time'
 
+const CATEGORIES = [
+  { id: 'woodpecker', label: 'Woodpecker' },
+  { id: 'mate', label: 'Patrones de mate' },
+]
+
 export default function Leaderboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
   const [blocks, setBlocks] = useState<Block[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('woodpecker')
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -18,7 +24,8 @@ export default function Leaderboard() {
     if (!user) { navigate('/'); return }
     fetchBlocks().then(b => {
       setBlocks(b)
-      if (b.length > 0) setSelectedBlock(b[0].id)
+      const first = b.find(block => block.category === 'woodpecker')
+      if (first) setSelectedBlock(first.id)
     }).catch(console.error)
   }, [user, navigate])
 
@@ -31,7 +38,14 @@ export default function Leaderboard() {
       .finally(() => setLoading(false))
   }, [selectedBlock])
 
+  const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
   const medals = ['🥇', '🥈', '🥉']
+
+  function selectCategory(catId: string) {
+    setSelectedCategory(catId)
+    const first = blocks.find(b => b.category === catId)
+    if (first) setSelectedBlock(first.id)
+  }
 
   return (
     <div className="min-h-screen bg-void">
@@ -40,12 +54,25 @@ export default function Leaderboard() {
 
         <div className="mb-8">
           <h2 className="text-2xl font-mono font-bold text-bone">Ranking</h2>
-          <p className="text-bone-3 font-mono text-sm mt-1">Mejor score por bloque — solo cycles completados</p>
+          <p className="text-bone-3 font-mono text-sm mt-1">Mejor score por bloque</p>
         </div>
 
-        {/* Block selector */}
+        {/* Selector de categoría */}
+        <div className="flex gap-2 mb-4">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => selectCategory(cat.id)}
+              className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedCategory === cat.id ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Selector de bloque */}
         <div className="flex gap-2 mb-8 flex-wrap">
-          {blocks.map(b => (
+          {blocksForCategory.map(b => (
             <button
               key={b.id}
               onClick={() => setSelectedBlock(b.id)}
@@ -67,7 +94,6 @@ export default function Leaderboard() {
 
         {!loading && entries.length > 0 && (
           <div className="space-y-2">
-            {/* Header */}
             <div className="flex items-center gap-3 px-4 py-2 font-mono text-xs text-bone-3 uppercase tracking-widest">
               <span className="w-8">#</span>
               <span className="flex-1">Jugador</span>

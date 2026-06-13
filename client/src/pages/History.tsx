@@ -5,11 +5,17 @@ import { useAuth } from '../lib/auth'
 import { Block, AttemptRecord } from '../types'
 import { formatTimeLong } from '../lib/time'
 
+const CATEGORIES = [
+  { id: 'woodpecker', label: 'Woodpecker' },
+  { id: 'mate', label: 'Patrones de mate' },
+]
+
 export default function History() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
   const [blocks, setBlocks] = useState<Block[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('woodpecker')
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
   const [attempts, setAttempts] = useState<AttemptRecord[]>([])
   const [loading, setLoading] = useState(false)
@@ -29,7 +35,10 @@ export default function History() {
       .finally(() => setLoading(false))
   }, [user, selectedBlock])
 
+  const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
   const attemptsByBlock = attempts.reduce<Record<number, AttemptRecord[]>>((acc, a) => {
+    const block = blocks.find(b => b.id === a.blockId)
+    if (block?.category !== selectedCategory) return acc
     if (!acc[a.blockId]) acc[a.blockId] = []
     acc[a.blockId].push(a)
     return acc
@@ -48,7 +57,20 @@ export default function History() {
           </div>
         </div>
 
-        {/* Filtro por bloque */}
+        {/* Selector de categoría */}
+        <div className="flex gap-2 mb-4">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => { setSelectedCategory(cat.id); setSelectedBlock(null) }}
+              className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedCategory === cat.id ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Selector de bloque */}
         <div className="flex gap-2 mb-8 flex-wrap">
           <button
             onClick={() => setSelectedBlock(null)}
@@ -56,7 +78,7 @@ export default function History() {
           >
             Todos
           </button>
-          {blocks.map(b => (
+          {blocksForCategory.map(b => (
             <button
               key={b.id}
               onClick={() => setSelectedBlock(b.id)}
@@ -69,7 +91,7 @@ export default function History() {
 
         {loading && <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>}
 
-        {!loading && attempts.length === 0 && (
+        {!loading && Object.keys(attemptsByBlock).length === 0 && (
           <div className="text-center py-16 border border-void-4 rounded-sm">
             <p className="text-bone-3 font-mono text-sm">Sin cycles registrados todavía</p>
             <button onClick={() => navigate('/solo')} className="mt-4 text-amber font-mono text-sm hover:underline">Iniciar primer cycle →</button>
@@ -79,23 +101,16 @@ export default function History() {
         {Object.entries(attemptsByBlock).map(([blockId, blockAttempts]) => {
           const block = blocks.find(b => b.id === parseInt(blockId))
           const sorted = [...blockAttempts].sort((a, b) => a.attemptNumber - b.attemptNumber)
-          const completedCycles = sorted.filter(a => a.solved === a.totalPuzzles)
-          const bestTime = completedCycles.length ? Math.min(...completedCycles.map(a => a.totalTimeMs)) : null
-          const bestScore = completedCycles.length ? Math.max(...completedCycles.map(a => a.score)) : null
+          const bestScore = sorted.length ? Math.max(...sorted.map(a => a.score)) : null
+          const bestTime = sorted.length ? Math.min(...sorted.map(a => a.totalTimeMs)) : null
           const totalCycles = sorted.length
 
           return (
             <div key={blockId} className="mb-10">
-              {/* Block header */}
               <div className="flex items-end justify-between mb-4">
                 <div>
                   <h3 className="font-mono text-base font-semibold text-bone">{block?.name || `Bloque ${blockId}`}</h3>
-                  <p className="font-mono text-xs text-bone-3 mt-0.5">
-                    {totalCycles} cycle{totalCycles !== 1 ? 's' : ''}
-                    {completedCycles.length < totalCycles && (
-                      <span className="ml-2 text-amber">{completedCycles.length} completados</span>
-                    )}
-                  </p>
+                  <p className="font-mono text-xs text-bone-3 mt-0.5">{totalCycles} cycle{totalCycles !== 1 ? 's' : ''}</p>
                 </div>
                 <div className="text-right flex gap-6">
                   {bestScore !== null && (
@@ -104,24 +119,20 @@ export default function History() {
                       <div className="font-mono text-sm font-bold text-amber">{bestScore.toLocaleString()} pts</div>
                     </div>
                   )}
-                  {bestTime && (
+                  {bestTime !== null && (
                     <div>
                       <div className="font-mono text-xs text-bone-3">mejor tiempo</div>
                       <div className="font-mono text-sm font-bold text-amber">{formatTimeLong(bestTime)}</div>
                     </div>
                   )}
-                  
                 </div>
               </div>
 
-              {/* PPM chart */}
               {sorted.length >= 2 && <ScoreChart attempts={sorted} />}
 
-              {/* Cycle list */}
               <div className="mt-3 space-y-1">
                 {sorted.map((attempt, i) => {
                   const prev = i > 0 ? sorted[i - 1] : null
-                  const isComplete = attempt.solved === attempt.totalPuzzles
                   const timeDiff = prev ? attempt.totalTimeMs - prev.totalTimeMs : null
                   const improved = timeDiff !== null && timeDiff < 0
 
@@ -151,7 +162,7 @@ export default function History() {
                       </div>
                       {expandedCycle === attempt.id && (
                         <div className="border border-t-0 border-void-4 bg-void rounded-b-sm px-4 py-3">
-                          {attempt.failedPuzzles.length === 0 ? (
+                          {!attempt.failedPuzzles || attempt.failedPuzzles.length === 0 ? (
                             <p className="font-mono text-xs text-green-400">✓ Sin errores en este cycle</p>
                           ) : (
                             <div className="space-y-1.5">

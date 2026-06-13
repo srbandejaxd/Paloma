@@ -11,6 +11,7 @@ export interface Block {
   id: number
   name: string
   description?: string
+  category: string
   puzzleCount: number
 }
 
