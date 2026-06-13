@@ -192,14 +192,18 @@ export default function PuzzleBoard({
         [moveResult.from]: { background: 'rgba(46,204,113,0.25)' },
         [moveResult.to]: { background: 'rgba(46,204,113,0.4)' },
       })
-      setFeedback('correct')
       setGame(gameCopy)
+
+      const isLastPlayerMove = solutionIndex + 1 >= puzzle.solution.length - 1 || solutionIndex + 1 >= puzzle.solution.length
+      if (isLastPlayerMove) {
+        setFeedback('correct')
+      }
 
       clearTimeout(feedbackTimeout.current)
       feedbackTimeout.current = setTimeout(() => {
         setFeedback('idle')
         playOpponentMove(gameCopy, solutionIndex)
-      }, 400)
+      }, isLastPlayerMove ? 400 : 0)
     } else {
       const newErrors = errors + 1
       setErrors(newErrors)
