@@ -80,7 +80,6 @@ export default function History() {
           const sorted = [...blockAttempts].sort((a, b) => a.attemptNumber - b.attemptNumber)
           const completedCycles = sorted.filter(a => a.solved === a.totalPuzzles)
           const bestTime = completedCycles.length ? Math.min(...completedCycles.map(a => a.totalTimeMs)) : null
-          const bestPpm = completedCycles.length ? Math.max(...completedCycles.map(a => a.ppm)) : null
           const bestScore = completedCycles.length ? Math.max(...completedCycles.map(a => a.score)) : null
           const totalCycles = sorted.length
 
@@ -110,17 +109,12 @@ export default function History() {
                       <div className="font-mono text-sm font-bold text-amber">{formatTimeLong(bestTime)}</div>
                     </div>
                   )}
-                  {bestPpm && (
-                    <div>
-                      <div className="font-mono text-xs text-bone-3">mejor PPM</div>
-                      <div className="font-mono text-sm font-bold text-amber">{bestPpm}</div>
-                    </div>
-                  )}
+                  
                 </div>
               </div>
 
               {/* PPM chart */}
-              {sorted.length >= 2 && <PpmChart attempts={sorted} />}
+              {sorted.length >= 2 && <ScoreChart attempts={sorted} />}
 
               {/* Cycle list */}
               <div className="mt-3 space-y-1">
@@ -140,7 +134,6 @@ export default function History() {
                       <span className="font-mono text-sm font-bold text-amber flex-1">
                         {isComplete ? `${attempt.score.toLocaleString()} pts` : '—'}
                       </span>
-                      <span className="font-mono text-xs text-bone-3 w-16">{attempt.ppm} PPM</span>
                       <span className="font-mono text-xs text-bone-3 w-12">{attempt.errors} err</span>
                       <span className={`font-mono text-xs w-10 text-right ${attempt.accuracy >= 90 ? 'text-green-400' : attempt.accuracy >= 70 ? 'text-amber' : 'text-red-400'}`}>
                         {attempt.accuracy}%
@@ -163,20 +156,20 @@ export default function History() {
   )
 }
 
-function PpmChart({ attempts }: { attempts: AttemptRecord[] }) {
-  const ppms = attempts.map(a => a.ppm)
-  const min = Math.min(...ppms)
-  const max = Math.max(...ppms)
+function ScoreChart({ attempts }: { attempts: AttemptRecord[] }) {
+  const scores = attempts.map(a => a.score)
+  const min = Math.min(...scores)
+  const max = Math.max(...scores)
   const range = max - min || 1
 
   const W = 600
   const H = 64
   const PAD = 10
 
-  const points = ppms.map((ppm, i) => ({
-    x: PAD + (i / (ppms.length - 1)) * (W - PAD * 2),
-    y: PAD + (1 - (ppm - min) / range) * (H - PAD * 2),
-    ppm,
+  const points = scores.map((score, i) => ({
+    x: PAD + (i / (scores.length - 1)) * (W - PAD * 2),
+    y: PAD + (1 - (score - min) / range) * (H - PAD * 2),
+    score,
   }))
 
   const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
@@ -185,8 +178,8 @@ function PpmChart({ attempts }: { attempts: AttemptRecord[] }) {
   return (
     <div className="bg-void-2 border border-void-4 rounded-sm overflow-hidden">
       <div className="px-4 pt-3 pb-1 flex justify-between">
-        <span className="font-mono text-xs text-bone-3 uppercase tracking-widest">PPM por cycle</span>
-        <span className="font-mono text-xs text-amber">↑ más alto = más rápido</span>
+        <span className="font-mono text-xs text-bone-3 uppercase tracking-widest">Score por cycle</span>
+        <span className="font-mono text-xs text-amber">↑ más alto = mejor</span>
       </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block">
         <path d={fillD} fill="rgba(212,160,23,0.07)" />
