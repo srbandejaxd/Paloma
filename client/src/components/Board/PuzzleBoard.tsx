@@ -109,35 +109,32 @@ export default function PuzzleBoard({
       if (nextIndex >= puzzle.solution.length) {
         const elapsed = Date.now() - startTimeRef.current
         setTimeout(() => {
-          onSolved(elapsed, errorsRef.current)  // ✅ leer de ref
+          onSolved(elapsed, errorsRef.current)
         }, 300)
         return
       }
 
       const opponentSAN = puzzle.solution[nextIndex]
-      setFeedback('opponent')
+      const gameCopy = new Chess()
+      gameCopy.loadPgn(currentGame.pgn())
+      const moveResult = gameCopy.move(opponentSAN)
+      if (moveResult) {
+        setHighlightSquares({
+          [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
+          [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
+        })
+        setGame(gameCopy)
+        const nextPlayerIndex = nextIndex + 1
+        setSolutionIndex(nextPlayerIndex)
+        setFeedback('idle')
 
-      setTimeout(() => {
-        const gameCopy = new Chess()
-        gameCopy.loadPgn(currentGame.pgn())
-        const moveResult = gameCopy.move(opponentSAN)
-        if (moveResult) {
-          setHighlightSquares({
-            [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
-            [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
-          })
-          setGame(gameCopy)
-          const nextPlayerIndex = nextIndex + 1
-          setSolutionIndex(nextPlayerIndex)
-          setFeedback('idle')
-
-          if (nextPlayerIndex >= puzzle.solution.length) {
-            const elapsed = Date.now() - startTimeRef.current
-            setTimeout(() => onSolved(elapsed, errorsRef.current), 400)
-          }
+        if (nextPlayerIndex >= puzzle.solution.length) {
+          const elapsed = Date.now() - startTimeRef.current
+          setTimeout(() => onSolved(elapsed, errorsRef.current), 400)
+        }
       }
     },
-    [puzzle.solution, onSolved]  // ✅ "errors" ya no es dependencia
+    [puzzle.solution, onSolved]
   )
 
   function highlightMoves(square: string) {
