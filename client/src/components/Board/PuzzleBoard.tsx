@@ -16,8 +16,12 @@ type FeedbackState = 'idle' | 'correct' | 'wrong' | 'opponent' | 'skipping'
 
 const moveSound = new Audio('/sounds/move.mp3')
 const captureSound = new Audio('/sounds/capture.mp3')
+const correctSound = new Audio('/sounds/correct.mp3')
+const errorSound = new Audio('/sounds/error.mp3')
 moveSound.preload = 'auto'
 captureSound.preload = 'auto'
+correctSound.preload = 'auto'
+errorSound.preload = 'auto'
 
 function moveFromSAN(game: Chess, san: string): { from: string; to: string; promotion?: string } | null {
   try {
@@ -136,8 +140,9 @@ export default function PuzzleBoard({
         setFeedback('idle')
 
         if (nextPlayerIndex >= puzzle.solution.length) {
-          const elapsed = Date.now() - startTimeRef.current
-          setTimeout(() => onSolved(elapsed, errorsRef.current), 400)
+           const elapsed = Date.now() - startTimeRef.current
+           correctSound.currentTime = 0; correctSound.play()
+           setTimeout(() => onSolved(elapsed, errorsRef.current), 400)
         }
       }
     },
@@ -219,6 +224,7 @@ export default function PuzzleBoard({
         [sourceSquare]: { background: 'rgba(231,76,60,0.3)' },
         [targetSquare]: { background: 'rgba(231,76,60,0.4)' },
       })
+      errorSound.currentTime = 0; errorSound.play()
       setFeedback('wrong')
       onError?.()
 
