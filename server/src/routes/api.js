@@ -44,7 +44,7 @@ router.get('/blocks', async (req, res) => {
   try {
     const db = getDb()
     const result = await db.execute(`
-      SELECT b.id, b.name, b.description, COUNT(p.id) as puzzleCount
+      SELECT b.id, b.name, b.description, b.category, COUNT(p.id) as puzzleCount
       FROM blocks b LEFT JOIN puzzles p ON p.block_id = b.id
       GROUP BY b.id ORDER BY b.id
     `)
