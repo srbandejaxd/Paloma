@@ -296,8 +296,9 @@ export default function PuzzleBoard({
       ? 'text-bone-3'
       : 'text-amber'
 
-  const borderColor =
-    feedback === 'correct'
+   const isLastMove = solutionIndex >= puzzle.solution.length - 1
+   const borderColor =
+    feedback === 'correct' && isLastMove
       ? 'rgba(46,204,113,0.6)'
       : feedback === 'wrong' || feedback === 'skipping'
       ? 'rgba(231,76,60,0.6)'
