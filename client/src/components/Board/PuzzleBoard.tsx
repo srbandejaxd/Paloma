@@ -41,10 +41,12 @@ function useBoardSize() {
   useEffect(() => {
     const calc = () => {
       const vw = window.innerWidth
+      const vh = window.innerHeight
       if (vw < 640) {
         setSize(Math.min(vw - 32, 480))
       } else {
-        setSize(480)
+        const available = Math.min(vw * 0.5, vh - 180)
+        setSize(Math.min(Math.max(available, 320), 680))
       }
     }
     calc()
@@ -131,10 +133,9 @@ export default function PuzzleBoard({
 
           if (nextPlayerIndex >= puzzle.solution.length) {
             const elapsed = Date.now() - startTimeRef.current
-            setTimeout(() => onSolved(elapsed, errorsRef.current), 400)  // ✅ leer de ref
+            setTimeout(() => onSolved(elapsed, errorsRef.current), 400)
           }
-        }
-      }, 500)
+      }
     },
     [puzzle.solution, onSolved]  // ✅ "errors" ya no es dependencia
   )
