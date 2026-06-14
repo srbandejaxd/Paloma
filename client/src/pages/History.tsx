@@ -8,6 +8,7 @@ import { formatTimeLong } from '../lib/time'
 const CATEGORIES = [
   { id: 'woodpecker', label: 'Woodpecker' },
   { id: 'mate', label: 'Patrones de mate' },
+  { id: 'woodpecker2', label: 'Woodpecker 2' },
 ]
 
 export default function History() {
@@ -143,9 +144,6 @@ export default function History() {
                         className="flex items-center gap-3 px-4 py-2.5 bg-void-2 border border-void-4 rounded-sm cursor-pointer hover:border-bone-3 transition-colors"
                       >
                         <span className="font-mono text-xs text-bone-3 w-20">Cycle {attempt.attemptNumber}</span>
-                        <span className="font-mono text-xs text-bone-3 w-24">
-                          {new Date(attempt.createdAt).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </span>
                         <span className="font-mono text-sm font-semibold w-24 text-bone">
                           {formatTimeLong(attempt.totalTimeMs)}
                         </span>

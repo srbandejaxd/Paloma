@@ -8,6 +8,7 @@ import { formatTimeLong } from '../lib/time'
 const CATEGORIES = [
   { id: 'woodpecker', label: 'Woodpecker' },
   { id: 'mate', label: 'Patrones de mate' },
+  { id: 'woodpecker2', label: 'Woodpecker 2' },
 ]
 
 export default function Leaderboard() {
