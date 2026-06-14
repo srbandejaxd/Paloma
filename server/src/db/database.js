@@ -782,6 +782,7 @@ const SEED_BLOCKS = [
   { name: 'Bloque 3', description: 'Puzzles 41–60', category: 'woodpecker', puzzles: PUZZLES_BLOCK_3 },
   { name: 'Bloque 4', description: 'Puzzles 61–80', category: 'woodpecker', puzzles: PUZZLES_BLOCK_4 },
   ...SEED_BLOCKS_MATE,
+  ...SEED_BLOCKS_WOODPECKER2,
 ]
 
 module.exports = { getDb, initDb }
