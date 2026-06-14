@@ -7,6 +7,7 @@ const { authMiddleware, JWT_SECRET } = require('../middleware/auth')
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 
+router.get('/health', (req, res) => res.json({ ok: true }))
 router.post('/auth/register', async (req, res) => {
   const { nickname, password } = req.body
   if (!nickname || !password) return res.status(400).json({ error: 'nickname y password requeridos' })
