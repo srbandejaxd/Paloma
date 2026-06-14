@@ -12,6 +12,7 @@ type Phase = 'category' | 'select' | 'racing' | 'done'
 const CATEGORIES = [
   { id: 'woodpecker', label: 'Woodpecker', description: 'Método de repetición de puzzles tácticos' },
   { id: 'mate', label: 'Patrones de mate', description: 'Patrones clásicos de jaque mate' },
+  { id: 'woodpecker2', label: 'Woodpecker 2', description: 'Método de repetición de puzzles posicionales' },
 ]
 
 interface FailedPuzzle {

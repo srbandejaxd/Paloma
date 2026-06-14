@@ -65,26 +65,28 @@ async function initSchema() {
   `)
 }
 
-async function seedIfEmpty() {
+async function seedNewBlocks() {
   const db = getDb()
-  const { rows } = await db.execute('SELECT COUNT(*) as c FROM blocks')
-  if (rows[0].c > 0) return
-
   for (const block of SEED_BLOCKS) {
+    const existing = await db.execute({
+      sql: 'SELECT id FROM blocks WHERE name = ?',
+      args: [block.name]
+    })
+    if (existing.rows.length > 0) continue
     const r = await db.execute({
       sql: 'INSERT INTO blocks (name, description, category) VALUES (?, ?, ?)',
-      args: [block.name, block.description, block.category ?? 'woodpecker'],
+      args: [block.name, block.description, block.category ?? 'woodpecker']
     })
     const blockId = r.lastInsertRowid
     for (let i = 0; i < block.puzzles.length; i++) {
       const p = block.puzzles[i]
       await db.execute({
         sql: 'INSERT INTO puzzles (block_id, order_in_block, fen, solution) VALUES (?, ?, ?, ?)',
-        args: [blockId, i + 1, p.fen, JSON.stringify(p.solution)],
+        args: [blockId, i + 1, p.fen, JSON.stringify(p.solution)]
       })
     }
+    console.log(`✓ Seeded new block: ${block.name}`)
   }
-  console.log('✓ Database seeded')
 }
 
 async function migrateDb() {
@@ -101,7 +103,7 @@ async function migrateDb() {
 async function initDb() {
   await initSchema()
   await migrateDb()
-  await seedIfEmpty()
+  await seedNewBlocks()
   console.log('✓ Turso DB ready')
 }
 
@@ -600,12 +602,180 @@ const MATE_PUZZLES_BLOCK_2 = [
     solution: ["Qe1+", "Qxe1", "Bxf3#"]
   }
 ]
+const WP2_PUZZLES_BLOCK_1= [
+  {
+    fen: "1r1n1rk1/b1p1qppp/p2p1n2/4pP2/P3P3/2PPNB2/6PP/R1BQK2R w KQ - 0 1",
+    solution: ["g4", "Nd7", "h4", "c6", "g5"]
+  },
+  {
+    fen: "r2q1rk1/pbpnnpbp/1p1pp1p1/8/3PPP2/2NBB3/PPPQN1PP/R4RK1 w - - 0 1",
+    solution: ["f5", "exf5", "exf5"]
+  },
+  {
+    fen: "r3r1k1/ppq1bppp/2ppnn2/4p3/4PP2/2PP2PP/PPB1Q3/RNB2RK1 w - - 0 1",
+    solution: ["f5"]
+  },
+  {
+    fen: "r1bqk2r/3n1ppp/p3p3/1pbpP3/5P2/3n1N2/PPPBQ1PP/R2NK2R w KQkq - 0 1",
+    solution: ["cxd3"]
+  },
+  {
+    fen: "r1r3k1/3bbppp/pqn1pn2/1p6/3P1B2/1BN2N2/PP2QPPP/R3R1K1 w - - 0 1",
+    solution: ["d5", "exd5", "Nxd5", "Nxd5", "Bxd5"]
+  },
+  {
+    fen: "r1r3k1/3bbppp/pqn1pn2/1p6/3P1B2/1BN2N2/PP2QPPP/R2R2K1 b - - 0 1",
+    solution: ["Na5", "Bc2", "b4", "Ne4", "Nd5"]
+  },
+  {
+    fen: "r4rk1/1b2bppp/ppq1pn2/2ppB3/5P2/1P1BP1N1/P1PPQ1PP/R4RK1 w - - 0 1",
+    solution: ["Nh5", "Nxh5", "Bxh7+", "Kxh7", "Qxh5+", "Kg8", "Bxg7"]
+  },
+  {
+    fen: "r1bq1rnk/1pp3np/p2p2p1/3Ppp2/2P1P3/2Q2NNP/PPB2PP1/3RR1K1 b - - 0 1",
+    solution: ["f4"]
+  },
+  {
+    fen: "r1bq1rk1/pp3ppp/2n2n2/2bp4/5B2/2NBPN2/PP3PPP/2RQK2R b K - 0 1",
+    solution: ["d4", "exd4", "Re8+"]
+  },
+  {
+    fen: "r1bqk2r/pppp1ppp/2n5/8/2BPn3/2P2N2/P4PPP/R1BQ1RK1 b kq - 0 1",
+    solution: ["d5"]
+  },
+  {
+    fen: "3r2k1/1b3ppp/pqnbpn2/1p6/1P6/PQN1PN1P/1B2BPP1/2R3K1 b - - 0 1",
+    solution: ["Ne5", "Nxe5", "Bxe5"]
+  },
+  {
+    fen: "2r1r1k1/p2n1pp1/1pqpp2p/3n4/3P4/2PQ1NB1/PP3PPP/3RR1K1 b - - 0 1",
+    solution: ["b5"]
+  },
+  {
+    fen: "2rq1rk1/1p1bppbp/p2p1np1/4nPP1/3NP3/2N1B2P/PPP1B3/R2Q1RK1 b - - 0 1",
+    solution: ["Rxc3", "bxc3", "Nxe4"]
+  },
+  {
+    fen: "r4rk1/p1p3pp/2p1b3/2qpP3/5P2/1PNQ3P/P1P3PK/4RR2 w - - 0 1",
+    solution: ["Na4"]
+  },
+  {
+    fen: "r1bq1rk1/ppp2pp1/1bnp1n1p/3Np3/1PB1P3/2PP1N2/P4PPP/R1BQ1RK1 w - - 0 1",
+    solution: ["a4"]
+  },
+  {
+    fen: "r2q1rk1/2p1nppp/p1pb4/4p2b/4P3/4BN1P/PPPNQPP1/R3K2R w KQ - 0 1",
+    solution: ["g4", "Bg6", "h4", "f6", "h5", "Bf7", "g5"]
+  },
+  {
+    fen: "r4rk1/ppp1qpp1/2n4p/3np3/8/1PPPBN2/1P1Q1PPP/R4RK1 b - - 0 1",
+    solution: ["a5"]
+  },
+  {
+    fen: "r2qk1nr/ppp2ppp/2npb3/2bNp3/2B1P3/3P1N2/PPP2PPP/R1BQK2R b KQkq - 0 1",
+    solution: ["Na5", "b4", "Bxd5"]
+  },
+  {
+    fen: "r2qk2r/ppp2ppp/2np1n2/2b1p3/2B1PPb1/2NP1N2/PPP3PP/R1BQK2R w KQkq - 0 1",
+    solution: ["Na4"]
+  },
+  {
+    fen: "r1bqkb1r/5ppp/ppn1p1n1/3p4/3P4/2N1BN2/PP2PPPP/R2QKB1R w KQkq - 0 1",
+    solution: ["h4", "Bd6", "h5", "Nge7", "h6", "g6", "Bg5", "O-O", "Bf6"]
+  }
+]
+const WP2_PUZZLES_BLOCK_2= [
+  {
+    fen: "r2q1rk1/1b1nbppp/2p1pn2/p5B1/PpBPP3/5N2/NP2QPPP/R2R2K1 b - - 0 1",
+    solution: ["c5", "dxc5", "Qc7"]
+  },
+  {
+    fen: "r1b2rk1/pp3ppp/2n1pn2/3pN3/3P4/qP1B1N2/P1P2PPP/R2Q1RK1 b - - 0 1",
+    solution: ["Nb4", "Be2", "Ne4", "Re1", "Nc3", "Qd2", "Ne4"]
+  },
+  {
+    fen: "4rrk1/ppp2ppp/2nq4/2bnp3/2B2P2/P2P2Q1/1PP1N1PP/R1B2R1K w - - 0 1",
+    solution: ["f5", "Nf6", "Nc3", "Kh8", "Bg5"]
+  },
+  {
+    fen: "r2qk2r/p3b1pp/2p5/np1bpp2/8/2PP2N1/PPQ1NPPP/R1B2RK1 b kq - 0 1",
+    solution: ["f4", "Ne4", "O-O", "f3", "c5"]
+  },
+  {
+    fen: "r4rk1/pp1b2pp/2nqp3/2pp1p2/3P4/2PQPN2/PP2BPPP/R4RK1 b - - 0 1",
+    solution: ["c4"]
+  },
+  {
+    fen: "rn1qkbnr/ppp2ppp/4p3/4N2b/2pP4/2N5/PP2PPPP/R1BQKB1R w KQkq - 0 1",
+    solution: ["g4", "Bg6", "h4", "f6", "Qa4+", "c6", "Nxg6", "hxg6", "Qxc4"]
+  },
+  {
+    fen: "r2qk2r/pbpn1ppp/1p1ppn2/6B1/1bPP4/2NBP3/PPQ2PPP/R3K1NR w KQkq - 0 1",
+    solution: ["f3"]
+  },
+  {
+    fen: "3r2k1/pp1r1pp1/2p1pb2/5q1p/1PPP1P2/2B1Q3/P2R2PP/3R2K1 b - - 0 1",
+    solution: ["b5", "c5", "g5"]
+  },
+  {
+    fen: "r3k2r/1bq1bppp/pp2pn2/2p5/3PPP2/2PB2N1/PB4PP/R2Q1RK1 b kq - 0 1",
+    solution: ["h5", "Qe2", "h4"]
+  },
+  {
+    fen: "r3kb1r/3bqn1p/p1pp2p1/1p2pp2/1P2P3/3P1NN1/1PPBQPPP/R3K2R b KQkq - 0 1",
+    solution: ["f4"]
+  },
+  {
+    fen: "r1b1qrk1/ppp1b1pp/2nppn2/3P1p2/2P2B2/2N2NP1/PP2PPBP/2RQK2R b K - 0 1",
+    solution: ["Nd8", "Nb5", "Qd7"]
+  },
+  {
+    fen: "r1b2rk1/pp1n1pp1/2p1p2p/q7/2BP3B/b1P1PN2/P2Q1PPP/1R2K2R b K - 0 1",
+    solution: ["e5"]
+  },
+  {
+    fen: "rn1qk2r/1ppbbppp/p2p1n2/3Pp3/B3P3/2P2N2/PP3PPP/RNBQ1RK1 w kq - 0 1",
+    solution: ["Bc2"]
+  },
+  {
+    fen: "r3r1k1/pp1b1pbp/2p1p1p1/q3B3/3P4/P1PB4/1PQ2PPP/3RR1K1 w - - 0 1",
+    solution: ["h4", "Qd8", "h5", "Qg5", "hxg6", "hxg6", "Re3"]
+  },
+  {
+    fen: "r1b2rk1/ppq1b2p/2p1ppp1/8/2NP1P2/2PBP3/P1R3PP/3Q1RK1 w - - 0 1",
+    solution: ["h4"]
+  },
+  {
+    fen: "1r1q1rk1/pbpn2pp/1p1pp3/5p2/2PPn3/1P2QNP1/PB2PPBP/3R1RK1 w - - 0 1",
+    solution: ["d5", "exd5", "cxd5", "Ndf6", "Nh4", "Qd7", "Bh3"]
+  },
+  {
+    fen: "r1bq1rk1/pp2npbp/2pp2p1/4p3/2Pn4/2NP1NP1/PP1BPPBP/2RQ1RK1 w - - 0 1",
+    solution: ["b4"]
+  },
+  {
+    fen: "rn1q1rk1/pbppbppp/1p2p3/8/2PPn3/2N2NP1/PP1BPPBP/R2Q1RK1 w - - 0 1",
+    solution: ["d5", "Nxd2", "Qxd2"]
+  },
+  {
+    fen: "r1b1k2r/pp1nbppp/1qn1p3/3pP3/3P4/P2B1N2/1P2NPPP/R1BQ1K1R b kq - 0 1",
+    solution: ["f6", "Nf4", "Ndxe5", "dxe5", "fxe5", "Nh5", "O-O", "Be3", "Qxb2", "Be2", "e4"]
+  },
+  {
+    fen: "r3r1k1/2q1bppp/p3bn2/npp1p3/4P3/2P1NN2/PPB1QPPP/R1B1R1K1 w - - 0 1",
+    solution: ["Ng5", "Bd7", "Nd5"]
+  }
+]
 
 const SEED_BLOCKS_MATE = [
    { name: 'Mate Bloque 1', description: 'Mates 1–20', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_1 },
    { name: 'Mate Bloque 2', description: 'Mates 21–40', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_2 },
 ]
 
+const SEED_BLOCKS_WOODPECKER2 = [
+  { name: 'W2 Bloque 1', description: 'Posicionales 1–20', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_1 },
+  { name: 'W2 Bloque 2', description: 'Posicionales 21–40', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_2 },
+]
 const SEED_BLOCKS = [
   { name: 'Bloque 1', description: 'Puzzles 1–20', category: 'woodpecker', puzzles: PUZZLES_BLOCK_1 },
   { name: 'Bloque 2', description: 'Puzzles 21–40', category: 'woodpecker', puzzles: PUZZLES_BLOCK_2 },
