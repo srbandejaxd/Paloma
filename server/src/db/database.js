@@ -70,7 +70,8 @@ async function initSchema() {
       score INTEGER NOT NULL,
       errors INTEGER NOT NULL DEFAULT 0,
       duration_ms INTEGER NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+    CREATE INDEX IF NOT EXISTS idx_vision_user ON vision_sessions(user_id);
   `)
 }
 
