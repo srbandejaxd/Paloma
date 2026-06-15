@@ -115,3 +115,31 @@ export async function saveVisionSession(data: { mode: string; score: number; err
   })
   if (!res.ok) throw new Error('Failed to save vision session')
 }
+
+export async function fetchVisionHistory(mode?: string): Promise<VisionSession[]> {
+  const params = mode ? `?mode=${mode}` : ''
+  const res = await fetch(`${BASE}/api/vision/history${params}`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch vision history')
+  return res.json()
+}
+
+export async function fetchVisionLeaderboard(mode: string): Promise<VisionLeaderboardEntry[]> {
+  const res = await fetch(`${BASE}/api/vision/leaderboard/${mode}`)
+  if (!res.ok) throw new Error('Failed to fetch vision leaderboard')
+  return res.json()
+}
+
+export interface VisionSession {
+  mode: string
+  score: number
+  errors: number
+  durationMs: number
+  createdAt: string
+}
+
+export interface VisionLeaderboardEntry {
+  nickname: string
+  bestScore: number
+  bestErrors: number
+  totalSessions: number
+}
