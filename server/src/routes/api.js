@@ -198,9 +198,37 @@ router.post('/vision', authMiddleware, async (req, res) => {
   try {
     await db.execute({
       sql: 'INSERT INTO vision_sessions (user_id, mode, score, errors, duration_ms) VALUES (?, ?, ?, ?, ?)',
-      args: [req.user.id, mode, score, errors ?? 0, durationMs ?? 60000],
+      args: [req.user.userId, mode, score, errors ?? 0, durationMs ?? 60000],
     })
     res.json({ ok: true })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+router.get('/vision/history', authMiddleware, async (req, res) => {
+  const { mode } = req.query
+  const db = getDb()
+  try {
+    const result = await db.execute({
+      sql: `SELECT mode, score, errors, duration_ms as durationMs, created_at as createdAt
+            FROM vision_sessions WHERE user_id = ? ${mode ? 'AND mode = ?' : ''}
+            ORDER BY created_at DESC LIMIT 50`,
+      args: mode ? [req.user.userId, mode] : [req.user.userId],
+    })
+    res.json(result.rows)
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+router.get('/vision/leaderboard/:mode', async (req, res) => {
+  const db = getDb()
+  try {
+    const result = await db.execute({
+      sql: `SELECT u.nickname, MAX(v.score) as bestScore, MIN(v.errors) as bestErrors, COUNT(*) as totalSessions
+            FROM vision_sessions v JOIN users u ON u.id = v.user_id
+            WHERE v.mode = ?
+            GROUP BY v.user_id ORDER BY bestScore DESC LIMIT 20`,
+      args: [req.params.mode],
+    })
+    res.json(result.rows)
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
