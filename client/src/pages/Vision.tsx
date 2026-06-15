@@ -7,7 +7,7 @@ import { saveVisionSession } from '../lib/api'
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 const RANKS = ['1', '2', '3', '4', '5', '6', '7', '8']
-const DURATION = 60 // seconds
+const DURATION = 30 // seconds
 
 function randomSquare(exclude?: string): string {
   let sq: string
@@ -192,7 +192,7 @@ export default function Vision() {
         {phase !== 'playing' && (
           <button
             onClick={startGame}
-            className="px-8 py-3 bg-amber-500 hover:bg-amber-400 text-black font-mono font-bold text-sm transition-colors rounded-sm"
+            className="px-8 py-3 bg-white hover:bg-bone text-void font-mono font-bold text-sm transition-colors rounded-sm"
           >
             {phase === 'idle' ? 'Iniciar' : 'Reintentar'}
           </button>
