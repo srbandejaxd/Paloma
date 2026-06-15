@@ -190,4 +190,18 @@ router.get('/leaderboard/:blockId', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
+// ─── VISION ───────────────────────────────────────────────────────────────────
+router.post('/vision', authMiddleware, async (req, res) => {
+  const { mode, score, errors, durationMs } = req.body
+  if (!mode || score === undefined) return res.status(400).json({ error: 'Datos incompletos' })
+  const db = getDb()
+  try {
+    await db.execute({
+      sql: 'INSERT INTO vision_sessions (user_id, mode, score, errors, duration_ms) VALUES (?, ?, ?, ?, ?)',
+      args: [req.user.id, mode, score, errors ?? 0, durationMs ?? 60000],
+    })
+    res.json({ ok: true })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
 module.exports = router

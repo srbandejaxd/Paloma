@@ -134,6 +134,7 @@ export default function Solo() {
             </div>
             <div className="flex gap-3">
               <button onClick={() => navigate('/puzzles')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Puzzles</button>
+              <button onClick={() => navigate('/vision')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Visión</button>
               <button onClick={() => navigate('/history')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Historial</button>
               <button onClick={() => navigate('/leaderboard')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Ranking</button>
               <button onClick={logout} className="text-bone-3 font-mono text-xs hover:text-red-400 transition-colors">Salir</button>

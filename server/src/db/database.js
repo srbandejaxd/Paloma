@@ -62,6 +62,15 @@ async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_attempts_user ON attempts(user_id);
     CREATE INDEX IF NOT EXISTS idx_attempts_block ON attempts(block_id);
     CREATE INDEX IF NOT EXISTS idx_puzzle_times_attempt ON puzzle_times(attempt_id);
+    CREATE INDEX IF NOT EXISTS idx_puzzle_times_attempt ON puzzle_times(attempt_id);
+    CREATE TABLE IF NOT EXISTS vision_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      mode TEXT NOT NULL,
+      score INTEGER NOT NULL,
+      errors INTEGER NOT NULL DEFAULT 0,
+      duration_ms INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   `)
 }
 

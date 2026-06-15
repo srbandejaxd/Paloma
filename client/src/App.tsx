@@ -5,6 +5,7 @@ import Solo from './pages/Solo'
 import History from './pages/History'
 import Leaderboard from './pages/Leaderboard'
 import Puzzles from './pages/Puzzles'
+import Vision from './pages/Vision'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/puzzles" element={<Puzzles />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/vision" element={<Vision />} />
       </Routes>
     </AuthProvider>
   )

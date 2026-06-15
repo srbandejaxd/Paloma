@@ -105,3 +105,13 @@ export interface LeaderboardEntry {
   bestSolved: number
   totalPuzzles: number
 }
+// ─── VISION ──────────────────────────────────────────────────────────────────
+
+export async function saveVisionSession(data: { mode: string; score: number; errors: number; durationMs: number }): Promise<void> {
+  const res = await fetch(`${BASE}/api/vision`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to save vision session')
+}
