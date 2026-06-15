@@ -155,7 +155,8 @@ export default function Leaderboard() {
             <div className="flex items-center gap-3 px-4 py-2 font-mono text-xs text-bone-3 uppercase tracking-widest">
               <span className="w-8">#</span>
               <span className="flex-1">Jugador</span>
-              <span className="w-28 text-right">Mejor score</span>
+              <span className="w-24 text-right">Score</span>
+              <span className="w-28 text-right">Correctas/Errores</span>
               <span className="w-20 text-right">Sesiones</span>
             </div>
             {loading && <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>}
@@ -171,7 +172,8 @@ export default function Leaderboard() {
                   {entry.nickname}
                   {entry.nickname === user?.nickname && <span className="text-xs font-normal ml-2 text-bone-3">(tú)</span>}
                 </span>
-                <span className="w-28 font-mono text-sm font-bold text-amber text-right">{entry.bestScore} correctas</span>
+                <span className="w-24 font-mono text-sm font-bold text-amber text-right">{entry.bestScore - entry.bestErrors}</span>
+                <span className="w-28 font-mono text-xs text-bone-3 text-right">{entry.bestScore}✓ / {entry.bestErrors}✗</span>
                 <span className="w-20 font-mono text-xs text-bone-3 text-right">{entry.totalSessions}x</span>
               </div>
             ))}

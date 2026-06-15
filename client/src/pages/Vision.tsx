@@ -192,7 +192,7 @@ export default function Vision() {
         {phase !== 'playing' && (
           <button
             onClick={startGame}
-            className="px-8 py-3 bg-amber-400 hover:bg-amber-400 text-black font-mono font-bold text-sm transition-colors rounded-sm"
+            className="px-8 py-3 bg-amber-500 hover:bg-amber-400 text-black font-mono font-bold text-sm transition-colors rounded-sm"
           >
             {phase === 'idle' ? 'Iniciar' : 'Reintentar'}
           </button>
