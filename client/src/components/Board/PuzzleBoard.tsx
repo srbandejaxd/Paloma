@@ -251,7 +251,7 @@ export default function PuzzleBoard({
 
     justMovedRef.current = true
     blockClickRef.current = true
-    setTimeout(() => { justMovedRef.current = false }, 50)
+    setTimeout(() => { justMovedRef.current = false }, 30)
     setTimeout(() => { blockClickRef.current = false }, 30)
     return true
   }
