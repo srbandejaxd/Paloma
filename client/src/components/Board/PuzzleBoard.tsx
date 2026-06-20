@@ -359,7 +359,22 @@ if (targetPiece) {
         </p>
       )}
 
-      <div className="relative" style={{ width: boardSize }}>
+      <div
+  className="relative"
+  style={{ width: boardSize }}
+  onMouseDown={(e) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const squareSize = boardSize / 8
+    const col = Math.floor((e.clientX - rect.left) / squareSize)
+    const row = Math.floor((e.clientY - rect.top) / squareSize)
+    const file = 'abcdefgh'[playerColor === 'white' ? col : 7 - col]
+    const rank = playerColor === 'white' ? 8 - row : row + 1
+    const sq = `${file}${rank}`
+    if (selectedSquare && !isOwnPiece(sq)) {
+      onSquareClick(sq)
+    }
+  }}
+>
         <div
           className="board-shadow rounded-sm overflow-hidden transition-all duration-300"
           style={{
