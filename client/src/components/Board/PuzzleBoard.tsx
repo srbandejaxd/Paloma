@@ -251,8 +251,8 @@ export default function PuzzleBoard({
 
     justMovedRef.current = true
     blockClickRef.current = true
-    setTimeout(() => { justMovedRef.current = false }, 30)
-    setTimeout(() => { blockClickRef.current = false }, 30)
+    setTimeout(() => { justMovedRef.current = false }, 20)
+    setTimeout(() => { blockClickRef.current = false }, 80)
     return true
   }
 
@@ -369,18 +369,7 @@ if (targetPiece) {
       <div
   className="relative"
   style={{ width: boardSize }}
-  onMouseDown={(e) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    const squareSize = boardSize / 8
-    const col = Math.floor((e.clientX - rect.left) / squareSize)
-    const row = Math.floor((e.clientY - rect.top) / squareSize)
-    const file = 'abcdefgh'[playerColor === 'white' ? col : 7 - col]
-    const rank = playerColor === 'white' ? 8 - row : row + 1
-    const sq = `${file}${rank}`
-    if (selectedSquare && !isOwnPiece(sq)) {
-      onSquareClick(sq)
-    }
-  }}
+  
 >
         <div
           className="board-shadow rounded-sm overflow-hidden transition-all duration-300"
@@ -416,7 +405,7 @@ if (targetPiece) {
             customDarkSquareStyle={{ backgroundColor: '#2C2C3E' }}
             customLightSquareStyle={{ backgroundColor: '#4A4A60' }}
             animationDuration={200}
-            customDndBackendOptions={{ delay: 150 }}
+      
           />
         </div>
 
