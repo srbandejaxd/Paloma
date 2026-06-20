@@ -249,7 +249,7 @@ export default function PuzzleBoard({
     }
 
     justMovedRef.current = true
-    setTimeout(() => { justMovedRef.current = false }, 75)
+    setTimeout(() => { justMovedRef.current = false }, 100)
     return true
   }
 
