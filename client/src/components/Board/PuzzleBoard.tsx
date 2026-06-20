@@ -81,6 +81,7 @@ export default function PuzzleBoard({
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
   const justMovedRef = useRef(false)
+  const blockClickRef = useRef(false)
 
   // ✅ Ref para leer errors siempre actualizado dentro de callbacks/timeouts
   const errorsRef = useRef(0)
@@ -249,7 +250,9 @@ export default function PuzzleBoard({
     }
 
     justMovedRef.current = true
-    setTimeout(() => { justMovedRef.current = false }, 100)
+    blockClickRef.current = true
+    setTimeout(() => { justMovedRef.current = false }, 50)
+    setTimeout(() => { blockClickRef.current = false }, 150)
     return true
   }
 
@@ -260,7 +263,7 @@ export default function PuzzleBoard({
 
   function onSquareClick(square: string) {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
-    if (justMovedRef.current) return
+    if (blockClickRef.current) return
 
     if (selectedSquare === null) {
       if (isOwnPiece(square)) {
