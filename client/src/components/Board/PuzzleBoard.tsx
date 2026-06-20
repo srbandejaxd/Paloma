@@ -382,7 +382,11 @@ if (targetPiece) {
             boardOrientation={boardOrientation}
             customSquareStyles={highlightSquares}
             boardWidth={boardSize}
-            isDraggablePiece={() => !disabled && feedback !== 'opponent' && feedback !== 'skipping'}
+            isDraggablePiece={({ piece }) => {
+               if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
+               const isOwn = playerColor === 'white' ? piece.startsWith('w') : piece.startsWith('b')
+               return isOwn
+            }}
             customBoardStyle={{
               borderRadius: '2px',
             }}
