@@ -277,6 +277,19 @@ export default function PuzzleBoard({
       highlightMoves(square)
       return
     }
+    // Si hay pieza enemiga en el destino, intentar captura directamente
+const targetPiece = game.get(square as any)
+if (targetPiece) {
+  const pieceOnSel = game.get(selectedSquare as any)
+  if (!pieceOnSel) {
+    setSelectedSquare(null)
+    setHighlightSquares({})
+    return
+  }
+  const pieceStr = (pieceOnSel.color === 'w' ? 'w' : 'b') + pieceOnSel.type.toUpperCase()
+  processMove(selectedSquare, square, pieceStr)
+  return
+}
 
     const pieceOnSelected = game.get(selectedSquare as any)
     if (!pieceOnSelected) {
