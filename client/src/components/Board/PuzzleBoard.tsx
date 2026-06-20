@@ -249,7 +249,7 @@ export default function PuzzleBoard({
     }
 
     justMovedRef.current = true
-    setTimeout(() => { justMovedRef.current = false }, 150)
+    setTimeout(() => { justMovedRef.current = false }, 100)
     return true
   }
 
@@ -260,6 +260,7 @@ export default function PuzzleBoard({
 
   function onSquareClick(square: string) {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
+    if (justMovedRef.current) return
 
     if (selectedSquare === null) {
       if (isOwnPiece(square)) {
