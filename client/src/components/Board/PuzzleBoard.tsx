@@ -80,6 +80,7 @@ export default function PuzzleBoard({
   const [highlightSquares, setHighlightSquares] = useState<Record<string, { background: string }>>({})
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
+  const justMovedRef = useRef(false)
 
   // ✅ Ref para leer errors siempre actualizado dentro de callbacks/timeouts
   const errorsRef = useRef(0)
@@ -247,6 +248,8 @@ export default function PuzzleBoard({
       return false
     }
 
+    justMovedRef.current = true
+    setTimeout(() => { justMovedRef.current = false }, 300)
     return true
   }
 
@@ -398,9 +401,10 @@ if (targetPiece) {
             customSquareStyles={highlightSquares}
             boardWidth={boardSize}
             isDraggablePiece={({ piece }) => {
-               if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
-               const isOwn = playerColor === 'white' ? piece.startsWith('w') : piece.startsWith('b')
-               return isOwn
+              if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
+              if (justMovedRef.current) return false
+              const isOwn = playerColor === 'white' ? piece.startsWith('w') : piece.startsWith('b')
+              return isOwn
             }}
             customBoardStyle={{
               borderRadius: '2px',
