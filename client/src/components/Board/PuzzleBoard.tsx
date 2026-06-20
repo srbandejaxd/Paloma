@@ -393,6 +393,7 @@ if (targetPiece) {
             customDarkSquareStyle={{ backgroundColor: '#2C2C3E' }}
             customLightSquareStyle={{ backgroundColor: '#4A4A60' }}
             animationDuration={200}
+            customDndBackendOptions={{ delay: 150 }}
           />
         </div>
 
