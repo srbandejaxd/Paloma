@@ -423,7 +423,7 @@ export default function PuzzleBoard({
   if (!draggedSquare) return
   const style = document.createElement('style')
   style.id = 'drag-hide'
-  style.textContent = `[data-square="${draggedSquare}"] { opacity: 0.15 !important; }`
+  style.textContent = `[data-square="${draggedSquare}"] > div > div { opacity: 0.15 !important; }`
   document.head.appendChild(style)
   return () => document.getElementById('drag-hide')?.remove()
 }, [draggedSquare])
