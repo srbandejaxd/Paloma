@@ -417,14 +417,7 @@ export default function PuzzleBoard({
     return () => document.getElementById('drag-hide')?.remove()
   }, [draggedSquare])
   // Ocultar pieza original del rival durante animación
-  useEffect(() => {
-    if (!opponentAnim) return
-    const style = document.createElement('style')
-    style.id = 'opponent-hide'
-    style.textContent = `[data-square="${opponentAnim.from}"] > div > div { opacity: 0 !important; }`
-    document.head.appendChild(style)
-    return () => document.getElementById('opponent-hide')?.remove()
-  }, [opponentAnim])
+ 
 
 
   return (
