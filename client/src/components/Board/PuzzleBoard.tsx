@@ -93,6 +93,15 @@ export default function PuzzleBoard({
   const DRAG_THRESHOLD = 6 // pixels antes de considerar drag
 
   useEffect(() => { errorsRef.current = errors }, [errors])
+  
+  const boardSize = useBoardSize()
+
+  const playerColor = (() => {
+    const parts = puzzle.fen.split(' ')
+    return parts[1] === 'w' ? 'white' : 'black'
+  })()
+
+  const boardOrientation = playerColor
   useEffect(() => {
   function onWindowMouseMove(e: MouseEvent) {
     if (!isDraggingRef.current) return
@@ -122,14 +131,6 @@ export default function PuzzleBoard({
   }
 }, [dragPiece, boardSize, boardOrientation])
 
-  const boardSize = useBoardSize()
-
-  const playerColor = (() => {
-    const parts = puzzle.fen.split(' ')
-    return parts[1] === 'w' ? 'white' : 'black'
-  })()
-
-  const boardOrientation = playerColor
 
   useEffect(() => {
     const newGame = new Chess()
