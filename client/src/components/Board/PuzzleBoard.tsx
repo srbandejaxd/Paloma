@@ -34,17 +34,6 @@ function moveFromSAN(game: Chess, san: string): { from: string; to: string; prom
   }
 }
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false)
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-  return isMobile
-}
-
 function useBoardSize() {
   const [size, setSize] = useState(480)
   useEffect(() => {
@@ -65,6 +54,17 @@ function useBoardSize() {
   return size
 }
 
+// Convierte pixel x,y dentro del board a casilla ajedrez
+function pixelToSquare(x: number, y: number, boardSize: number, orientation: 'white' | 'black'): string {
+  const col = Math.floor(x / (boardSize / 8))
+  const row = Math.floor(y / (boardSize / 8))
+  const clampedCol = Math.max(0, Math.min(7, col))
+  const clampedRow = Math.max(0, Math.min(7, row))
+  const file = orientation === 'white' ? clampedCol : 7 - clampedCol
+  const rank = orientation === 'white' ? 7 - clampedRow : clampedRow
+  return 'abcdefgh'[file] + (rank + 1)
+}
+
 export default function PuzzleBoard({
   puzzle,
   onSolved,
@@ -78,18 +78,22 @@ export default function PuzzleBoard({
   const [solutionIndex, setSolutionIndex] = useState(0)
   const [errors, setErrors] = useState(0)
   const [highlightSquares, setHighlightSquares] = useState<Record<string, { background: string }>>({})
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
+  const [draggedSquare, setDraggedSquare] = useState<string | null>(null)
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
+  const [dragPiece, setDragPiece] = useState<string | null>(null)
+
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
-  const justMovedRef = useRef(false)
-  const blockClickRef = useRef(false)
-
-  // ✅ Ref para leer errors siempre actualizado dentro de callbacks/timeouts
   const errorsRef = useRef(0)
+  const boardRef = useRef<HTMLDivElement>(null)
+  const isDraggingRef = useRef(false)
+  const mouseDownSquareRef = useRef<string | null>(null)
+  const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null)
+  const DRAG_THRESHOLD = 6 // pixels antes de considerar drag
+
   useEffect(() => { errorsRef.current = errors }, [errors])
 
-  const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
-
-  const isMobile = useIsMobile()
   const boardSize = useBoardSize()
 
   const playerColor = (() => {
@@ -97,20 +101,22 @@ export default function PuzzleBoard({
     return parts[1] === 'w' ? 'white' : 'black'
   })()
 
+  const boardOrientation = playerColor
+
   useEffect(() => {
     const newGame = new Chess()
-    try {
-      newGame.load(puzzle.fen)
-    } catch {
-      console.error('Invalid FEN:', puzzle.fen)
-    }
+    try { newGame.load(puzzle.fen) } catch { console.error('Invalid FEN:', puzzle.fen) }
     setGame(newGame)
     setSolutionIndex(0)
     setErrors(0)
-    errorsRef.current = 0  // ✅ reset también la ref al cambiar puzzle
+    errorsRef.current = 0
     setFeedback('idle')
     setHighlightSquares({})
     setSelectedSquare(null)
+    setDraggedSquare(null)
+    setDragPos(null)
+    setDragPiece(null)
+    isDraggingRef.current = false
     startTimeRef.current = Date.now()
   }, [puzzle])
 
@@ -119,37 +125,38 @@ export default function PuzzleBoard({
       const nextIndex = currentIndex + 1
       if (nextIndex >= puzzle.solution.length) {
         const elapsed = Date.now() - startTimeRef.current
-        setTimeout(() => {
-          onSolved(elapsed, errorsRef.current)
-        }, 300)
+        setTimeout(() => onSolved(elapsed, errorsRef.current), 300)
         return
       }
-
       const opponentSAN = puzzle.solution[nextIndex]
       const gameCopy = new Chess()
       gameCopy.loadPgn(currentGame.pgn())
       const moveResult = gameCopy.move(opponentSAN)
-        if (moveResult) {
-          if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
-          else { moveSound.currentTime = 0; moveSound.play() }
-          setHighlightSquares({
-            [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
-            [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
-          })
-          setGame(gameCopy)
+      if (moveResult) {
+        if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
+        else { moveSound.currentTime = 0; moveSound.play() }
+        setHighlightSquares({
+          [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
+          [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
+        })
+        setGame(gameCopy)
         const nextPlayerIndex = nextIndex + 1
         setSolutionIndex(nextPlayerIndex)
         setFeedback('idle')
-
         if (nextPlayerIndex >= puzzle.solution.length) {
-           const elapsed = Date.now() - startTimeRef.current
-           correctSound.currentTime = 0; correctSound.play()
-           setTimeout(() => onSolved(elapsed, errorsRef.current), 400)
+          const elapsed = Date.now() - startTimeRef.current
+          correctSound.currentTime = 0; correctSound.play()
+          setTimeout(() => onSolved(elapsed, errorsRef.current), 400)
         }
       }
     },
     [puzzle.solution, onSolved]
   )
+
+  function isOwnPiece(square: string): boolean {
+    const p = game.get(square as any)
+    return !!p && (playerColor === 'white' ? p.color === 'w' : p.color === 'b')
+  }
 
   function highlightMoves(square: string) {
     const moves = game.moves({ square: square as any, verbose: true })
@@ -162,11 +169,6 @@ export default function PuzzleBoard({
     setHighlightSquares(highlights)
   }
 
-  function isOwnPiece(square: string): boolean {
-    const p = game.get(square as any)
-    return !!p && (playerColor === 'white' ? p.color === 'w' : p.color === 'b')
-  }
-
   function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
 
@@ -176,24 +178,19 @@ export default function PuzzleBoard({
 
     let moveResult
     try {
-      const isPromotion =
-        piece.toLowerCase().includes('p') &&
+      const isPromotion = piece.toLowerCase().includes('p') &&
         (targetSquare[1] === '8' || targetSquare[1] === '1')
-
       moveResult = gameCopy.move({
         from: sourceSquare,
         to: targetSquare,
         promotion: isPromotion ? 'q' : undefined,
       })
-    } catch {
-      return false
-    }
+    } catch { return false }
 
     if (!moveResult) return false
 
     const expectedMove = moveFromSAN(new Chess(game.fen()), expectedSAN)
-    const isCorrect =
-      expectedMove &&
+    const isCorrect = expectedMove &&
       expectedMove.from === moveResult.from &&
       expectedMove.to === moveResult.to
 
@@ -208,20 +205,20 @@ export default function PuzzleBoard({
       })
       setGame(gameCopy)
 
-      const isLastPlayerMove = solutionIndex + 1 >= puzzle.solution.length - 1 || solutionIndex + 1 >= puzzle.solution.length
-      if (isLastPlayerMove) {
-        setFeedback('correct')
-      }
+      const isLastPlayerMove = solutionIndex + 1 >= puzzle.solution.length
+      if (isLastPlayerMove) setFeedback('correct')
 
       clearTimeout(feedbackTimeout.current)
       feedbackTimeout.current = setTimeout(() => {
         setFeedback('idle')
         playOpponentMove(gameCopy, solutionIndex)
       }, isLastPlayerMove ? 400 : 0)
+
+      return true
     } else {
       const newErrors = errors + 1
       setErrors(newErrors)
-      errorsRef.current = newErrors  // ✅ actualizar ref inmediatamente, sin esperar el useEffect
+      errorsRef.current = newErrors
       setHighlightSquares({
         [sourceSquare]: { background: 'rgba(231,76,60,0.3)' },
         [targetSquare]: { background: 'rgba(231,76,60,0.4)' },
@@ -229,7 +226,6 @@ export default function PuzzleBoard({
       errorSound.currentTime = 0; errorSound.play()
       setFeedback('wrong')
       onError?.()
-
       clearTimeout(feedbackTimeout.current)
 
       if (autoSkipAfterErrors > 0 && newErrors >= autoSkipAfterErrors) {
@@ -245,103 +241,159 @@ export default function PuzzleBoard({
           setFeedback('idle')
         }, 600)
       }
-
       return false
     }
-
-    justMovedRef.current = true
-    blockClickRef.current = true
-    setTimeout(() => { justMovedRef.current = false }, 20)
-    setTimeout(() => { blockClickRef.current = false }, 80)
-    return true
   }
 
-  function onDrop(sourceSquare: string, targetSquare: string, piece: string): boolean {
-    setSelectedSquare(null)
-    return processMove(sourceSquare, targetSquare, piece)
+  // ── Custom mouse handlers ──────────────────────────────────────────────────
+
+  function getBoardSquare(e: React.MouseEvent): string | null {
+    if (!boardRef.current) return null
+    const rect = boardRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    if (x < 0 || y < 0 || x > boardSize || y > boardSize) return null
+    return pixelToSquare(x, y, boardSize, boardOrientation)
   }
 
-  function onSquareClick(square: string) {
+  function handleMouseDown(e: React.MouseEvent) {
+    if (e.button !== 0) return
     if (disabled || feedback === 'opponent' || feedback === 'skipping') return
-    if (blockClickRef.current) return
+    const sq = getBoardSquare(e)
+    if (!sq) return
+    mouseDownSquareRef.current = sq
+    mouseDownPosRef.current = { x: e.clientX, y: e.clientY }
+    isDraggingRef.current = false
 
-    if (selectedSquare === null) {
-      if (isOwnPiece(square)) {
-        setSelectedSquare(square)
-        highlightMoves(square)
+    // Si hay pieza propia — guardar para posible drag
+    if (isOwnPiece(sq)) {
+      const p = game.get(sq as any)!
+      setDragPiece((p.color === 'w' ? 'w' : 'b') + p.type.toUpperCase())
+    }
+  }
+
+  function handleMouseMove(e: React.MouseEvent) {
+    if (!mouseDownSquareRef.current || !mouseDownPosRef.current) return
+    if (disabled || feedback === 'opponent' || feedback === 'skipping') return
+
+    const dx = e.clientX - mouseDownPosRef.current.x
+    const dy = e.clientY - mouseDownPosRef.current.y
+    const dist = Math.sqrt(dx * dx + dy * dy)
+
+    if (!isDraggingRef.current && dist > DRAG_THRESHOLD) {
+      // Solo iniciar drag si es pieza propia
+      if (isOwnPiece(mouseDownSquareRef.current)) {
+        isDraggingRef.current = true
+        setDraggedSquare(mouseDownSquareRef.current)
+        setSelectedSquare(null)
+        setHighlightSquares({})
+      }
+    }
+
+    if (isDraggingRef.current) {
+      setDragPos({ x: e.clientX, y: e.clientY })
+    }
+  }
+
+  function handleMouseUp(e: React.MouseEvent) {
+    if (e.button !== 0) return
+    const downSq = mouseDownSquareRef.current
+    mouseDownSquareRef.current = null
+    mouseDownPosRef.current = null
+
+    if (!downSq) return
+    if (disabled || feedback === 'opponent' || feedback === 'skipping') {
+      isDraggingRef.current = false
+      setDraggedSquare(null)
+      setDragPos(null)
+      return
+    }
+
+    const upSq = getBoardSquare(e)
+
+    if (isDraggingRef.current) {
+      // Fin de drag
+      isDraggingRef.current = false
+      setDraggedSquare(null)
+      setDragPos(null)
+      if (upSq && upSq !== downSq && dragPiece) {
+        processMove(downSq, upSq, dragPiece)
       }
       return
     }
 
-    if (square === selectedSquare) {
+    // Es un click (sin drag)
+    if (!upSq) return
+
+    if (selectedSquare === null) {
+      if (isOwnPiece(upSq)) {
+        setSelectedSquare(upSq)
+        highlightMoves(upSq)
+      }
+      return
+    }
+
+    if (upSq === selectedSquare) {
       setSelectedSquare(null)
       setHighlightSquares({})
       return
     }
 
-    if (isOwnPiece(square)) {
-      setSelectedSquare(square)
-      highlightMoves(square)
+    if (isOwnPiece(upSq)) {
+      setSelectedSquare(upSq)
+      highlightMoves(upSq)
       return
     }
-    // Si hay pieza enemiga en el destino, intentar captura directamente
-const targetPiece = game.get(square as any)
-if (targetPiece) {
-  const pieceOnSel = game.get(selectedSquare as any)
-  if (!pieceOnSel) {
-    setSelectedSquare(null)
-    setHighlightSquares({})
-    return
-  }
-  const pieceStr = (pieceOnSel.color === 'w' ? 'w' : 'b') + pieceOnSel.type.toUpperCase()
-  processMove(selectedSquare, square, pieceStr)
-  return
-}
 
+    // Mover a casilla destino (captura o casilla vacía)
     const pieceOnSelected = game.get(selectedSquare as any)
     if (!pieceOnSelected) {
       setSelectedSquare(null)
       setHighlightSquares({})
       return
     }
-
-    const pieceStr =
-      (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
-
-    const moved = processMove(selectedSquare, square, pieceStr)
+    const pieceStr = (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
+    const moved = processMove(selectedSquare, upSq, pieceStr)
     if (!moved && feedback === 'idle') {
       setSelectedSquare(null)
       setHighlightSquares({})
     }
   }
 
-  const boardOrientation = playerColor === 'white' ? 'white' : 'black'
+  function handleMouseLeave() {
+    if (isDraggingRef.current) {
+      // Si sale del board cancelar drag
+      isDraggingRef.current = false
+      setDraggedSquare(null)
+      setDragPos(null)
+      mouseDownSquareRef.current = null
+      mouseDownPosRef.current = null
+    }
+  }
+
+  // Pieza siendo arrastrada visualmente
+  const dragPieceImage = dragPiece ? `/pieces/${dragPiece}.svg` : null
 
   const isPlayerTurn = feedback !== 'opponent' && feedback !== 'skipping' && solutionIndex < puzzle.solution.length
   const turnLabel =
-    feedback === 'skipping'
-      ? 'Pasando al siguiente...'
-      : feedback === 'opponent'
-      ? 'Rival respondiendo...'
-      : `Tu turno · ${playerColor === 'white' ? '♔ Blancas' : '♚ Negras'}`
-  const turnDot =
-    feedback === 'skipping' || feedback === 'opponent' ? 'bg-bone-3' : 'bg-amber animate-pulse'
-  const turnText =
-    feedback === 'skipping'
-      ? 'text-red-400'
-      : feedback === 'opponent'
-      ? 'text-bone-3'
-      : 'text-amber'
+    feedback === 'skipping' ? 'Pasando al siguiente...' :
+    feedback === 'opponent' ? 'Rival respondiendo...' :
+    `Tu turno · ${playerColor === 'white' ? '♔ Blancas' : '♚ Negras'}`
+  const turnDot = feedback === 'skipping' || feedback === 'opponent' ? 'bg-bone-3' : 'bg-amber animate-pulse'
+  const turnText = feedback === 'skipping' ? 'text-red-400' : feedback === 'opponent' ? 'text-bone-3' : 'text-amber'
 
-   const isLastMove = solutionIndex >= puzzle.solution.length - 1
-   const borderColor =
-    feedback === 'correct' && isLastMove
-      ? 'rgba(46,204,113,0.6)'
-      : feedback === 'wrong' || feedback === 'skipping'
-      ? 'rgba(231,76,60,0.6)'
-      : feedback === 'opponent'
-      ? 'rgba(212,160,23,0.3)'
-      : 'rgba(212,160,23,0.12)'
+  const isLastMove = solutionIndex >= puzzle.solution.length - 1
+  const borderColor =
+    feedback === 'correct' && isLastMove ? 'rgba(46,204,113,0.6)' :
+    feedback === 'wrong' || feedback === 'skipping' ? 'rgba(231,76,60,0.6)' :
+    feedback === 'opponent' ? 'rgba(212,160,23,0.3)' :
+    'rgba(212,160,23,0.12)'
+
+  // Highlight de la casilla siendo arrastrada (ocultar pieza original)
+  const allHighlights = { ...highlightSquares }
+  if (draggedSquare) {
+    allHighlights[draggedSquare] = { background: 'rgba(212,160,23,0.3)' }
+  }
 
   return (
     <div>
@@ -355,22 +407,26 @@ if (targetPiece) {
         )}
       </div>
 
-      {isPlayerTurn && !selectedSquare && (
+      {isPlayerTurn && !selectedSquare && !draggedSquare && (
         <p className="font-mono text-xs text-bone-3 mb-2 text-center">
           Haz clic en una pieza para seleccionarla
         </p>
       )}
-      {isPlayerTurn && selectedSquare && (
+      {isPlayerTurn && (selectedSquare || draggedSquare) && (
         <p className="font-mono text-xs text-amber mb-2 text-center">
           Pieza seleccionada — haz clic en la casilla destino
         </p>
       )}
 
       <div
-  className="relative"
-  style={{ width: boardSize }}
-  
->
+        ref={boardRef}
+        className="relative"
+        style={{ width: boardSize, userSelect: 'none' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
         <div
           className="board-shadow rounded-sm overflow-hidden transition-all duration-300"
           style={{
@@ -380,34 +436,35 @@ if (targetPiece) {
         >
           <Chessboard
             position={game.fen()}
-            onPieceDrop={onDrop}
-            onSquareClick={onSquareClick}
-            onPieceDragBegin={() => {
-              setSelectedSquare(null)
-              setHighlightSquares({})
-            }}
-            onPieceDragEnd={() => {
-              setSelectedSquare(null)
-              setHighlightSquares({})
-            }}
+            onPieceDrop={() => false}
+            onSquareClick={() => {}}
             boardOrientation={boardOrientation}
-            customSquareStyles={highlightSquares}
+            customSquareStyles={allHighlights}
             boardWidth={boardSize}
-            isDraggablePiece={({ piece }) => {
-              if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
-              if (justMovedRef.current) return false
-              const isOwn = playerColor === 'white' ? piece.startsWith('w') : piece.startsWith('b')
-              return isOwn
-            }}
-            customBoardStyle={{
-              borderRadius: '2px',
-            }}
+            arePiecesDraggable={false}
+            customBoardStyle={{ borderRadius: '2px', cursor: 'default' }}
             customDarkSquareStyle={{ backgroundColor: '#2C2C3E' }}
             customLightSquareStyle={{ backgroundColor: '#4A4A60' }}
-            animationDuration={200}
-      
+            animationDuration={150}
           />
         </div>
+
+        {/* Pieza flotante durante drag */}
+        {isDraggingRef.current && dragPos && dragPieceImage && (
+          <img
+            src={dragPieceImage}
+            style={{
+              position: 'fixed',
+              left: dragPos.x - boardSize / 16,
+              top: dragPos.y - boardSize / 16,
+              width: boardSize / 8,
+              height: boardSize / 8,
+              pointerEvents: 'none',
+              zIndex: 9999,
+            }}
+            alt=""
+          />
+        )}
 
         {feedback === 'wrong' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
