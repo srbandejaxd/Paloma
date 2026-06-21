@@ -168,7 +168,7 @@ export default function PuzzleBoard({
           [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
           [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
         })
-        setTimeout(() => setGame(gameCopy), 50)
+        setTimeout(() => setGame(gameCopy), 200)
         const nextPlayerIndex = nextIndex + 1
         setSolutionIndex(nextPlayerIndex)
         setFeedback('idle')
