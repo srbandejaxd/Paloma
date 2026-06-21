@@ -193,7 +193,10 @@ export default function PuzzleBoard({
       [square]: { background: 'rgba(212,160,23,0.5)' },
     }
     moves.forEach((m: any) => {
-      highlights[m.to] = { background: 'rgba(212,160,23,0.2)' }
+      const hasEnemy = !!game.get(m.to as any)
+      highlights[m.to] = hasEnemy
+        ? { background: 'radial-gradient(circle, rgba(0,0,0,0.15) 85%, transparent 85%)' }
+        : { background: 'radial-gradient(circle, rgba(0,0,0,0.2) 30%, transparent 30%)' }
     })
     setHighlightSquares(highlights)
   }
