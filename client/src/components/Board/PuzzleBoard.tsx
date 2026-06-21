@@ -93,6 +93,34 @@ export default function PuzzleBoard({
   const DRAG_THRESHOLD = 6 // pixels antes de considerar drag
 
   useEffect(() => { errorsRef.current = errors }, [errors])
+  useEffect(() => {
+  function onWindowMouseMove(e: MouseEvent) {
+    if (!isDraggingRef.current) return
+    setDragPos({ x: e.clientX, y: e.clientY })
+  }
+  function onWindowMouseUp(e: MouseEvent) {
+    if (!isDraggingRef.current) return
+    const downSq = mouseDownSquareRef.current
+    isDraggingRef.current = false
+    setDraggedSquare(null)
+    setDragPos(null)
+    mouseDownSquareRef.current = null
+    mouseDownPosRef.current = null
+    if (!boardRef.current || !downSq || !dragPiece) return
+    const rect = boardRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    if (x < 0 || y < 0 || x > boardSize || y > boardSize) return
+    const upSq = pixelToSquare(x, y, boardSize, boardOrientation)
+    if (upSq !== downSq) processMove(downSq, upSq, dragPiece)
+  }
+  window.addEventListener('mousemove', onWindowMouseMove)
+  window.addEventListener('mouseup', onWindowMouseUp)
+  return () => {
+    window.removeEventListener('mousemove', onWindowMouseMove)
+    window.removeEventListener('mouseup', onWindowMouseUp)
+  }
+}, [dragPiece, boardSize, boardOrientation])
 
   const boardSize = useBoardSize()
 
@@ -361,14 +389,7 @@ export default function PuzzleBoard({
   }
 
   function handleMouseLeave() {
-    if (isDraggingRef.current) {
-      // Si sale del board cancelar drag
-      isDraggingRef.current = false
-      setDraggedSquare(null)
-      setDragPos(null)
-      mouseDownSquareRef.current = null
-      mouseDownPosRef.current = null
-    }
+  // No cancelar drag al salir — se maneja en window
   }
 
   // Pieza siendo arrastrada visualmente
@@ -394,6 +415,14 @@ export default function PuzzleBoard({
   if (draggedSquare) {
     allHighlights[draggedSquare] = { background: 'rgba(212,160,23,0.3)' }
   }
+  useEffect(() => {
+  if (!draggedSquare) return
+  const style = document.createElement('style')
+  style.id = 'drag-hide'
+  style.textContent = `[data-square="${draggedSquare}"] piece { opacity: 0 !important; }`
+  document.head.appendChild(style)
+  return () => document.getElementById('drag-hide')?.remove()
+}, [draggedSquare])
 
   return (
     <div>
@@ -443,8 +472,8 @@ export default function PuzzleBoard({
             boardWidth={boardSize}
             arePiecesDraggable={false}
             customBoardStyle={{ borderRadius: '2px', cursor: 'default' }}
-            customDarkSquareStyle={{ backgroundColor: '#2C2C3E' }}
-            customLightSquareStyle={{ backgroundColor: '#4A4A60' }}
+            customDarkSquareStyle={{ backgroundColor: '#b58863' }}
+            customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
             animationDuration={150}
           />
         </div>
