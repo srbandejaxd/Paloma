@@ -478,7 +478,7 @@ export default function PuzzleBoard({
             customBoardStyle={{ borderRadius: '2px', cursor: 'default' }}
             customDarkSquareStyle={{ backgroundColor: '#b58863' }}
             customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
-            animationDuration={400}
+            animationDuration={700}
           />
         </div>
 
