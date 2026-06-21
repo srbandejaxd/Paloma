@@ -168,7 +168,7 @@ export default function PuzzleBoard({
           [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
           [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
         })
-        setGame(gameCopy)
+        setTimeout(() => setGame(gameCopy), 50)
         const nextPlayerIndex = nextIndex + 1
         setSolutionIndex(nextPlayerIndex)
         setFeedback('idle')
@@ -478,7 +478,7 @@ export default function PuzzleBoard({
             customBoardStyle={{ borderRadius: '2px', cursor: 'default' }}
             customDarkSquareStyle={{ backgroundColor: '#b58863' }}
             customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
-            animationDuration={150}
+            animationDuration={400}
           />
         </div>
 
