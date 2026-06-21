@@ -416,6 +416,16 @@ export default function PuzzleBoard({
     document.head.appendChild(style)
     return () => document.getElementById('drag-hide')?.remove()
   }, [draggedSquare])
+  // Ocultar pieza original del rival durante animación
+  useEffect(() => {
+    if (!opponentAnim) return
+    const style = document.createElement('style')
+    style.id = 'opponent-hide'
+    style.textContent = `[data-square="${opponentAnim.from}"] > div > div { opacity: 0 !important; }`
+    document.head.appendChild(style)
+    return () => document.getElementById('opponent-hide')?.remove()
+  }, [opponentAnim])
+
 
   return (
     <div>
@@ -467,7 +477,7 @@ export default function PuzzleBoard({
             customBoardStyle={{ borderRadius: '2px', cursor: 'default' }}
             customDarkSquareStyle={{ backgroundColor: '#b58863' }}
             customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
-            animationDuration={350}
+            animationDuration={600}
           />
         </div>
 
