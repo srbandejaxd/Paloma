@@ -371,10 +371,11 @@ export default function PuzzleBoard({
       } else {
         // Tocar una casilla destino (vacía o pieza rival): intento de movimiento
         // ya en el mouseDown, como en lichess/chess.com.
-        const pieceOnSelected = gameRef.current.get(selectedSquareRef.current as any)
-        if (pieceOnSelected) {
+        const fromSq = selectedSquareRef.current
+        const pieceOnSelected = fromSq ? gameRef.current.get(fromSq as any) : null
+        if (fromSq && pieceOnSelected) {
           const pieceStr = (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
-          processMove(selectedSquareRef.current, sq, pieceStr)
+          processMove(fromSq, sq, pieceStr)
         }
         mouseDownSquareRef.current = null
         mouseDownPosRef.current = null
