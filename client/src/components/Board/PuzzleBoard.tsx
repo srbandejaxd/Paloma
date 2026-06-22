@@ -491,21 +491,24 @@ export default function PuzzleBoard({
           />
         </div>
 
-        {isDragging && dragPos && dragPieceImage && (
-          <img
-            src={dragPieceImage}
-            style={{
-              position: 'fixed',
-              left: dragPos.x - boardSize / 16,
-              top: dragPos.y - boardSize / 16,
-              width: boardSize / 8,
-              height: boardSize / 8,
-              pointerEvents: 'none',
-              zIndex: 9999,
-            }}
-            alt=""
-          />
-        )}
+        {/* Pre-render all piece images hidden so browser decodes them before first drag */}
+        {PIECE_CODES.map(code => (
+          <img key={code} src={`/pieces/${code}.svg`} style={{ position: 'fixed', left: -9999, top: -9999, width: 1, height: 1, pointerEvents: 'none' }} alt="" />
+        ))}
+        <img
+          src={dragPieceImage ?? undefined}
+          style={{
+            position: 'fixed',
+            left: dragPos ? dragPos.x - boardSize / 16 : -9999,
+            top: dragPos ? dragPos.y - boardSize / 16 : -9999,
+            width: boardSize / 8,
+            height: boardSize / 8,
+            pointerEvents: 'none',
+            zIndex: 9999,
+            visibility: isDragging && dragPos && dragPieceImage ? 'visible' : 'hidden',
+          }}
+          alt=""
+        />
 
         {feedback === 'wrong' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
