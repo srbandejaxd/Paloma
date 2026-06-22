@@ -132,7 +132,6 @@ export default function PuzzleBoard({
       const downSq = mouseDownSquareRef.current
       const wasDragging = isDraggingRef.current
 
-      // Reset drag state
       isDraggingRef.current = false
       mouseDownSquareRef.current = null
       mouseDownPosRef.current = null
@@ -148,20 +147,21 @@ export default function PuzzleBoard({
         return
       }
 
-      // Es click — procesar aunque el mouseUp sea fuera del board
+      // Click sin drag — si no se procesó en mouseDown, procesar aquí (primer click selección)
       if (!downSq) return
       if (feedbackRef.current === 'opponent' || feedbackRef.current === 'skipping') return
-
       const upSq = getSquareFromEvent(e)
-      // Si mouseUp está fuera del board, usar downSq como destino no tiene sentido
-      // pero si hay pieza seleccionada y el mouseUp fue fuera, cancelar selección
-      if (!upSq) {
+      if (!upSq || upSq !== downSq) return // solo si mouseUp está en la misma casilla que mouseDown
+      // Seleccionar pieza propia
+      if (!selectedSquareRef.current && isOwnPieceRef.current(upSq)) {
+        setSelectedSquare(upSq)
+        selectedSquareRef.current = upSq
+        highlightMovesRef.current(upSq)
+      } else if (selectedSquareRef.current === upSq) {
         setSelectedSquare(null)
+        selectedSquareRef.current = null
         setHighlightSquares({})
-        return
       }
-
-      handleClickLogic(downSq, upSq)
     }
 
     window.addEventListener('mousemove', onWindowMouseMove)
@@ -267,6 +267,8 @@ export default function PuzzleBoard({
 
   // Ref para processMove para evitar stale closure en window events
   const processMoveRef = useRef<(src: string, tgt: string, piece: string) => boolean>(() => false)
+  const isOwnPieceRef = useRef<(sq: string) => boolean>(() => false)
+  const highlightMovesRef = useRef<(sq: string) => void>(() => {})
 
   function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
     if (disabled || feedbackRef.current === 'opponent' || feedbackRef.current === 'skipping') return false
@@ -350,6 +352,8 @@ export default function PuzzleBoard({
   }
 
   useEffect(() => { processMoveRef.current = processMove }, )
+  useEffect(() => { isOwnPieceRef.current = isOwnPiece }, )
+  useEffect(() => { highlightMovesRef.current = highlightMoves }, )
 
   function handleClickLogic(downSq: string, upSq: string) {
     // Si es el mismo square, deseleccionar
@@ -431,6 +435,34 @@ export default function PuzzleBoard({
     const y = e.clientY - rect.top
     const sq = pixelToSquare(x, y, boardSize, boardOrientation)
     if (!sq) return
+
+    // Si hay pieza seleccionada y click en casilla diferente — ejecutar movimiento YA en mouseDown
+    if (selectedSquareRef.current && selectedSquareRef.current !== sq) {
+      if (isOwnPiece(sq)) {
+        // Cambiar selección
+        setSelectedSquare(sq)
+        selectedSquareRef.current = sq
+        highlightMoves(sq)
+        mouseDownSquareRef.current = sq
+        mouseDownPosRef.current = { x: e.clientX, y: e.clientY }
+        isDraggingRef.current = false
+        const p = gameRef.current.get(sq as any)!
+        const pc = (p.color === 'w' ? 'w' : 'b') + p.type.toUpperCase()
+        setDragPiece(pc)
+        dragPieceRef.current = pc
+      } else {
+        // Mover inmediatamente en mouseDown
+        const pieceOnSelected = gameRef.current.get(selectedSquareRef.current as any)
+        if (pieceOnSelected) {
+          const pieceStr = (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
+          processMove(selectedSquareRef.current, sq, pieceStr)
+        }
+        mouseDownSquareRef.current = null
+        mouseDownPosRef.current = null
+      }
+      return
+    }
+
     mouseDownSquareRef.current = sq
     mouseDownPosRef.current = { x: e.clientX, y: e.clientY }
     isDraggingRef.current = false
