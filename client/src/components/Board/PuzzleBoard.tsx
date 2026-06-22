@@ -80,6 +80,7 @@ export default function PuzzleBoard({
   const [draggedSquare, setDraggedSquare] = useState<string | null>(null)
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
   const [dragPiece, setDragPiece] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
@@ -92,8 +93,6 @@ export default function PuzzleBoard({
   const gameRef = useRef<Chess>(new Chess())
   const feedbackRef = useRef<FeedbackState>('idle')
   const dragPieceRef = useRef<string | null>(null)
-  const DRAG_THRESHOLD = 6
-
   useEffect(() => { errorsRef.current = errors }, [errors])
   useEffect(() => { selectedSquareRef.current = selectedSquare }, [selectedSquare])
   useEffect(() => { feedbackRef.current = feedback }, [feedback])
@@ -137,6 +136,7 @@ export default function PuzzleBoard({
       mouseDownPosRef.current = null
 
       if (wasDragging) {
+        setIsDragging(false)
         setDraggedSquare(null)
         setDragPos(null)
         if (!downSq || !dragPieceRef.current) return
@@ -150,6 +150,9 @@ export default function PuzzleBoard({
       // Click simple sin arrastre real: la selección (click-to-move) ya se
       // armó en mouseDown, así que no hay que hacer nada más aquí. Permanece
       // activa hasta que se toque una casilla destino u otra pieza.
+      // Pero sí limpiamos el estado visual de drag para no dejar la imagen flotante.
+      setIsDragging(false)
+      setDragPos(null)
     }
 
     window.addEventListener('mousemove', onWindowMouseMove)
@@ -177,6 +180,7 @@ export default function PuzzleBoard({
     setDraggedSquare(null)
     setDragPos(null)
     setDragPiece(null)
+    setIsDragging(false)
     isDraggingRef.current = false
     startTimeRef.current = Date.now()
   }, [puzzle])
@@ -340,7 +344,10 @@ export default function PuzzleBoard({
   function armDrag(sq: string, e: React.MouseEvent) {
     mouseDownSquareRef.current = sq
     mouseDownPosRef.current = { x: e.clientX, y: e.clientY }
-    isDraggingRef.current = false
+    isDraggingRef.current = true
+    setIsDragging(true)
+    setDraggedSquare(sq)
+    setDragPos({ x: e.clientX, y: e.clientY })
     const p = gameRef.current.get(sq as any)!
     const pc = (p.color === 'w' ? 'w' : 'b') + p.type.toUpperCase()
     setDragPiece(pc)
@@ -401,18 +408,6 @@ export default function PuzzleBoard({
   function handleMouseMove(e: React.MouseEvent) {
     if (!mouseDownSquareRef.current || !mouseDownPosRef.current) return
     if (disabled || feedbackRef.current === 'opponent' || feedbackRef.current === 'skipping') return
-    const dx = e.clientX - mouseDownPosRef.current.x
-    const dy = e.clientY - mouseDownPosRef.current.y
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    if (!isDraggingRef.current && dist > DRAG_THRESHOLD) {
-      if (isOwnPiece(mouseDownSquareRef.current)) {
-        isDraggingRef.current = true
-        setDraggedSquare(mouseDownSquareRef.current)
-        // La selección (highlights de movimientos legales) NO se borra al
-        // empezar a arrastrar: el click-to-move sigue armado por debajo del
-        // drag, tal como en lichess/chess.com. Solo se cancela con el mouseUp.
-      }
-    }
     if (isDraggingRef.current) setDragPos({ x: e.clientX, y: e.clientY })
   }
 
@@ -489,7 +484,7 @@ export default function PuzzleBoard({
           />
         </div>
 
-        {isDraggingRef.current && dragPos && dragPieceImage && (
+        {isDragging && dragPos && dragPieceImage && (
           <img
             src={dragPieceImage}
             style={{
