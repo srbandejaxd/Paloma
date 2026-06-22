@@ -120,7 +120,7 @@ export default function PuzzleBoard({
       const rect = boardRef.current.getBoundingClientRect()
       const x = e.clientX - rect.left
       const y = e.clientY - rect.top
-      return pixelToSquare(x, y, boardSizeRef.current, playerColorRef.current)
+      return pixelToSquare(x, y, boardSizeRef.current, playerColorRef.current as 'white' | 'black')
     }
 
     function onWindowMouseMove(e: MouseEvent) {
