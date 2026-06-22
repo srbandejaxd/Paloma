@@ -25,6 +25,13 @@ errorSound.preload = 'auto'
 
 const OPPONENT_ANIM_MS = 500
 
+// Preload all piece images so the drag ghost never flashes on first use
+const PIECE_CODES = ['wP','wN','wB','wR','wQ','wK','bP','bN','bB','bR','bQ','bK']
+PIECE_CODES.forEach(code => {
+  const img = new Image()
+  img.src = `/pieces/${code}.svg`
+})
+
 function moveFromSAN(game: Chess, san: string): { from: string; to: string; promotion?: string } | null {
   try {
     const result = game.move(san)
