@@ -217,18 +217,14 @@ export default function PuzzleBoard({
       setGame(gameCopy)
       gameRef.current = gameCopy
 
-      // Mostrar highlights
       setHighlightSquares({
         [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
         [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
       })
 
-      // Actualizar displayFen en el siguiente frame para que react-chessboard anime
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setDisplayFen(gameCopy.fen())
-        })
-      })
+      setTimeout(() => {
+        setDisplayFen(gameCopy.fen())
+      }, 50)
 
       const nextPlayerIndex = nextIndex + 1
       setSolutionIndex(nextPlayerIndex)
