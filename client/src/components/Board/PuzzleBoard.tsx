@@ -23,15 +23,15 @@ captureSound.preload = 'auto'
 correctSound.preload = 'auto'
 errorSound.preload = 'auto'
 
+const OPPONENT_ANIM_MS = 500
+
 function moveFromSAN(game: Chess, san: string): { from: string; to: string; promotion?: string } | null {
   try {
     const result = game.move(san)
     if (!result) return null
     game.undo()
     return { from: result.from, to: result.to, promotion: result.promotion }
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
 
 function useBoardSize() {
@@ -40,9 +40,8 @@ function useBoardSize() {
     const calc = () => {
       const vw = window.innerWidth
       const vh = window.innerHeight
-      if (vw < 640) {
-        setSize(Math.min(vw - 32, 480))
-      } else {
+      if (vw < 640) setSize(Math.min(vw - 32, 480))
+      else {
         const available = Math.min(vw * 0.5, vh - 180)
         setSize(Math.min(Math.max(available, 320), 680))
       }
@@ -54,13 +53,12 @@ function useBoardSize() {
   return size
 }
 
-function pixelToSquare(x: number, y: number, boardSize: number, orientation: 'white' | 'black'): string {
+function pixelToSquare(x: number, y: number, boardSize: number, orientation: 'white' | 'black'): string | null {
   const col = Math.floor(x / (boardSize / 8))
   const row = Math.floor(y / (boardSize / 8))
-  const clampedCol = Math.max(0, Math.min(7, col))
-  const clampedRow = Math.max(0, Math.min(7, row))
-  const file = orientation === 'white' ? clampedCol : 7 - clampedCol
-  const rank = orientation === 'white' ? 7 - clampedRow : clampedRow
+  if (col < 0 || col > 7 || row < 0 || row > 7) return null
+  const file = orientation === 'white' ? col : 7 - col
+  const rank = orientation === 'white' ? 7 - row : row
   return 'abcdefgh'[file] + (rank + 1)
 }
 
@@ -90,63 +88,113 @@ export default function PuzzleBoard({
   const isDraggingRef = useRef(false)
   const mouseDownSquareRef = useRef<string | null>(null)
   const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null)
+  const selectedSquareRef = useRef<string | null>(null)
+  const gameRef = useRef<Chess>(new Chess())
+  const feedbackRef = useRef<FeedbackState>('idle')
+  const dragPieceRef = useRef<string | null>(null)
   const DRAG_THRESHOLD = 6
 
   useEffect(() => { errorsRef.current = errors }, [errors])
+  useEffect(() => { selectedSquareRef.current = selectedSquare }, [selectedSquare])
+  useEffect(() => { feedbackRef.current = feedback }, [feedback])
+  useEffect(() => { dragPieceRef.current = dragPiece }, [dragPiece])
+  useEffect(() => { gameRef.current = game }, [game])
 
   const boardSize = useBoardSize()
+  const boardSizeRef = useRef(boardSize)
+  useEffect(() => { boardSizeRef.current = boardSize }, [boardSize])
+
   const playerColor = (() => {
     const parts = puzzle.fen.split(' ')
     return parts[1] === 'w' ? 'white' : 'black'
   })()
+  const playerColorRef = useRef(playerColor)
+  useEffect(() => { playerColorRef.current = playerColor }, [playerColor])
+
   const boardOrientation = playerColor
 
+  // ── Window-level mouse events (captura mouseUp aunque esté fuera del board) ─
   useEffect(() => {
+    function getSquareFromEvent(e: MouseEvent): string | null {
+      if (!boardRef.current) return null
+      const rect = boardRef.current.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      return pixelToSquare(x, y, boardSizeRef.current, playerColorRef.current)
+    }
+
     function onWindowMouseMove(e: MouseEvent) {
       if (!isDraggingRef.current) return
       setDragPos({ x: e.clientX, y: e.clientY })
     }
+
     function onWindowMouseUp(e: MouseEvent) {
-      if (!isDraggingRef.current) return
       const downSq = mouseDownSquareRef.current
+      const wasDragging = isDraggingRef.current
+
+      // Reset drag state
       isDraggingRef.current = false
-      setDraggedSquare(null)
-      setDragPos(null)
       mouseDownSquareRef.current = null
       mouseDownPosRef.current = null
-      if (!boardRef.current || !downSq || !dragPiece) return
-      const rect = boardRef.current.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      if (x < 0 || y < 0 || x > boardSize || y > boardSize) return
-      const upSq = pixelToSquare(x, y, boardSize, boardOrientation)
-      if (upSq !== downSq) processMove(downSq, upSq, dragPiece)
+
+      if (wasDragging) {
+        setDraggedSquare(null)
+        setDragPos(null)
+        if (!downSq || !dragPieceRef.current) return
+        const upSq = getSquareFromEvent(e)
+        if (upSq && upSq !== downSq) {
+          processMoveRef.current(downSq, upSq, dragPieceRef.current)
+        }
+        return
+      }
+
+      // Es click — procesar aunque el mouseUp sea fuera del board
+      if (!downSq) return
+      if (feedbackRef.current === 'opponent' || feedbackRef.current === 'skipping') return
+
+      const upSq = getSquareFromEvent(e)
+      // Si mouseUp está fuera del board, usar downSq como destino no tiene sentido
+      // pero si hay pieza seleccionada y el mouseUp fue fuera, cancelar selección
+      if (!upSq) {
+        setSelectedSquare(null)
+        setHighlightSquares({})
+        return
+      }
+
+      handleClickLogic(downSq, upSq)
     }
+
     window.addEventListener('mousemove', onWindowMouseMove)
     window.addEventListener('mouseup', onWindowMouseUp)
     return () => {
       window.removeEventListener('mousemove', onWindowMouseMove)
       window.removeEventListener('mouseup', onWindowMouseUp)
     }
-  }, [dragPiece, boardSize, boardOrientation])
+  }, [])
 
   useEffect(() => {
     const newGame = new Chess()
     try { newGame.load(puzzle.fen) } catch { console.error('Invalid FEN:', puzzle.fen) }
     setGame(newGame)
+    gameRef.current = newGame
     setDisplayFen(newGame.fen())
     setSolutionIndex(0)
     setErrors(0)
     errorsRef.current = 0
     setFeedback('idle')
+    feedbackRef.current = 'idle'
     setHighlightSquares({})
     setSelectedSquare(null)
+    selectedSquareRef.current = null
     setDraggedSquare(null)
     setDragPos(null)
     setDragPiece(null)
     isDraggingRef.current = false
     startTimeRef.current = Date.now()
   }, [puzzle])
+
+  const solutionIndexRef = useRef(0)
+  useEffect(() => { solutionIndexRef.current = solutionIndex }, [solutionIndex])
 
   const playOpponentMove = useCallback(
     (currentGame: Chess, currentIndex: number) => {
@@ -160,48 +208,56 @@ export default function PuzzleBoard({
       const gameCopy = new Chess()
       gameCopy.loadPgn(currentGame.pgn())
       const moveResult = gameCopy.move(opponentSAN)
-      if (moveResult) {
-        if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
-        else { moveSound.currentTime = 0; moveSound.play() }
+      if (!moveResult) return
 
-        // Primero actualizar el juego lógico pero mantener displayFen en posición anterior
-        // Luego en el siguiente frame actualizar displayFen para que react-chessboard anime
-        setGame(gameCopy)
-        setHighlightSquares({
-          [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
-          [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
-        })
+      if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
+      else { moveSound.currentTime = 0; moveSound.play() }
+
+      // Actualizar juego lógico inmediatamente (para que isOwnPiece etc. sean correctos)
+      setGame(gameCopy)
+      gameRef.current = gameCopy
+
+      // Mostrar highlights
+      setHighlightSquares({
+        [moveResult.from]: { background: 'rgba(212,160,23,0.25)' },
+        [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
+      })
+
+      // Actualizar displayFen en el siguiente frame para que react-chessboard anime
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setDisplayFen(gameCopy.fen())
-          })
+          setDisplayFen(gameCopy.fen())
         })
+      })
 
-        const nextPlayerIndex = nextIndex + 1
-        setSolutionIndex(nextPlayerIndex)
-        setFeedback('idle')
-        if (nextPlayerIndex >= puzzle.solution.length) {
-          const elapsed = Date.now() - startTimeRef.current
-          correctSound.currentTime = 0; correctSound.play()
-          setTimeout(() => onSolved(elapsed, errorsRef.current), 400)
-        }
+      const nextPlayerIndex = nextIndex + 1
+      setSolutionIndex(nextPlayerIndex)
+      solutionIndexRef.current = nextPlayerIndex
+      setFeedback('idle')
+      feedbackRef.current = 'idle'
+
+      if (nextPlayerIndex >= puzzle.solution.length) {
+        const elapsed = Date.now() - startTimeRef.current
+        correctSound.currentTime = 0; correctSound.play()
+        setTimeout(() => onSolved(elapsed, errorsRef.current), OPPONENT_ANIM_MS + 100)
       }
     },
     [puzzle.solution, onSolved]
   )
 
-  function isOwnPiece(square: string): boolean {
-    const p = game.get(square as any)
-    return !!p && (playerColor === 'white' ? p.color === 'w' : p.color === 'b')
+  function isOwnPiece(square: string, g?: Chess): boolean {
+    const chess = g || gameRef.current
+    const p = chess.get(square as any)
+    return !!p && (playerColorRef.current === 'white' ? p.color === 'w' : p.color === 'b')
   }
 
   function highlightMoves(square: string) {
-    const moves = game.moves({ square: square as any, verbose: true })
+    const moves = gameRef.current.moves({ square: square as any, verbose: true })
     const highlights: Record<string, { background: string }> = {
       [square]: { background: 'rgba(212,160,23,0.5)' },
     }
     moves.forEach((m: any) => {
-      const hasEnemy = !!game.get(m.to as any)
+      const hasEnemy = !!gameRef.current.get(m.to as any)
       highlights[m.to] = hasEnemy
         ? { background: 'radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 78%, rgba(80,150,80,0.6) 78%, rgba(80,150,80,0.6) 100%)' }
         : { background: 'radial-gradient(circle, rgba(80,150,80,0.5) 20%, transparent 20%)' }
@@ -209,32 +265,34 @@ export default function PuzzleBoard({
     setHighlightSquares(highlights)
   }
 
-  function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
-    if (disabled || feedback === 'opponent' || feedback === 'skipping') return false
+  // Ref para processMove para evitar stale closure en window events
+  const processMoveRef = useRef<(src: string, tgt: string, piece: string) => boolean>(() => false)
 
-    const expectedSAN = puzzle.solution[solutionIndex]
+  function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
+    if (disabled || feedbackRef.current === 'opponent' || feedbackRef.current === 'skipping') return false
+
+    const currentGame = gameRef.current
+    const currentSolutionIndex = solutionIndexRef.current
+    const expectedSAN = puzzle.solution[currentSolutionIndex]
     const gameCopy = new Chess()
-    gameCopy.loadPgn(game.pgn())
+    gameCopy.loadPgn(currentGame.pgn())
 
     let moveResult
     try {
       const isPromotion = piece.toLowerCase().includes('p') &&
         (targetSquare[1] === '8' || targetSquare[1] === '1')
-      moveResult = gameCopy.move({
-        from: sourceSquare,
-        to: targetSquare,
-        promotion: isPromotion ? 'q' : undefined,
-      })
+      moveResult = gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: isPromotion ? 'q' : undefined })
     } catch { return false }
 
     if (!moveResult) return false
 
-    const expectedMove = moveFromSAN(new Chess(game.fen()), expectedSAN)
+    const expectedMove = moveFromSAN(new Chess(currentGame.fen()), expectedSAN)
     const isCorrect = expectedMove &&
       expectedMove.from === moveResult.from &&
       expectedMove.to === moveResult.to
 
     setSelectedSquare(null)
+    selectedSquareRef.current = null
 
     if (isCorrect) {
       if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
@@ -244,20 +302,22 @@ export default function PuzzleBoard({
         [moveResult.to]: { background: 'rgba(46,204,113,0.4)' },
       })
       setGame(gameCopy)
+      gameRef.current = gameCopy
       setDisplayFen(gameCopy.fen())
 
-      const isLastPlayerMove = solutionIndex + 1 >= puzzle.solution.length
-      if (isLastPlayerMove) setFeedback('correct')
+      const isLastPlayerMove = currentSolutionIndex + 1 >= puzzle.solution.length
+      if (isLastPlayerMove) { setFeedback('correct'); feedbackRef.current = 'correct' }
 
       clearTimeout(feedbackTimeout.current)
       feedbackTimeout.current = setTimeout(() => {
         setFeedback('idle')
-        playOpponentMove(gameCopy, solutionIndex)
+        feedbackRef.current = 'idle'
+        playOpponentMove(gameCopy, currentSolutionIndex)
       }, isLastPlayerMove ? 400 : 0)
 
       return true
     } else {
-      const newErrors = errors + 1
+      const newErrors = errorsRef.current + 1
       setErrors(newErrors)
       errorsRef.current = newErrors
       setHighlightSquares({
@@ -266,11 +326,13 @@ export default function PuzzleBoard({
       })
       errorSound.currentTime = 0; errorSound.play()
       setFeedback('wrong')
+      feedbackRef.current = 'wrong'
       onError?.()
       clearTimeout(feedbackTimeout.current)
 
       if (autoSkipAfterErrors > 0 && newErrors >= autoSkipAfterErrors) {
         setFeedback('skipping')
+        feedbackRef.current = 'skipping'
         feedbackTimeout.current = setTimeout(() => {
           setHighlightSquares({})
           const elapsed = Date.now() - startTimeRef.current
@@ -280,38 +342,88 @@ export default function PuzzleBoard({
         feedbackTimeout.current = setTimeout(() => {
           setHighlightSquares({})
           setFeedback('idle')
+          feedbackRef.current = 'idle'
         }, 600)
       }
       return false
     }
   }
 
-  function getBoardSquare(e: React.MouseEvent): string | null {
-    if (!boardRef.current) return null
-    const rect = boardRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    if (x < 0 || y < 0 || x > boardSize || y > boardSize) return null
-    return pixelToSquare(x, y, boardSize, boardOrientation)
+  useEffect(() => { processMoveRef.current = processMove }, )
+
+  function handleClickLogic(downSq: string, upSq: string) {
+    // Si es el mismo square, deseleccionar
+    if (downSq === upSq) {
+      if (selectedSquareRef.current === upSq) {
+        setSelectedSquare(null)
+        selectedSquareRef.current = null
+        setHighlightSquares({})
+      } else if (isOwnPiece(upSq)) {
+        setSelectedSquare(upSq)
+        selectedSquareRef.current = upSq
+        highlightMoves(upSq)
+      }
+      return
+    }
+
+    // Si no hay selección
+    if (selectedSquareRef.current === null) {
+      if (isOwnPiece(upSq)) {
+        setSelectedSquare(upSq)
+        selectedSquareRef.current = upSq
+        highlightMoves(upSq)
+      }
+      return
+    }
+
+    // Hay selección — intentar mover
+    if (isOwnPiece(upSq)) {
+      // Cambiar selección a otra pieza propia
+      setSelectedSquare(upSq)
+      selectedSquareRef.current = upSq
+      highlightMoves(upSq)
+      return
+    }
+
+    const pieceOnSelected = gameRef.current.get(selectedSquareRef.current as any)
+    if (!pieceOnSelected) {
+      setSelectedSquare(null)
+      selectedSquareRef.current = null
+      setHighlightSquares({})
+      return
+    }
+    const pieceStr = (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
+    const moved = processMove(selectedSquareRef.current, upSq, pieceStr)
+    if (!moved && feedbackRef.current === 'idle') {
+      setSelectedSquare(null)
+      selectedSquareRef.current = null
+      setHighlightSquares({})
+    }
   }
 
   function handleMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return
-    if (disabled || feedback === 'opponent' || feedback === 'skipping') return
-    const sq = getBoardSquare(e)
+    if (disabled || feedbackRef.current === 'opponent' || feedbackRef.current === 'skipping') return
+    if (!boardRef.current) return
+    const rect = boardRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const sq = pixelToSquare(x, y, boardSize, boardOrientation)
     if (!sq) return
     mouseDownSquareRef.current = sq
     mouseDownPosRef.current = { x: e.clientX, y: e.clientY }
     isDraggingRef.current = false
     if (isOwnPiece(sq)) {
-      const p = game.get(sq as any)!
-      setDragPiece((p.color === 'w' ? 'w' : 'b') + p.type.toUpperCase())
+      const p = gameRef.current.get(sq as any)!
+      const pc = (p.color === 'w' ? 'w' : 'b') + p.type.toUpperCase()
+      setDragPiece(pc)
+      dragPieceRef.current = pc
     }
   }
 
   function handleMouseMove(e: React.MouseEvent) {
     if (!mouseDownSquareRef.current || !mouseDownPosRef.current) return
-    if (disabled || feedback === 'opponent' || feedback === 'skipping') return
+    if (disabled || feedbackRef.current === 'opponent' || feedbackRef.current === 'skipping') return
     const dx = e.clientX - mouseDownPosRef.current.x
     const dy = e.clientY - mouseDownPosRef.current.y
     const dist = Math.sqrt(dx * dx + dy * dy)
@@ -320,70 +432,11 @@ export default function PuzzleBoard({
         isDraggingRef.current = true
         setDraggedSquare(mouseDownSquareRef.current)
         setSelectedSquare(null)
+        selectedSquareRef.current = null
         setHighlightSquares({})
       }
     }
-    if (isDraggingRef.current) {
-      setDragPos({ x: e.clientX, y: e.clientY })
-    }
-  }
-
-  function handleMouseUp(e: React.MouseEvent) {
-    if (e.button !== 0) return
-    const downSq = mouseDownSquareRef.current
-    mouseDownSquareRef.current = null
-    mouseDownPosRef.current = null
-    if (!downSq) return
-    if (disabled || feedback === 'opponent' || feedback === 'skipping') {
-      isDraggingRef.current = false
-      setDraggedSquare(null)
-      setDragPos(null)
-      return
-    }
-    const upSq = getBoardSquare(e)
-    if (isDraggingRef.current) {
-      isDraggingRef.current = false
-      setDraggedSquare(null)
-      setDragPos(null)
-      if (upSq && upSq !== downSq && dragPiece) {
-        processMove(downSq, upSq, dragPiece)
-      }
-      return
-    }
-    if (!upSq) return
-    if (selectedSquare === null) {
-      if (isOwnPiece(upSq)) {
-        setSelectedSquare(upSq)
-        highlightMoves(upSq)
-      }
-      return
-    }
-    if (upSq === selectedSquare) {
-      setSelectedSquare(null)
-      setHighlightSquares({})
-      return
-    }
-    if (isOwnPiece(upSq)) {
-      setSelectedSquare(upSq)
-      highlightMoves(upSq)
-      return
-    }
-    const pieceOnSelected = game.get(selectedSquare as any)
-    if (!pieceOnSelected) {
-      setSelectedSquare(null)
-      setHighlightSquares({})
-      return
-    }
-    const pieceStr = (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
-    const moved = processMove(selectedSquare, upSq, pieceStr)
-    if (!moved && feedback === 'idle') {
-      setSelectedSquare(null)
-      setHighlightSquares({})
-    }
-  }
-
-  function handleMouseLeave() {
-    // No cancelar drag al salir — se maneja en window
+    if (isDraggingRef.current) setDragPos({ x: e.clientX, y: e.clientY })
   }
 
   const dragPieceImage = dragPiece ? `/pieces/${dragPiece}.svg` : null
@@ -395,7 +448,6 @@ export default function PuzzleBoard({
     `Tu turno · ${playerColor === 'white' ? '♔ Blancas' : '♚ Negras'}`
   const turnDot = feedback === 'skipping' || feedback === 'opponent' ? 'bg-bone-3' : 'bg-amber animate-pulse'
   const turnText = feedback === 'skipping' ? 'text-red-400' : feedback === 'opponent' ? 'text-bone-3' : 'text-amber'
-
   const isLastMove = solutionIndex >= puzzle.solution.length - 1
   const borderColor =
     feedback === 'correct' && isLastMove ? 'rgba(46,204,113,0.6)' :
@@ -404,9 +456,7 @@ export default function PuzzleBoard({
     'rgba(212,160,23,0.12)'
 
   const allHighlights = { ...highlightSquares }
-  if (draggedSquare) {
-    allHighlights[draggedSquare] = { background: 'rgba(212,160,23,0.3)' }
-  }
+  if (draggedSquare) allHighlights[draggedSquare] = { background: 'rgba(212,160,23,0.3)' }
 
   useEffect(() => {
     if (!draggedSquare) return
@@ -416,9 +466,6 @@ export default function PuzzleBoard({
     document.head.appendChild(style)
     return () => document.getElementById('drag-hide')?.remove()
   }, [draggedSquare])
-  // Ocultar pieza original del rival durante animación
- 
-
 
   return (
     <div>
@@ -433,14 +480,10 @@ export default function PuzzleBoard({
       </div>
 
       {isPlayerTurn && !selectedSquare && !draggedSquare && (
-        <p className="font-mono text-xs text-bone-3 mb-2 text-center">
-          Haz clic en una pieza para seleccionarla
-        </p>
+        <p className="font-mono text-xs text-bone-3 mb-2 text-center">Haz clic en una pieza para seleccionarla</p>
       )}
       {isPlayerTurn && (selectedSquare || draggedSquare) && (
-        <p className="font-mono text-xs text-amber mb-2 text-center">
-          Pieza seleccionada — haz clic en la casilla destino
-        </p>
+        <p className="font-mono text-xs text-amber mb-2 text-center">Pieza seleccionada — haz clic en la casilla destino</p>
       )}
 
       <div
@@ -449,15 +492,10 @@ export default function PuzzleBoard({
         style={{ width: boardSize, userSelect: 'none' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
       >
         <div
           className="board-shadow rounded-sm overflow-hidden transition-all duration-300"
-          style={{
-            width: boardSize,
-            boxShadow: `0 0 0 2px ${borderColor}, 0 0 60px ${borderColor}`,
-          }}
+          style={{ width: boardSize, boxShadow: `0 0 0 2px ${borderColor}, 0 0 60px ${borderColor}` }}
         >
           <Chessboard
             position={displayFen}
@@ -470,7 +508,7 @@ export default function PuzzleBoard({
             customBoardStyle={{ borderRadius: '2px', cursor: 'default' }}
             customDarkSquareStyle={{ backgroundColor: '#b58863' }}
             customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
-            animationDuration={600}
+            animationDuration={OPPONENT_ANIM_MS}
           />
         </div>
 
