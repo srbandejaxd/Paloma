@@ -354,17 +354,38 @@ export default function PuzzleBoard({
   function handleClickLogic(downSq: string, upSq: string) {
     // Si es el mismo square, deseleccionar
     if (downSq === upSq) {
-      if (selectedSquareRef.current === upSq) {
-        setSelectedSquare(null)
-        selectedSquareRef.current = null
-        setHighlightSquares({})
-      } else if (isOwnPiece(upSq)) {
-        setSelectedSquare(upSq)
-        selectedSquareRef.current = upSq
-        highlightMoves(upSq)
+  // Si hay pieza seleccionada y click en casilla diferente a la seleccionada — intentar mover
+  if (selectedSquareRef.current && selectedSquareRef.current !== upSq) {
+    if (isOwnPiece(upSq)) {
+      setSelectedSquare(upSq)
+      selectedSquareRef.current = upSq
+      highlightMoves(upSq)
+    } else {
+      const pieceOnSelected = gameRef.current.get(selectedSquareRef.current as any)
+      if (pieceOnSelected) {
+        const pieceStr = (pieceOnSelected.color === 'w' ? 'w' : 'b') + pieceOnSelected.type.toUpperCase()
+        const moved = processMove(selectedSquareRef.current, upSq, pieceStr)
+        if (!moved && feedbackRef.current === 'idle') {
+          setSelectedSquare(null)
+          selectedSquareRef.current = null
+          setHighlightSquares({})
+        }
       }
-      return
     }
+    return
+  }
+  // Click en la misma casilla seleccionada — deseleccionar
+  if (selectedSquareRef.current === upSq) {
+    setSelectedSquare(null)
+    selectedSquareRef.current = null
+    setHighlightSquares({})
+  } else if (isOwnPiece(upSq)) {
+    setSelectedSquare(upSq)
+    selectedSquareRef.current = upSq
+    highlightMoves(upSq)
+  }
+  return
+}
 
     // Si no hay selección
     if (selectedSquareRef.current === null) {
