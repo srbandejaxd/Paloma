@@ -136,9 +136,11 @@ export default function BlindChess() {
   }
 
   function handleSubmit() {
+    console.log('handleSubmit called', { puzzle: !!puzzle, game: !!game, inputValue, phase })
     if (!puzzle || !game) return
     const input = inputValue.trim()
     if (!input) return
+    console.log('Processing input:', input)
 
     const expectedSAN = puzzle.solution[solutionIndex]
 
