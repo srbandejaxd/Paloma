@@ -3,6 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { Chess } from 'chess.js'
 import { useAuth } from '../lib/auth'
 import { fetchBlindPuzzle, advanceBlindPuzzle, BlindPuzzle } from '../lib/api'
+const errorSound = new Audio('/sounds/error.mp3')
+const correctSound = new Audio('/sounds/correct.mp3')
+errorSound.preload = 'auto'
+correctSound.preload = 'auto'
+
+function normalizeNotation(input: string): string {
+  return input
+    .replace(/^D/g, 'Q').replace(/^T/g, 'R').replace(/^A/g, 'B').replace(/^C/g, 'N').replace(/^R(?=[a-h\d])/g, 'K')
+    .replace(/xD/g, 'xQ').replace(/xT/g, 'xR').replace(/xA/g, 'xB').replace(/xC/g, 'xN')
+}
 
 const MEMORIZE_SECONDS = 30
 
@@ -119,6 +129,7 @@ export default function BlindChess() {
   async function handleAdvance() {
     try {
       await advanceBlindPuzzle()
+      correctSound.currentTime = 0; correctSound.play()
       setPhase('correct')
       setTimeout(() => loadPuzzle(), 1500)
     } catch (e) { console.error(e) }
@@ -133,10 +144,21 @@ export default function BlindChess() {
 
     // Intentar el movimiento
     const gameCopy = new Chess()
-    gameCopy.loadPgn(game.pgn())
+    try {
+      if (game.pgn()) gameCopy.loadPgn(game.pgn())
+      else gameCopy.load(game.fen())
+    } catch { gameCopy.load(game.fen()) }
 
+    const normalized = normalizeNotation(input)
     let moveResult
-    try { moveResult = gameCopy.move(input) } catch { moveResult = null }
+    try { moveResult = gameCopy.move(normalized) } catch { moveResult = null }
+    if (!moveResult) {
+       const cleanInput = input.replace(/[+#]/g, '').trim()
+       try { moveResult = gameCopy.move(cleanInput) } catch { moveResult = null }
+       if (!moveResult) {
+        try { moveResult = gameCopy.move(input) } catch { }
+       }
+    }
 
     if (!moveResult) {
       setError('Notación inválida')
@@ -146,12 +168,17 @@ export default function BlindChess() {
     // Verificar si es el movimiento correcto comparando from/to
     let expectedResult
     try {
-      const tempGame = new Chess()
-      tempGame.loadPgn(game.pgn())
-      expectedResult = tempGame.move(expectedSAN)
+       const tempGame = new Chess()
+       try {
+        if (game.pgn()) tempGame.loadPgn(game.pgn())
+        else tempGame.load(game.fen())
+       } catch { tempGame.load(game.fen()) }
+       const cleanExpected = expectedSAN.replace(/[+#]/g, '').trim()
+       expectedResult = tempGame.move(cleanExpected)
     } catch { expectedResult = null }
 
     if (!expectedResult || moveResult.from !== expectedResult.from || moveResult.to !== expectedResult.to) {
+      errorSound.currentTime = 0; errorSound.play()
       setError(`Incorrecto. La respuesta era: ${expectedSAN}`)
       setPhase('wrong')
       setTimeout(() => {
