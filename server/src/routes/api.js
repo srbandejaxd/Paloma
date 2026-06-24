@@ -231,5 +231,54 @@ router.get('/vision/leaderboard/:mode', async (req, res) => {
     res.json(result.rows)
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
+// ─── BLIND CHESS ──────────────────────────────────────────────────────────────
+
+router.get('/blind/puzzle', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    // Obtener o crear progreso del usuario
+    let progress = await db.execute({
+      sql: 'SELECT current_puzzle, completed FROM blind_progress WHERE user_id = ?',
+      args: [req.user.userId]
+    })
+    if (progress.rows.length === 0) {
+      await db.execute({
+        sql: 'INSERT INTO blind_progress (user_id, current_puzzle) VALUES (?, 1)',
+        args: [req.user.userId]
+      })
+      progress = await db.execute({
+        sql: 'SELECT current_puzzle, completed FROM blind_progress WHERE user_id = ?',
+        args: [req.user.userId]
+      })
+    }
+    const { current_puzzle, completed } = progress.rows[0]
+    const puzzle = await db.execute({
+      sql: 'SELECT id, order_number as orderNumber, fen, solution FROM blind_puzzles WHERE order_number = ?',
+      args: [current_puzzle]
+    })
+    if (puzzle.rows.length === 0) return res.status(404).json({ error: 'Puzzle no encontrado' })
+    const p = puzzle.rows[0]
+    res.json({ ...p, solution: JSON.parse(p.solution), currentNumber: current_puzzle, completed, total: 1000 })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+router.post('/blind/advance', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const progress = await db.execute({
+      sql: 'SELECT current_puzzle FROM blind_progress WHERE user_id = ?',
+      args: [req.user.userId]
+    })
+    if (progress.rows.length === 0) return res.status(404).json({ error: 'Sin progreso' })
+    const current = progress.rows[0].current_puzzle
+    const next = current + 1
+    const completed = next > 1000 ? 1 : 0
+    await db.execute({
+      sql: 'UPDATE blind_progress SET current_puzzle = ?, completed = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+      args: [Math.min(next, 1000), completed, req.user.userId]
+    })
+    res.json({ ok: true, nextPuzzle: Math.min(next, 1000), completed })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
 
 module.exports = router

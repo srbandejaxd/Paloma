@@ -6,6 +6,7 @@ import History from './pages/History'
 import Leaderboard from './pages/Leaderboard'
 import Puzzles from './pages/Puzzles'
 import Vision from './pages/Vision'
+import BlindChess from './pages/BlindChess'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/puzzles" element={<Puzzles />} />
         <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/vision" element={<Vision />} />
+        <Route path="/blind" element={<BlindChess />} />
       </Routes>
     </AuthProvider>
   )

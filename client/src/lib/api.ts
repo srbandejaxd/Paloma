@@ -143,3 +143,30 @@ export interface VisionLeaderboardEntry {
   bestErrors: number
   totalSessions: number
 }
+
+// ─── BLIND CHESS ─────────────────────────────────────────────────────────────
+
+export interface BlindPuzzle {
+  id: number
+  orderNumber: number
+  fen: string
+  solution: string[]
+  currentNumber: number
+  completed: number
+  total: number
+}
+
+export async function fetchBlindPuzzle(): Promise<BlindPuzzle> {
+  const res = await fetch(`${BASE}/api/blind/puzzle`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch blind puzzle')
+  return res.json()
+}
+
+export async function advanceBlindPuzzle(): Promise<{ ok: boolean; nextPuzzle: number; completed: number }> {
+  const res = await fetch(`${BASE}/api/blind/advance`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to advance blind puzzle')
+  return res.json()
+}
