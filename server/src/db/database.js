@@ -981,7 +981,7 @@ const SEED_BLOCKS = [
 ]
 // ─── BLIND PUZZLES ────────────────────────────────────────────────────────────
 const BLIND_PUZZLES = [
-  {order: 1,fen: "kr6/1p6/p7/4b3/8/8/6BP/R6K w - - 0 0",solution: ["Rxa6#"]},
+  {order: 1,fen: "kr6/1p6/p7/4b3/8/8/6BP/R6K w - - 0 1",solution: ["Rxa6#"]},
   {
     order: 2,
     fen: "r2B3k/5p1p/8/8/8/b7/7P/K5R1 w - - 0 0",
