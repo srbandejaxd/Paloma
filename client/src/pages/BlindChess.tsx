@@ -144,10 +144,7 @@ export default function BlindChess() {
 
     // Intentar el movimiento
     const gameCopy = new Chess()
-    try {
-      if (game.pgn()) gameCopy.loadPgn(game.pgn())
-      else gameCopy.load(game.fen())
-    } catch { gameCopy.load(game.fen()) }
+    gameCopy.load(game.fen())
 
     const normalized = normalizeNotation(input)
     let moveResult
@@ -169,10 +166,7 @@ export default function BlindChess() {
     let expectedResult
     try {
        const tempGame = new Chess()
-       try {
-        if (game.pgn()) tempGame.loadPgn(game.pgn())
-        else tempGame.load(game.fen())
-       } catch { tempGame.load(game.fen()) }
+       tempGame.load(game.fen())
        const cleanExpected = expectedSAN.replace(/[+#]/g, '').trim()
        expectedResult = tempGame.move(cleanExpected)
     } catch { expectedResult = null }
