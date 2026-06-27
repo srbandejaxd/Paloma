@@ -92,24 +92,38 @@ async function initSchema() {
 async function seedNewBlocks() {
   const db = getDb()
   for (const block of SEED_BLOCKS) {
+    let blockId
     const existing = await db.execute({
       sql: 'SELECT id FROM blocks WHERE name = ?',
       args: [block.name]
     })
-    if (existing.rows.length > 0) continue
-    const r = await db.execute({
-      sql: 'INSERT INTO blocks (name, description, category) VALUES (?, ?, ?)',
-      args: [block.name, block.description, block.category ?? 'woodpecker']
-    })
-    const blockId = r.lastInsertRowid
+    if (existing.rows.length === 0) {
+      // Bloque nuevo — insertar
+      const r = await db.execute({
+        sql: 'INSERT INTO blocks (name, description, category) VALUES (?, ?, ?)',
+        args: [block.name, block.description, block.category ?? 'woodpecker']
+      })
+      blockId = r.lastInsertRowid
+    } else {
+      blockId = existing.rows[0].id
+    }
+
+    // Insertar puzzles que no existen aún por order_in_block
     for (let i = 0; i < block.puzzles.length; i++) {
       const p = block.puzzles[i]
-      await db.execute({
-        sql: 'INSERT INTO puzzles (block_id, order_in_block, fen, solution) VALUES (?, ?, ?, ?)',
-        args: [blockId, i + 1, p.fen, JSON.stringify(p.solution)]
+      const orderInBlock = i + 1
+      const existingPuzzle = await db.execute({
+        sql: 'SELECT id FROM puzzles WHERE block_id = ? AND order_in_block = ?',
+        args: [blockId, orderInBlock]
       })
+      if (existingPuzzle.rows.length === 0) {
+        await db.execute({
+          sql: 'INSERT INTO puzzles (block_id, order_in_block, fen, solution) VALUES (?, ?, ?, ?)',
+          args: [blockId, orderInBlock, p.fen, JSON.stringify(p.solution)]
+        })
+        console.log(`✓ New puzzle added: ${block.name} #${orderInBlock}`)
+      }
     }
-    console.log(`✓ Seeded new block: ${block.name}`)
   }
 }
 
@@ -970,10 +984,10 @@ const SEED_BLOCKS_MATE = [
 ]
 
 const SEED_BLOCKS_WOODPECKER2 = [
-  { name: 'W2 Bloque 1', description: 'Posicionales 1–20', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_1 },
-  { name: 'W2 Bloque 2', description: 'Posicionales 21–40', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_2 },
-  { name: 'W2 Bloque 3', description: 'Posicionales 41–60', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_3 },
-  { name: 'W2 Bloque 4', description: 'Posicionales 61–80', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_4 },
+  { name: 'W2 Bloque 1', description: 'Posicionales 1–21', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_1 },
+  { name: 'W2 Bloque 2', description: 'Posicionales 22–41', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_2 },
+  { name: 'W2 Bloque 3', description: 'Posicionales 42–62', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_3 },
+  { name: 'W2 Bloque 4', description: 'Posicionales 63–83', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_4 },
 ]
 const SEED_BLOCKS = [
   { name: 'Bloque 1', description: 'Puzzles 1–20', category: 'woodpecker', puzzles: PUZZLES_BLOCK_1 },
