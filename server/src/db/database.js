@@ -707,6 +707,10 @@ const WP2_PUZZLES_BLOCK_1= [
   {
     fen: "r1bqkb1r/5ppp/ppn1p1n1/3p4/3P4/2N1BN2/PP2PPPP/R2QKB1R w KQkq - 0 1",
     solution: ["h4", "Bd6", "h5", "Nge7", "h6", "g6", "Bg5", "O-O", "Bf6"]
+  },
+  {
+    fen: "8/8/4k1KP/8/5r2/8/8/8 w - - 0 1",
+    solution: ["Kg7", "Rg4+", "Kf8", "Rf4+", "Kg7", "Rf7+", "Kg8", "Kf6", "h7", "Rg7+", "Kh8", "Ra7", "Kg8", "Ra8#"]
   }
 ]
 const WP2_PUZZLES_BLOCK_2= [
