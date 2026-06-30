@@ -24,6 +24,7 @@ export default function History() {
   const [expandedCycle, setExpandedCycle] = useState<number | null>(null)
   const [visionMode, setVisionMode] = useState(false)
   const [visionSessions, setVisionSessions] = useState<VisionSession[]>([])
+  const [blockDropdownOpen, setBlockDropdownOpen] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
@@ -83,7 +84,7 @@ export default function History() {
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => { setSelectedCategory(cat.id); setSelectedBlock(null) }}
+                  onClick={() => { setSelectedCategory(cat.id); setSelectedBlock(null); setBlockDropdownOpen(false) }}
                   className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedCategory === cat.id ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
                 >
                   {cat.label}
@@ -91,23 +92,36 @@ export default function History() {
               ))}
             </div>
 
-            {/* Selector de bloque */}
-            <div className="flex gap-2 mb-8 flex-wrap">
+            {/* Selector de bloque (dropdown) */}
+            <div className="relative mb-8" style={{ maxWidth: 320 }}>
               <button
-                onClick={() => setSelectedBlock(null)}
-                className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedBlock === null ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+                onClick={() => setBlockDropdownOpen(o => !o)}
+                className="w-full flex items-center justify-between px-4 py-2.5 font-mono text-xs border border-void-4 hover:border-bone-3 rounded-sm transition-colors bg-void-2 text-bone"
               >
-                Todos
+                <span>
+                  {selectedBlock === null ? 'Todos los bloques' : (blocksForCategory.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque')}
+                </span>
+                <span className={`text-bone-3 transition-transform ${blockDropdownOpen ? 'rotate-180' : ''}`}>▾</span>
               </button>
-              {blocksForCategory.map(b => (
-                <button
-                  key={b.id}
-                  onClick={() => setSelectedBlock(b.id)}
-                  className={`px-3 py-2 font-mono text-xs border rounded-sm transition-all ${selectedBlock === b.id ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
-                >
-                  {b.name}
-                </button>
-              ))}
+              {blockDropdownOpen && (
+                <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-void-2 border border-void-4 rounded-sm overflow-hidden max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setSelectedBlock(null); setBlockDropdownOpen(false) }}
+                    className={`w-full text-left px-4 py-2.5 font-mono text-xs transition-colors ${selectedBlock === null ? 'bg-amber/10 text-amber' : 'text-bone-3 hover:bg-void-3 hover:text-bone'}`}
+                  >
+                    Todos los bloques
+                  </button>
+                  {blocksForCategory.map(b => (
+                    <button
+                      key={b.id}
+                      onClick={() => { setSelectedBlock(b.id); setBlockDropdownOpen(false) }}
+                      className={`w-full text-left px-4 py-2.5 font-mono text-xs transition-colors border-t border-void-4 ${selectedBlock === b.id ? 'bg-amber/10 text-amber' : 'text-bone-3 hover:bg-void-3 hover:text-bone'}`}
+                    >
+                      {b.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {loading && <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>}
