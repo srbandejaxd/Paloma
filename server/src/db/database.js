@@ -482,170 +482,8 @@ const PUZZLES_BLOCK_4 = [
     solution: ["Rxg2", "Rxg2", "Qh3+"]
   }
 ]
-// ─── PATRONES DE MATE ─────────────────────────────────────────────────────────
 // Agrega tus bloques aquí cuando estén listos, siguiendo el mismo formato:
 // { name: 'Mate Bloque 1', description: 'Mates 1–20', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_1 }
-const MATE_PUZZLES_BLOCK_1 = [
-  {
-    fen: "7r/6pk/4Q2p/2q1p3/8/7R/5PPP/6K1 w - - 0 1",
-    solution: ["Rxh6+", "gxh6", "Qf7#"]
-  },
-  {
-    fen: "6k1/5p2/4q1p1/7p/1P4r1/PB5K/2Q2P1P/2R3R1 b - - 0 1",
-    solution: ["Rg3+", "Kxg3", "Qg4#"]
-  },
-  {
-    fen: "7R/1Q3r2/1b2rkp1/5p2/3q1P2/8/6R1/7K w - - 0 1",
-    solution: ["Rxg6+", "Kxg6", "Qg2+", "Kf6", "Qg5#"]
-  },
-  {
-    fen: "1k5r/1pp2p1r/p4bp1/8/2P2B2/1P2Pq2/P2Q2B1/3RR1K1 b - - 0 1",
-    solution: ["Rh1+", "Bxh1", "Rxh1#"]
-  },
-  {
-    fen: "3rrb2/1R3pk1/3p1n1p/2p1pQ2/2P1Pqp1/3P2R1/5NP1/6K1 w - - 0 1",
-    solution: ["Rxg4+", "Nxg4", "Rxf7+", "Kg8", "Qh7#"]
-  },
-  {
-    fen: "8/8/8/6k1/8/5Q1R/8/6K1 w - - 0 1",
-    solution: ["Rh5+", "Kg6", "Qf5+", "Kg7", "Rh7+", "Kg8", "Qf7#"]
-  },
-  {
-    fen: "2b3k1/1pr4p/p2R2p1/1q6/8/QP5P/P6K/8 w - - 0 30",
-    solution: ["Rd8+", "Kf7", "Qf8+", "Ke6", "Rd6+", "Ke5", "Qf6+", "Ke4", "Rd4+", "Ke3", "Qf4+", "Ke2", "Rd2+", "Ke1", "Qf2#"]
-  },
-  {
-    fen: "7k/6p1/5p1p/8/Q7/1B6/8/4K3 w - - 0 1",
-    solution: ["Qe8+", "Kh7", "Bg8+", "Kh8", "Bf7+", "Kh7", "Qg8#"]
-  },
-  {
-    fen: "k7/1p2p3/p1p1pb1p/5q2/2P3pP/P1P1P1B1/3Q2PK/1r6 w - - 0 1",
-    solution: ["Qd8+", "Ka7", "Bb8+", "Ka8", "Bc7+", "Ka7", "Qb8#"]
-  },
-  {
-    fen: "6k1/4Qpp1/7p/5q2/3bR3/r4B2/P5PP/5K2 b - - 0 37",
-    solution: ["Rxf3+", "gxf3", "Qxf3+", "Ke1", "Bc3#"]
-  },
-  {
-    fen: "q7/7k/4p1pp/3pN3/3Pb3/2P3QP/r5PK/4R3 w - - 0 1",
-    solution: ["Rxe4", "dxe4", "Qxg6+", "Kh8", "Nf7#"]
-  },
-  {
-    fen: "2kr1b2/Qp1q1pp1/6p1/N1p1p1n1/2P5/4PP1r/P4PK1/R1B2R2 b - - 0 1",
-    solution: ["Rh2+", "Kxh2", "Qh3+", "Kg1", "Nxf3#"]
-  },
-  {
-    fen: "r3rqk1/6p1/5pP1/8/8/1pP5/1P6/1KQR3R w - - 0 1",
-    solution: ["Rh8+", "Kxh8", "Rh1+", "Kg8", "Rh8+", "Kxh8", "Qh1+", "Kg8", "Qh7#"]
-  },
-  {
-    fen: "r4rk1/2p1q1p1/5pP1/1p1p1b2/p1nP4/5PB1/PPP3P1/1KQR3R w - - 0 1",
-    solution: ["Rh8+", "Kxh8", "Rh1+", "Kg8", "Rh8+", "Kxh8", "Qh1+", "Kg8", "Qh7#"]
-  },
-  {
-    fen: "2br1rk1/pp3p1p/2p2Pp1/4B3/3p2Pq/3P3P/PP4P1/R1Q2R1K w - - 0 1",
-    solution: ["Bg3", "Qxg3", "Qh6", "Rd6", "Qg7#"]
-  },
-  {
-    fen: "4r1k1/1p3pp1/2p1b2p/8/QP6/8/P4PPP/6K1 b - - 0 1",
-    solution: ["Bb3", "Qxb3", "Re1#"]
-  },
-  {
-    fen: "2k5/pp3ppp/2pq4/8/PP6/2P1P1NP/1r1r1P2/2R1QRK1 b - - 0 25",
-    solution: ["Qxg3+", "fxg3", "Rg2+", "Kh1", "Rh2+", "Kg1", "Rbg2#"]
-  },
-  {
-    fen: "r3r2k/1p5p/3p1b2/q1p5/2P1Q3/6R1/8/1K3R2 w - - 0 1",
-    solution: ["Qxh7+", "Kxh7", "Rh1+", "Bh4", "Rxh4#"]
-  },
-  {
-    fen: "2k4r/ppp3q1/2b3r1/8/2Q5/6P1/PPP1NR1P/5RK1 b - - 0 1",
-    solution: ["Rxg3+", "Nxg3", "Qxg3+", "hxg3", "Rh1#"]
-  },
-  {
-    fen: "4kb1r/p2n1ppp/4q3/4p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 0 16",
-    solution: ["Qb8+", "Nxb8", "Rd8#"]
-  }
-]
-
-const MATE_PUZZLES_BLOCK_2 = [
-  {
-    fen: "r1b2rk1/ppp2ppp/8/bBQ5/5q2/2P2N1P/3N1PP1/4R1K1 w - - 0 22",
-    solution: ["Qxf8+", "Kxf8", "Re8#"]
-  },
-  {
-    fen: "rnb1kb1r/pp3ppp/2p5/4q3/4n3/3Q4/PPPB1PPP/2KR1BNR w kq - 0 1",
-    solution: ["Qd8+", "Kxd8", "Bg5+", "Kc7", "Bd8#"]
-  },
-  {
-    fen: "2kr2nr/pp3ppp/8/4p3/2p1P1b1/2Pn1N2/PPK2PPP/RNB2B1R b - - 0 1",
-    solution: ["Ne1+", "Nxe1", "Bd1#"]
-  },
-  {
-    fen: "r6k/pb2n2p/1p3p2/4p3/2PP4/1P6/P1B2PrP/R2Q1R1K b - - 0 1",
-    solution: ["Rg1+", "Kxg1", "Rg8+", "Qg4", "Rxg4#"]
-  },
-  {
-    fen: "5rk1/p4ppp/1p1rp3/3qB3/3PR3/5Q1P/PP3PP1/6K1 w - - 0 1",
-    solution: ["Qf6", "gxf6", "Rg4+", "Kh8", "Bxf6#"]
-  },
-  {
-    fen: "1r3r1k/5Bpp/8/p7/P2q4/5R2/1b4PP/1Q3R1K w - - 0 1",
-    solution: ["Qxh7+", "Kxh7", "Rh3+", "Qh4", "Rxh4#"]
-  },
-  {
-    fen: "6k1/3Q1p2/6p1/P5r1/R1q1n3/7B/7P/5R1K b - - 0 1",
-    solution: ["Qxf1+", "Bxf1", "Nf2#"]
-  },
-  {
-    fen: "5rk1/5ppp/3n4/q2N4/8/1R6/2Q2PPP/6K1 w - - 0 1",
-    solution: ["Ne7+", "Kh8", "Qxh7+", "Kxh7", "Rh3+", "Qh5", "Rxh5#"]
-  },
-  {
-    fen: "3r1b1k/1p3R2/7p/2p4N/p4P2/2K3R1/PP6/3r4 w - - 0 1",
-    solution: ["Rh7+", "Kxh7", "Nf6+", "Kh8", "Rg8#"]
-  },
-  {
-    fen: "2r4k/p6p/1b1pPNpB/6P1/2p2p2/8/P1r2PK1/7R w - - 0 1",
-    solution: ["Bg7+", "Kxg7", "Rxh7+", "Kf8", "Rf7#"]
-  },
-  {
-    fen: "6rk/pp3Qp1/1q5p/3pNP2/n1p5/2P5/PP6/2K1R3 w - - 0 1",
-    solution: ["Ng6+", "Kh7", "Qxg8+", "Kxg8", "Re8+", "Kf7", "Rf8#"]
-  },
-  {
-    fen: "3r2k1/p4rPp/1b1q3Q/n1p1pP2/1p6/3B1NR1/P4P1P/6RK w - - 0 29",
-    solution: ["Qxh7+", "Kxh7", "f6+", "Kg8", "Bh7+", "Kxh7", "Rh3+", "Kg8", "Rh8#"]
-  },
-  {
-    fen: "8/p4B2/8/6pp/R7/1P4Pk/P1r4P/3n2K1 w - - 0 43",
-    solution: ["Rh4+", "gxh4", "Be6#"]
-  },
-  {
-    fen: "r3kb1r/pppn1ppp/2b1p3/q5B1/3P4/2PQ2N1/PPB2P1P/2K1R1R1 w kq - 0 13",
-    solution: ["Rxe6+", "fxe6", "Qg6+", "hxg6", "Bxg6#"]
-  },
-  {
-    fen: "r1bqk2r/p1pn1pp1/1p2pn1p/8/3P4/B1PB4/P1P1QPPP/R3K1NR w KQkq - 0 10",
-    solution: ["Qxe6+", "fxe6", "Bg6#"]
-  },
-  {
-    fen: "4r2k/6pp/8/3QN3/8/q7/5PPP/6K1 w - - 0 1",
-    solution: ["Nf7+", "Kg8", "Nh6+", "Kh8", "Qg8+", "Rxg8", "Nf7#"]
-  },
-  {
-    fen: "2r2r1k/pb2b1p1/1p4Qp/3nN3/2p1N1Pq/3B4/PPP4P/1KR4R w - - 0 1",
-    solution: ["Qh7+", "Kxh7", "Nf6+", "Kh8", "Ng6#"]
-  },
-  {
-    fen: "r2q1rk1/pb3pbp/np4pQ/3p4/1P1N4/P2BP3/1B3PPP/R3K2R w KQ - 0 16",
-    solution: ["Qxg7+", "Kxg7", "Nf5+", "Kg8", "Nh6#"]
-  },
-  {
-    fen: "7r/4Rpk1/6p1/q2p4/P3b3/5NPn/2B1QP1P/7K b - - 0 1",
-    solution: ["Qe1+", "Qxe1", "Bxf3#"]
-  }
-]
 const WP2_PUZZLES_BLOCK_1= [
   {
     fen: "1r1n1rk1/b1p1qppp/p2p1n2/4pP2/P3P3/2PPNB2/6PP/R1BQK2R w KQ - 0 1",
@@ -987,18 +825,12 @@ const WP2_PUZZLES_BLOCK_4= [
 
 
 
-const SEED_BLOCKS_MATE = [
-   { name: 'Mate Bloque 1', description: 'Mates 1–20', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_1 },
-   { name: 'Mate Bloque 2', description: 'Mates 21–40', category: 'mate', puzzles: MATE_PUZZLES_BLOCK_2 },
-]
-
 const SEED_BLOCKS_WOODPECKER2 = [
   { name: 'W2 Bloque 1', description: 'Posicionales 1–21', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_1 },
   { name: 'W2 Bloque 2', description: 'Posicionales 22–41', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_2 },
   { name: 'W2 Bloque 3', description: 'Posicionales 42–62', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_3 },
   { name: 'W2 Bloque 4', description: 'Posicionales 63–83', category: 'woodpecker2', puzzles: WP2_PUZZLES_BLOCK_4 },
 ]
-// ─── THE CHECKMATE PATTERNS MANUAL ─────────────────────────────────────────────────────────
 const CHECKMATE_PATTERNS_1 = [
   { fen: "3q1r1k/1b1nNppp/4p3/1Nnp4/1R6/4PP2/2Q1B1PP/6K1 w - - 0 27", solution: ["Qxh7+","Kxh7","Rh4#"] },
   { fen: "4r2k/1p1b2pp/p7/5p2/q1B4R/8/1PP3PP/3Q2K1 w - - 0 28", solution: ["Rxh7+","Kxh7","Qh5#"] },
@@ -1507,7 +1339,6 @@ const SEED_BLOCKS = [
   { name: 'Bloque 2', description: 'Puzzles 21–40', category: 'woodpecker', puzzles: PUZZLES_BLOCK_2 },
   { name: 'Bloque 3', description: 'Puzzles 41–60', category: 'woodpecker', puzzles: PUZZLES_BLOCK_3 },
   { name: 'Bloque 4', description: 'Puzzles 61–80', category: 'woodpecker', puzzles: PUZZLES_BLOCK_4 },
-  ...SEED_BLOCKS_MATE,
   ...SEED_BLOCKS_WOODPECKER2,
   ...SEED_BLOCKS_CHECKMATE_PATTERNS,
 ]

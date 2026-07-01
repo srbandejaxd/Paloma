@@ -11,7 +11,6 @@ type Phase = 'category' | 'select' | 'racing' | 'done'
 
 const CATEGORIES = [
   { id: 'woodpecker', label: 'Woodpecker', description: 'Método de repetición de puzzles tácticos' },
-  { id: 'mate', label: 'Patrones de mate', description: 'Patrones clásicos de jaque mate' },
   { id: 'woodpecker2', label: 'Woodpecker 2', description: 'Método de repetición de puzzles posicionales' },
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual", description: "El Manual de patrones de mate te muestra los 34 patrones de mate que todo jugador de ajedrez debe conocer." },
 ]
