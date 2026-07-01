@@ -26,6 +26,7 @@ async function initSchema() {
       name TEXT NOT NULL,
       description TEXT,
       category TEXT NOT NULL DEFAULT 'woodpecker',
+      subcategory TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS puzzles (
@@ -100,8 +101,8 @@ async function seedNewBlocks() {
     if (existing.rows.length === 0) {
       // Bloque nuevo — insertar
       const r = await db.execute({
-        sql: 'INSERT INTO blocks (name, description, category) VALUES (?, ?, ?)',
-        args: [block.name, block.description, block.category ?? 'woodpecker']
+        sql: 'INSERT INTO blocks (name, description, category, subcategory) VALUES (?, ?, ?, ?)',
+        args: [block.name, block.description, block.category ?? 'woodpecker', block.subcategory ?? null]
       })
       blockId = r.lastInsertRowid
     } else {
@@ -134,10 +135,15 @@ async function seedNewBlocks() {
 
 async function migrateDb() {
   const db = getDb()
-  // Add category column if it doesn't exist (safe to run on existing DBs)
   try {
     await db.execute(`ALTER TABLE blocks ADD COLUMN category TEXT NOT NULL DEFAULT 'woodpecker'`)
     console.log('✓ Migration: added category column to blocks')
+  } catch {
+    // Column already exists, no-op
+  }
+  try {
+    await db.execute(`ALTER TABLE blocks ADD COLUMN subcategory TEXT`)
+    console.log('✓ Migration: added subcategory column to blocks')
   } catch {
     // Column already exists, no-op
   }

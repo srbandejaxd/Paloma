@@ -24,6 +24,7 @@ export default function History() {
   const [visionMode, setVisionMode] = useState(false)
   const [visionSessions, setVisionSessions] = useState<VisionSession[]>([])
   const [blockDropdownOpen, setBlockDropdownOpen] = useState(false)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
@@ -49,9 +50,15 @@ export default function History() {
   }, [visionMode])
 
   const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
+  const subcategoriesForCategory = [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
+  const hasSubcategories = subcategoriesForCategory.length > 0
+  const blocksForSelection = hasSubcategories && selectedSubcategory
+    ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
+    : hasSubcategories ? [] : blocksForCategory
   const attemptsByBlock = attempts.reduce<Record<number, AttemptRecord[]>>((acc, a) => {
     const block = blocks.find(b => b.id === a.blockId)
     if (block?.category !== selectedCategory) return acc
+    if (hasSubcategories && selectedSubcategory && block?.subcategory !== selectedSubcategory) return acc
     if (!acc[a.blockId]) acc[a.blockId] = []
     acc[a.blockId].push(a)
     return acc
@@ -83,7 +90,7 @@ export default function History() {
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => { setSelectedCategory(cat.id); setSelectedBlock(null); setBlockDropdownOpen(false) }}
+                  onClick={() => { setSelectedCategory(cat.id); setSelectedBlock(null); setSelectedSubcategory(null); setBlockDropdownOpen(false) }}
                   className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedCategory === cat.id ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
                 >
                   {cat.label}
@@ -91,14 +98,30 @@ export default function History() {
               ))}
             </div>
 
+            {/* Selector de subcategoría */}
+            {hasSubcategories && (
+              <div className="flex gap-2 mb-4 flex-wrap">
+                {subcategoriesForCategory.map(sub => (
+                  <button
+                    key={sub}
+                    onClick={() => { setSelectedSubcategory(sub); setSelectedBlock(null); setBlockDropdownOpen(false) }}
+                    className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedSubcategory === sub ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Selector de bloque (dropdown) */}
+            {(!hasSubcategories || selectedSubcategory) && (
             <div className="relative mb-8" style={{ maxWidth: 320 }}>
               <button
                 onClick={() => setBlockDropdownOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-2.5 font-mono text-xs border border-void-4 hover:border-bone-3 rounded-sm transition-colors bg-void-2 text-bone"
               >
                 <span>
-                  {selectedBlock === null ? 'Todos los bloques' : (blocksForCategory.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque')}
+                  {selectedBlock === null ? 'Todos los bloques' : (blocksForSelection.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque')}
                 </span>
                 <span className={`text-bone-3 transition-transform ${blockDropdownOpen ? 'rotate-180' : ''}`}>▾</span>
               </button>
@@ -110,7 +133,7 @@ export default function History() {
                   >
                     Todos los bloques
                   </button>
-                  {blocksForCategory.map(b => (
+                  {blocksForSelection.map(b => (
                     <button
                       key={b.id}
                       onClick={() => { setSelectedBlock(b.id); setBlockDropdownOpen(false) }}
@@ -122,6 +145,7 @@ export default function History() {
                 </div>
               )}
             </div>
+            )}
 
             {loading && <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>}
 

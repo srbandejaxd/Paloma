@@ -25,6 +25,7 @@ export default function Puzzles() {
   const [solved, setSolved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [blockDropdownOpen, setBlockDropdownOpen] = useState(false)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
@@ -52,6 +53,11 @@ export default function Puzzles() {
   }, [user, navigate])
 
   const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
+  const subcategoriesForCategory = [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
+  const hasSubcategories = subcategoriesForCategory.length > 0
+  const blocksForSelection = hasSubcategories && selectedSubcategory
+    ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
+    : hasSubcategories ? [] : blocksForCategory
 
   const filteredPuzzles = selectedBlock
     ? allPuzzles.filter(p => p.blockId === selectedBlock)
@@ -65,6 +71,7 @@ export default function Puzzles() {
   function selectCategory(catId: string) {
     setSelectedCategory(catId)
     setSelectedBlock(null)
+    setSelectedSubcategory(null)
     setBlockDropdownOpen(false)
     setCurrentIdx(0)
   }
@@ -113,20 +120,35 @@ export default function Puzzles() {
           ))}
         </div>
 
+        {/* Subcategory selector */}
+        {selectedCategory && hasSubcategories && (
+          <div className="max-w-4xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto">
+            {subcategoriesForCategory.map(sub => (
+              <button
+                key={sub}
+                onClick={() => { setSelectedSubcategory(sub); setSelectedBlock(null); setBlockDropdownOpen(false); setCurrentIdx(0) }}
+                className={`px-3 py-1.5 font-mono text-xs border rounded-sm whitespace-nowrap transition-all ${selectedSubcategory === sub ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Block dropdown */}
-        {selectedCategory && (
+        {selectedCategory && (!hasSubcategories || selectedSubcategory) && (
           <div className="max-w-4xl mx-auto px-4 pb-3">
             <div className="relative" style={{ maxWidth: 320 }}>
               <button
                 onClick={() => setBlockDropdownOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-2 font-mono text-xs border border-void-4 hover:border-bone-3 rounded-sm transition-colors bg-void text-bone"
               >
-                <span>{blocksForCategory.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque'}</span>
+                <span>{blocksForSelection.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque'}</span>
                 <span className={`text-bone-3 transition-transform ${blockDropdownOpen ? 'rotate-180' : ''}`}>▾</span>
               </button>
               {blockDropdownOpen && (
                 <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-void-2 border border-void-4 rounded-sm overflow-hidden max-h-64 overflow-y-auto">
-                  {blocksForCategory.map(b => (
+                  {blocksForSelection.map(b => (
                     <button
                       key={b.id}
                       onClick={() => selectBlock(b.id)}
@@ -149,8 +171,13 @@ export default function Puzzles() {
         </div>
       )}
 
-      {/* Categoría elegida pero sin bloque */}
-      {selectedCategory && !selectedBlock && (
+      {selectedCategory && hasSubcategories && !selectedSubcategory && (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-bone-3 font-mono text-sm">Elige una subcategoría</p>
+        </div>
+      )}
+
+      {selectedCategory && (!hasSubcategories || selectedSubcategory) && !selectedBlock && (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-bone-3 font-mono text-sm">Elige un bloque de la lista</p>
         </div>

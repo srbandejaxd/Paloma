@@ -7,7 +7,7 @@ import { useTimer } from '../hooks/useTimer'
 import { formatTimerDisplay, formatTimeLong } from '../lib/time'
 import PuzzleBoard from '../components/Board/PuzzleBoard'
 
-type Phase = 'category' | 'select' | 'racing' | 'done'
+type Phase = 'category' | 'subcategory' | 'select' | 'racing' | 'done'
 
 const CATEGORIES = [
   { id: 'woodpecker', label: 'Woodpecker', description: 'Método de repetición de puzzles tácticos' },
@@ -28,6 +28,7 @@ export default function Solo() {
 
   const [phase, setPhase] = useState<Phase>('category')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const [blocks, setBlocks] = useState<Block[]>([])
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null)
   const [puzzles, setPuzzles] = useState<Puzzle[]>([])
@@ -54,6 +55,11 @@ export default function Solo() {
   }, [user, navigate])
 
   const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
+  const subcategoriesForCategory = [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
+  const hasSubcategories = subcategoriesForCategory.length > 0
+  const blocksForSelection = hasSubcategories
+    ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
+    : blocksForCategory
 
   async function startSolo(block: Block) {
     setSelectedBlock(block)
@@ -151,7 +157,13 @@ export default function Solo() {
             {CATEGORIES.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => { setSelectedCategory(cat.id); setPhase('select') }}
+                onClick={() => {
+                  setSelectedCategory(cat.id)
+                  setSelectedSubcategory(null)
+                  const catBlocks = blocks.filter(b => b.category === cat.id)
+                  const subs = [...new Set(catBlocks.map(b => b.subcategory).filter(Boolean))]
+                  setPhase(subs.length > 0 ? 'subcategory' : 'select')
+                }}
                 className="w-full flex items-center justify-between px-5 py-5 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
               >
                 <div className="text-left">
@@ -167,13 +179,47 @@ export default function Solo() {
     )
   }
 
+  // ── SUBCATEGORY ────────────────────────────────────────────────────────────
+  if (phase === 'subcategory') {
+    const catLabel = CATEGORIES.find(c => c.id === selectedCategory)?.label
+    return (
+      <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md animate-slide-up">
+          <button onClick={() => setPhase('category')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-6 block">← Categorías</button>
+          <div className="mb-8">
+            <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-1">{catLabel}</p>
+            <h2 className="text-2xl font-mono font-bold text-bone">Elige una subcategoría</h2>
+          </div>
+          <div className="space-y-3">
+            {subcategoriesForCategory.map(sub => {
+              const subBlocks = blocksForCategory.filter(b => b.subcategory === sub)
+              return (
+                <button
+                  key={sub}
+                  onClick={() => { setSelectedSubcategory(sub); setPhase('select') }}
+                  className="w-full flex items-center justify-between px-5 py-5 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
+                >
+                  <div className="text-left">
+                    <div className="font-mono text-base font-bold text-bone group-hover:text-amber transition-colors">{sub}</div>
+                    <div className="font-mono text-xs text-bone-3 mt-1">{subBlocks.length} bloque{subBlocks.length !== 1 ? 's' : ''}</div>
+                  </div>
+                  <span className="font-mono text-amber text-lg opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // ── SELECT ──────────────────────────────────────────────────────────────────
   if (phase === 'select') {
     const catLabel = CATEGORIES.find(c => c.id === selectedCategory)?.label
     return (
       <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md animate-slide-up">
-          <button onClick={() => setPhase('category')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-6 block">← Categorías</button>
+          <button onClick={() => setPhase(hasSubcategories ? 'subcategory' : 'category')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-6 block">← Categorías</button>
 
           <div className="mb-8">
             <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-1">{catLabel}</p>
@@ -182,7 +228,7 @@ export default function Solo() {
           </div>
 
           <div className="space-y-2">
-            {blocksForCategory.map(block => (
+            {blocksForSelection.map(block => (
               <button
                 key={block.id}
                 onClick={() => startSolo(block)}

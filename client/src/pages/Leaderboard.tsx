@@ -23,6 +23,7 @@ export default function Leaderboard() {
   const [visionMode, setVisionMode] = useState(false)
   const [visionEntries, setVisionEntries] = useState<VisionLeaderboardEntry[]>([])
   const [blockDropdownOpen, setBlockDropdownOpen] = useState(false)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
@@ -52,13 +53,25 @@ export default function Leaderboard() {
   }, [visionMode])
 
   const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
+  const subcategoriesForCategory = [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
+  const hasSubcategories = subcategoriesForCategory.length > 0
+  const blocksForSelection = hasSubcategories && selectedSubcategory
+    ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
+    : hasSubcategories ? [] : blocksForCategory
   const medals = ['🥇', '🥈', '🥉']
 
   function selectCategory(catId: string) {
     setSelectedCategory(catId)
     setBlockDropdownOpen(false)
-    const first = blocks.find(b => b.category === catId)
-    if (first) setSelectedBlock(first.id)
+    setSelectedSubcategory(null)
+    const catBlocks = blocks.filter(b => b.category === catId)
+    const subs = [...new Set(catBlocks.map(b => b.subcategory).filter(Boolean))]
+    if (subs.length === 0) {
+      const first = catBlocks[0]
+      if (first) setSelectedBlock(first.id)
+    } else {
+      setSelectedBlock(null)
+    }
   }
 
   return (
@@ -92,18 +105,39 @@ export default function Leaderboard() {
               ))}
             </div>
 
+            {/* Selector de subcategoría */}
+            {hasSubcategories && (
+              <div className="flex gap-2 mb-4 flex-wrap">
+                {subcategoriesForCategory.map(sub => (
+                  <button
+                    key={sub}
+                    onClick={() => {
+                      setSelectedSubcategory(sub)
+                      setBlockDropdownOpen(false)
+                      const first = blocksForCategory.find(b => b.subcategory === sub)
+                      if (first) setSelectedBlock(first.id)
+                    }}
+                    className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedSubcategory === sub ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Selector de bloque (dropdown) */}
+            {(!hasSubcategories || selectedSubcategory) && (
             <div className="relative mb-8" style={{ maxWidth: 320 }}>
               <button
                 onClick={() => setBlockDropdownOpen(o => !o)}
                 className="w-full flex items-center justify-between px-4 py-2.5 font-mono text-xs border border-void-4 hover:border-bone-3 rounded-sm transition-colors bg-void-2 text-bone"
               >
-                <span>{blocksForCategory.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque'}</span>
+                <span>{blocksForSelection.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque'}</span>
                 <span className={`text-bone-3 transition-transform ${blockDropdownOpen ? 'rotate-180' : ''}`}>▾</span>
               </button>
               {blockDropdownOpen && (
                 <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-void-2 border border-void-4 rounded-sm overflow-hidden max-h-64 overflow-y-auto">
-                  {blocksForCategory.map(b => (
+                  {blocksForSelection.map(b => (
                     <button
                       key={b.id}
                       onClick={() => { setSelectedBlock(b.id); setBlockDropdownOpen(false) }}
@@ -115,6 +149,7 @@ export default function Leaderboard() {
                 </div>
               )}
             </div>
+            )}
 
             {loading && <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>}
 
