@@ -1012,7 +1012,7 @@ const SEED_BLOCKS_CHECKMATE_PATTERNS = [
 
 
 // ─── WOODPECKER METHOD ─────────────────────────────────────────────────────────
-const PALOMITA_1 = [
+const PUZZLE_PALOMITA_1 = [
   { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["Z0"] },
   { fen: "r6r/1pp3k1/1b6/p2P1p2/P1N1pn2/2P2PP1/BP5P/4RR1K b - - 0 1", solution: ["Rxh2+","Kxh2","Rh8#"] },
   { fen: "rnb3kr/ppp4p/3b3B/3Pp2n/2BP4/3K1Rp1/PPP3q1/RN1Q4 w - - 0 1", solution: ["Rf8+","Bxf8","d6+","Be6","Bxe6#"] },
@@ -2214,7 +2214,7 @@ const PALOMITA_23 = [
 ]
 
 const SEED_BLOCKS_PALOMITA = [
-  { name: "Bloque 1", description: "Bloque 1", category: "palomita", subcategory: "Easy Exercises", puzzles: PALOMITA_1 },
+  { name: "Bloque 1", description: "Bloque 1", category: "palomita", subcategory: "Easy Exercises", puzzles: PUZZLE_PALOMITA_1 },
   { name: "Bloque 2", description: "Bloque 2", category: "palomita", subcategory: "Easy Exercises", puzzles: PALOMITA_2 },
   { name: "Bloque 3", description: "Bloque 3", category: "palomita", subcategory: "Easy Exercises", puzzles: PALOMITA_3 },
   { name: "Bloque 4", description: "Bloque 4", category: "palomita", subcategory: "Easy Exercises", puzzles: PALOMITA_4 },
