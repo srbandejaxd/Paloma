@@ -6,7 +6,6 @@ import { Block, AttemptRecord } from '../types'
 import { formatTimeLong } from '../lib/time'
 
 const CATEGORIES = [
-  { id: 'woodpecker', label: 'Woodpecker' },
   { id: 'woodpecker2', label: 'Woodpecker 2' },
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual" },
 ]
