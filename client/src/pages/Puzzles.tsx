@@ -6,7 +6,6 @@ import { Puzzle, Block } from '../types'
 import PuzzleBoard from '../components/Board/PuzzleBoard'
 
 const CATEGORIES = [
-  { id: 'mate', label: 'Patrones de mate' },
   { id: 'woodpecker2', label: 'Woodpecker 2' },
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual" },
 ]
