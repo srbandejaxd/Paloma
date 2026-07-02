@@ -1013,7 +1013,6 @@ const SEED_BLOCKS_CHECKMATE_PATTERNS = [
 
 // ─── WOODPECKER METHOD ─────────────────────────────────────────────────────────
 const PUZZLES_PALOMITA_BLOQUE_1A = [
-  { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["Z0"] },
   { fen: "r6r/1pp3k1/1b6/p2P1p2/P1N1pn2/2P2PP1/BP5P/4RR1K b - - 0 1", solution: ["Rxh2+","Kxh2","Rh8#"] },
   { fen: "rnb3kr/ppp4p/3b3B/3Pp2n/2BP4/3K1Rp1/PPP3q1/RN1Q4 w - - 0 1", solution: ["Rf8+","Bxf8","d6+","Be6","Bxe6#"] },
   { fen: "r2q1rk1/pppb1ppp/3b4/4p1P1/4Pn2/2N1B2P/PPPQBP2/2KR3R w - - 0 1", solution: ["Bxf4","exf4","e5"] },
