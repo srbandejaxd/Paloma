@@ -18,7 +18,7 @@ app.use('/api', apiRouter)
 
 initDb()
   .then(() => {
-    app.listen(PORT, () => {
+    app.listen(PORT,'0.0.0.0', () => {
       console.log(`🪃  Woodpecker → http://localhost:${PORT}`)
     })
   })
