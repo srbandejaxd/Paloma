@@ -16,13 +16,10 @@ app.use(cors({ origin: allowedOrigins }))
 app.use(express.json())
 app.use('/api', apiRouter)
 
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🪃  Woodpecker → http://localhost:${PORT}`)
+})
+
 initDb()
-  .then(() => {
-    app.listen(PORT,'0.0.0.0', () => {
-      console.log(`🪃  Woodpecker → http://localhost:${PORT}`)
-    })
-  })
-  .catch(err => {
-    console.error('Failed to init DB:', err)
-    process.exit(1)
-  })
+  .then(() => console.log('✓ DB ready'))
+  .catch(err => console.error('Failed to init DB:', err))
