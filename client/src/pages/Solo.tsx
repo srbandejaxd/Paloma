@@ -12,6 +12,7 @@ type Phase = 'category' | 'subcategory' | 'select' | 'racing' | 'done'
 const CATEGORIES = [
   { id: 'woodpecker2', label: 'Woodpecker 2', description: 'Método de repetición de puzzles posicionales' },
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual", description: "El Manual de patrones de mate te muestra los 34 patrones de mate que todo jugador de ajedrez debe conocer." },
+  { id: "woodpecker_puzzles", label: "Paloma Carpintera", description: "Puzzles de Tactica de Facil a Intermedio" },
 ]
 
 interface FailedPuzzle {
