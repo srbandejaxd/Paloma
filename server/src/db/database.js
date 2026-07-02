@@ -2210,9 +2210,35 @@ const PUZZLES_PALOMITA_BLOQUE_3D = [
   { fen: "rn2rk2/5pp1/p7/2pb1qN1/7Q/2P5/5PPP/1R3RK1 w - - 0 1", solution: ["Rbe1","Rxe1","Rxe1","Be6","Qh8+","Ke7","h4","Qd5","Qxg7","Kd8","h5"] }
 ]
 
+const SEED_BLOCKS_PALOMITA = [
+  { name: "Bloque 1a", description: "Bloque 1a", category: "palomita", subcategory: "Easy Exercises", puzzles: PUZZLES_PALOMITA_BLOQUE_1A },
+  { name: "Bloque 2a", description: "Bloque 2a", category: "palomita", subcategory: "Easy Exercises", puzzles: PUZZLES_PALOMITA_BLOQUE_2A },
+  { name: "Bloque 3a", description: "Bloque 3a", category: "palomita", subcategory: "Easy Exercises", puzzles: PUZZLES_PALOMITA_BLOQUE_3A },
+  { name: "Bloque 4a", description: "Bloque 4a", category: "palomita", subcategory: "Easy Exercises", puzzles: PUZZLES_PALOMITA_BLOQUE_4A },
+  { name: "Bloque 1b", description: "Bloque 1b", category: "palomita", subcategory: "Intermediate Exercises 1", puzzles: PUZZLES_PALOMITA_BLOQUE_1B },
+  { name: "Bloque 2b", description: "Bloque 2b", category: "palomita", subcategory: "Intermediate Exercises 1", puzzles: PUZZLES_PALOMITA_BLOQUE_2B },
+  { name: "Bloque 3b", description: "Bloque 3b", category: "palomita", subcategory: "Intermediate Exercises 1", puzzles: PUZZLES_PALOMITA_BLOQUE_3B },
+  { name: "Bloque 4b", description: "Bloque 4b", category: "palomita", subcategory: "Intermediate Exercises 1", puzzles: PUZZLES_PALOMITA_BLOQUE_4B },
+  { name: "Bloque 5b", description: "Bloque 5b", category: "palomita", subcategory: "Intermediate Exercises 1", puzzles: PUZZLES_PALOMITA_BLOQUE_5B },
+  { name: "Bloque 6b", description: "Bloque 6b", category: "palomita", subcategory: "Intermediate Exercises 1", puzzles: PUZZLES_PALOMITA_BLOQUE_6B },
+  { name: "Bloque 1c", description: "Bloque 1c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_1C },
+  { name: "Bloque 2c", description: "Bloque 2c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_2C },
+  { name: "Bloque 3c", description: "Bloque 3c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_3C },
+  { name: "Bloque 4c", description: "Bloque 4c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_4C },
+  { name: "Bloque 5c", description: "Bloque 5c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_5C },
+  { name: "Bloque 6c", description: "Bloque 6c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_6C },
+  { name: "Bloque 7c", description: "Bloque 7c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_7C },
+  { name: "Bloque 8c", description: "Bloque 8c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_8C },
+  { name: "Bloque 9c", description: "Bloque 9c", category: "palomita", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_PALOMITA_BLOQUE_9C },
+  { name: "Bloque 1d", description: "Bloque 1d", category: "palomita", subcategory: "Advanced Exercises", puzzles: PUZZLES_PALOMITA_BLOQUE_1D },
+  { name: "Bloque 2d", description: "Bloque 2d", category: "palomita", subcategory: "Advanced Exercises", puzzles: PUZZLES_PALOMITA_BLOQUE_2D },
+  { name: "Bloque 3d", description: "Bloque 3d", category: "palomita", subcategory: "Advanced Exercises", puzzles: PUZZLES_PALOMITA_BLOQUE_3D }
+]
+
 const SEED_BLOCKS = [
   ...SEED_BLOCKS_WOODPECKER2,
   ...SEED_BLOCKS_CHECKMATE_PATTERNS,
+  ...SEED_BLOCKS_PALOMITA,
 ]
 // ─── BLIND PUZZLES ────────────────────────────────────────────────────────────
 const BLIND_PUZZLES = [

@@ -8,6 +8,7 @@ import { formatTimeLong } from '../lib/time'
 const CATEGORIES = [
   { id: 'woodpecker2', label: 'Woodpecker 2' },
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual" },
+  { id: "palomita", label: "Woodpecker Method" },
 ]
 
 export default function History() {
