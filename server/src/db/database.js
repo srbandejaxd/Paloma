@@ -1010,7 +1010,7 @@ const SEED_BLOCKS_CHECKMATE_PATTERNS = [
 ]
 
 // ─── PALOMA CARPINTERA ─────────────────────────────────────────────────────────
-const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_1 = [
+const WOODPECKER_PUZZLES_1 = [
   { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["Z0"] },
   { fen: "r6r/1pp3k1/1b6/p2P1p2/P1N1pn2/2P2PP1/BP5P/4RR1K b - - 0 1", solution: ["Rxh2+","Kxh2","Rh8#"] },
   { fen: "rnb3kr/ppp4p/3b3B/3Pp2n/2BP4/3K1Rp1/PPP3q1/RN1Q4 w - - 0 1", solution: ["Rf8+","Bxf8","d6+","Be6","Bxe6#"] },
@@ -1064,7 +1064,7 @@ const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_1 = [
   { fen: "r3br1k/pp5p/4B1p1/4NpP1/P2Pn3/q1PQ3R/7P/3R2K1 w - - 0 1", solution: ["Rxh7+","Kxh7","Qh3+","Kg7","Qh6#"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_2 = [
+const WOODPECKER_PUZZLES_2 = [
   { fen: "5rk1/ppp2ppp/6q1/2b1P3/3r4/2N1BQ1b/PP3PPP/R3R1K1 b - - 0 1", solution: ["Bxg2","Qg3","Rg4","Bxc5","Rxg3","fxg3","Re8"] },
   { fen: "4r2k/ppp3pp/8/1PPb1p2/3P1P1b/P1Q2p1P/7R/R4KBq b - - 0 1", solution: ["Qg2+","Rxg2","fxg2#"] },
   { fen: "3r1b1k/pp4p1/2p1Qp2/5N2/PP2Pp2/2Pq4/5PKP/5R2 b - - 0 1", solution: ["f3+","Kg1","Qxf1+","Kxf1","Rd1#"] },
@@ -1118,7 +1118,7 @@ const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_2 = [
   { fen: "6k1/1pqrnp2/3p2p1/2pn2b1/P1Q3Pp/2B4P/1PP1RP2/4R1K1 w - - 0 1", solution: ["Qxd5","Nxd5","Re8+","Kh7","Rh8#"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_3 = [
+const WOODPECKER_PUZZLES_3 = [
   { fen: "6k1/1p3pp1/p7/P2n1PQ1/8/8/1r3r1P/3R3K b - - 0 1", solution: ["Rxh2+","Kg1","Rbg2+","Qxg2","Rxg2+","Kxg2","Ne3+","Kf3","Nxd1"] },
   { fen: "1r4k1/2qpn1pp/p1p1pr2/2b5/2P2P2/3B4/PP4PP/R1BQ1R1K w - - 0 1", solution: ["Bxh7+","Kxh7","Qh5+","Rh6","Qxc5"] },
   { fen: "1rq1r2k/5Rbp/p2p1p1B/2p1p3/2P1P2Q/1P6/P5PP/3b2K1 w - - 0 1", solution: ["Bxg7+","Kg8","Bh8","Kxf7","Qxf6+","Kg8","Qg7#"] },
@@ -1172,7 +1172,7 @@ const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_3 = [
   { fen: "8/7R/2r5/8/P3n3/8/3nk1PP/R5K1 b - - 0 1", solution: ["Nf3+","gxf3","Rg6+","Kh1","Nf2#"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_4 = [
+const WOODPECKER_PUZZLES_4 = [
   { fen: "8/7R/2r5/8/P3n3/8/3nk1PP/R5K1 b - - 0 1", solution: ["Nf3+","gxf3","Rg6+","Kh1","Nf2#"] },
   { fen: "3rrk2/R4ppB/7p/1p2N1q1/nPbP1p2/2PQ1P2/6PP/4R1K1 w - - 0 1", solution: ["Qxc4","bxc4","Rxf7#"] },
   { fen: "5kr1/5p2/8/1Q1bPp2/8/P5P1/q1rBBK1P/3R4 w - - 0 1", solution: ["Qxd5","Qxd5","Bh6+","Ke7","Rxd5"] },
@@ -1211,7 +1211,7 @@ const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_4 = [
   { fen: "r2qk2r/3bb1pp/5p2/1p1Q4/1pNP4/4P3/PB4PP/R4RK1 w kq - 0 1", solution: ["Ne5","Rf8","Nxd7"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_5 = [
+const WOODPECKER_PUZZLES_5 = [
   { fen: "r3k1r1/p4p1p/3bpBp1/3p1b2/5P2/3BP2P/PP4P1/1K1R3R w - - 0 1", solution: ["e4","Bxe4","Bxe4"] },
   { fen: "4r2k/6b1/8/p2R3p/1pP1p1Nq/8/PP3P1P/3Q3K w - - 0 1", solution: ["Nf6","Qxf6","Qxh5+","Kg8","Qxe8+"] },
   { fen: "2r4k/2q4p/p2bPp2/1p6/6QP/3B4/PPP5/1K4R1 w - - 0 1", solution: ["e7"] },
@@ -1249,7 +1249,7 @@ const PUZZLES_WOODPECKER_PUZZLES_BLOQUE_5 = [
   { fen: "2R5/4bppk/1p1p4/5R1P/4PQ2/5P2/r4q1P/7K w - - 0 1", solution: ["Qh6+"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES2_BLOQUE_1 = [
+const WOODPECKER_PUZZLES_1 = [
   { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["Z0"] },
   { fen: "2k3rr/ppp1npb1/2Pp4/P7/1PBP4/2P2QBq/7P/R4RK1 b - - 0 1", solution: ["Bxd4+","Kh1","Rxg3"] },
   { fen: "r5r1/pp2kpBQ/3pn3/6q1/8/8/P4PPP/3RR1K1 w - - 0 1", solution: ["Rxe6+","Kxe6","Qe4+","Kd7","Qxb7+","Ke6","Re1+","Kf5","Qxf7+","Kg4","Qf3+","Kh4","Qh3#"] },
@@ -1303,7 +1303,7 @@ const PUZZLES_WOODPECKER_PUZZLES2_BLOQUE_1 = [
   { fen: "3k3r/1pp2p2/p1q1bN1p/4P3/2P4n/1P1r1pP1/PQ5P/R1B2RK1 b - - 0 1", solution: ["f2+","Rxf2","Qh1+","Kxh1","Rd1+"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES3_BLOQUE_1 = [
+const WOODPECKER_PUZZLES_1 = [
   { fen: "1k4rr/ppp2p2/5q2/4p3/1PPpPn2/P2P1Q2/R5NP/5R1K b - - 0 1", solution: ["Rxh2+","Kxh2","Qh6+","Kg1","Nh3+","Kh2","Ng5+"] },
   { fen: "5k2/1p4pP/p7/1p1p2K1/2r5/8/6PP/8 b - - 0 1", solution: ["Rh4","Kxh4","g5+","Kxg5","Kg7"] },
   { fen: "r1b1kb1r/pp2q2p/2p2p2/1B2p3/3PQ3/8/PPP3PP/R1B1K2R w KQkq - 0 1", solution: ["Be2","exd4","Qxd4","Qb4+","Qxb4","Bxb4+","c3"] },
@@ -1356,7 +1356,7 @@ const PUZZLES_WOODPECKER_PUZZLES3_BLOQUE_1 = [
   { fen: "r4rk1/2pq2pp/pbn1b3/1p1p2B1/4n3/1NPQ1N2/PPB2PPP/3R1RK1 b - - 0 1", solution: ["Rxf3","gxf3","Nxg5"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_1 = [
+const WOODPECKER_PUZZLES_1 = [
   { fen: "rnbq1n1r/pp3QpB/2pkpb2/3pN3/3P4/2N5/PPP3PP/R4RK1 w - - 0 1", solution: ["Nc4+","dxc4","Ne4+","Kd5","Rf5+","Kxe4","Re1+","Kxd4","c3+","Kd3","Rd5#"] },
   { fen: "rq1n2k1/6b1/p5R1/1p1pP2r/2pP1P2/2P4P/P1QB3K/1R6 w - - 0 1", solution: ["Rxg7+","Kxg7","Rg1+","Kf8","Qg6"] },
   { fen: "8/2NPk3/p5pp/P7/1P3p2/3b3P/6P1/6K1 w - - 0 1", solution: ["Ne6","Kxd7","Nc5+","Kc6","Nxd3"] },
@@ -1410,7 +1410,7 @@ const PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_1 = [
   { fen: "r4rk1/p1pp2pp/1p2p3/n6q/Q1PPR3/2P2P2/P2B2PP/5RK1 b - - 0 1", solution: ["Nxc4","Qxc4","d5","Qb5","a6"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_2 = [
+const WOODPECKER_PUZZLES_2 = [
   { fen: "3r4/4kp2/1RQ4p/p2rP1p1/P7/3q3P/5BP1/6K1 w - - 0 1", solution: ["Qf6+","Ke8","e6","Qf5","exf7+","Kf8","Bc5+","Rxc5","Qxd8+","Kxf7","Rb7+"] },
   { fen: "3r1r1k/1b4p1/pb5p/4Pp1q/2pBnP2/5N1N/PPQ3PP/3R1R1K b - - 0 1", solution: ["Bxd4","Rxd4","Rxd4","Nxd4","Qxh3","gxh3","Nf2+","Kg1","Nxh3#"] },
   { fen: "2r1k3/p4R1Q/1p4Bp/3pP3/6P1/P4K2/1P4P1/2r1q3 b - - 0 1", solution: ["R8c3+","bxc3","Rxc3+","Bd3","Qf1+","Ke3","Rxd3+","Qxd3","Qxd3+","Kxd3","Kxf7"] },
@@ -1464,7 +1464,7 @@ const PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_2 = [
   { fen: "6k1/rb4pp/pN6/P3rp2/1pRp4/3B2qP/1P2Q1P1/4R1K1 w - - 0 1", solution: ["Rc8+","Kf7","Qh5+"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_3 = [
+const WOODPECKER_PUZZLES_3 = [
   { fen: "2k3r1/3r2N1/ppp4p/3bPN2/P1p1n3/6P1/1PP4K/3R1R2 w - - 0 1", solution: ["e6","Rdxg7","Nxg7","Rxg7","Rxd5","cxd5","Rf8+","Kc7","Rf7+","Rxf7","exf7"] },
   { fen: "2kr3r/pp3bpp/1qp5/3n1p2/P1PPpP2/B3P1P1/2Q1BKP1/R6R b - - 0 1", solution: ["Nxe3","Qc3","Ng4+","Bxg4","fxg4"] },
   { fen: "r1r3k1/pp3p2/4pp1p/2q5/b1nN4/3BP3/P3QPPP/1R3RK1 w - - 0 1", solution: ["Nxe6","fxe6","Qg4+","Kh8","Rxb7","Rc7","Rxc7","Qxc7","Bxc4"] },
@@ -1519,7 +1519,7 @@ const PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_3 = [
   { fen: "4r1k1/2q2p1p/p5pB/1pb2PPn/3Q4/1B5P/PP3P2/R5K1 w - - 0 1", solution: ["Bxf7+","Qxf7","Qxc5"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES5_BLOQUE_1 = [
+const WOODPECKER_PUZZLES_1 = [
   { fen: "r4rk1/6pp/p1p5/1p1pP3/3P2b1/1B2BPp1/PPR3Pq/3QRK2 b - - 0 1", solution: ["Rxf3+","Qxf3","Qh1+","Ke2","Qxg2+","Kd3","Qxf3"] },
   { fen: "2kr4/ppbr1ppp/2p1p3/2P2nP1/3PBP2/P1P4P/4N3/2KR3R b - - 0 1", solution: ["Ng3","Nxg3","Bxf4+","Kc2","Bxg3","Bxh7","g6"] },
   { fen: "3r2k1/pp2qppp/2pb1n2/5PQ1/6P1/8/PB1r1PBP/1R3RK1 b - - 0 1", solution: ["Rxb2","Rxb2","Qe5","Rfb1","Qxh2+","Kf1","Bf4"] },
@@ -1572,7 +1572,7 @@ const PUZZLES_WOODPECKER_PUZZLES5_BLOQUE_1 = [
   { fen: "4r2k/p5qp/bp2B1p1/3P1p2/2n2N2/2R5/PQ3PPP/6K1 w - - 0 1", solution: ["Nxg6+","Qxg6","Rxc4+","Qg7","Qxg7+","Kxg7","Rc7+"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_1 = [
+const WOODPECKER_PUZZLES_1 = [
   { fen: "2r2rk1/1p3pp1/4n3/1P1Rn1q1/4P2p/7P/2P2QN1/R4BK1 b - - 0 1", solution: ["Rxc2","Qxc2","Nf3+","Kf2","Qg3+","Ke2","Nfd4+","Kd1","Nxc2"] },
   { fen: "bq3rk1/2pnnppp/3p1b2/1p1Pp3/4P3/NBP2N1P/1P3PP1/2BQR1K1 w - - 0 1", solution: ["Nxb5","Qxb5","Ba4"] },
   { fen: "8/1q4kp/2np1p2/4p3/2PpP2P/6P1/r1PQ2BK/5R2 w - - 0 1", solution: ["Rxf6","Kxf6","Qh6+","Kf7","Qxh7+","Kf6","Qxb7"] },
@@ -1626,7 +1626,7 @@ const PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_1 = [
   { fen: "r7/2k1Pp1p/p1n2p2/P1b1r3/2p5/2P3P1/5P1P/1R1Q2K1 w - - 0 1", solution: ["Rb7+","Kxb7","Qd7+","Kb8","e8=Q+","Rxe8","Qxe8+","Kb7","Qd7+","Kb8","Qxc6"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_2 = [
+const WOODPECKER_PUZZLES_2 = [
   { fen: "r4rk1/1q1nbppp/p1b5/4pP2/NpP1Nn2/1B3Q2/PP3BPP/R3R1K1 b - - 0 1", solution: ["g6","fxg6","f5"] },
   { fen: "3rr1k1/3nbppp/p1R2n2/q2Bp3/1p2P3/5N1P/PP1B1PP1/2RQ2K1 w - - 0 1", solution: ["Bxf7+","Kxf7","Qb3+","Kf8","Ng5"] },
   { fen: "r4k1r/1q2bp1p/p3pp2/3p3Q/1p1N1P2/4R3/PPP3PP/1K1R4 w - - 0 1", solution: ["Rxe6","fxe6","Nxe6+","Kg8","Rd3"] },
@@ -1680,7 +1680,7 @@ const PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_2 = [
   { fen: "3r2k1/pp2ppbp/6p1/n2p4/3P2b1/PP2PNP1/R4PKP/B1rB1R2 b - - 0 1", solution: ["Nxb3","Bb2","Rb1","Bxb3","Bxf3+","Kg1","Rxf1+","Kxf1"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_3 = [
+const WOODPECKER_PUZZLES_3 = [
   { fen: "4N1r1/p3n1pQ/1p2p2P/1P2kp2/r5P1/8/5P1K/8 w - - 0 1", solution: ["Qxg8"] },
   { fen: "r4rk1/p4ppp/1pn1pn2/3q4/3P4/2PBBP2/P1Q2P1P/2KR3R b - - 0 1", solution: ["Nb4","Qb3","Nxd3+"] },
   { fen: "r3r1k1/3q1ppp/5n2/2Rp4/p4P2/P2QPNPP/P3K3/7R b - - 0 1", solution: ["Ne4","Rxd5","Qxd5"] },
@@ -1734,7 +1734,7 @@ const PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_3 = [
   { fen: "4r1k1/pb1q1r1p/2np2p1/2pN1pB1/2P1nP2/P1P2B2/6PP/1R1QR1K1 w - - 0 1", solution: ["Rxe4","Rxe4","Bxe4","fxe4","Nf6+","Rxf6","Bxf6"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_4 = [
+const WOODPECKER_PUZZLES_4 = [
   { fen: "rn3rk1/pb3ppp/1p2qb2/3p4/3p4/2NN2P1/PP2PPBP/2RQ1RK1 w - - 0 1", solution: ["Nxd5","Bxd5","Nf4","Qd6"] },
   { fen: "2kr1bnr/pppq1ppp/2n5/4P3/2Pp4/1Q3NPb/PP2PPBP/RNB2RK1 w - - 0 1", solution: ["e6","Bxe6","Ne5","Qd6","Nxc6","bxc6"] },
   { fen: "r1r2bk1/p4ppp/1pq5/3R1N2/n1P5/4R3/PB2QPPP/6K1 w - - 0 1", solution: ["Bxg7","Qxd5","Nh6+","Kxg7","Qg4+","Kf6","Ng8#"] },
@@ -1789,7 +1789,7 @@ const PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_4 = [
   { fen: "2r3k1/q4pp1/3p3p/1p1QpPb1/r3P3/1NP3PP/1P4K1/R3R3 b - - 0 1", solution: ["Ra2","Kf1","Rxc3","Rxa2","Rf3+","Ke2","Rf2+","Kd3","Qxa2"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_1 = [
+const WOODPECKER_PUZZLES_1 = [
   { fen: "r1r3k1/2pbbpp1/p2p1qnp/np1Pp3/4P2P/2P2NP1/PP2QP2/RNBBK2R w KQ - 0 1", solution: ["Bg5","hxg5","hxg5","Qxg5","Nxg5"] },
   { fen: "1r2k2r/p5bp/4p1p1/q2pn3/1p2N1P1/6QP/PPP5/1KBR3R w k - 0 1", solution: ["Bh6","Qc7","Nd6+","Kd8","Bxg7","Qxd6","Qxe5"] },
   { fen: "r2b1nk1/p4p2/2pN2p1/1p1pPP2/1P4P1/2P3B1/P5K1/7R w - - 0 1", solution: ["e6","f6","Nf7"] },
@@ -1843,7 +1843,7 @@ const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_1 = [
   { fen: "r2q1rk1/1pp3bp/n2p4/p2P1b2/1PPN4/P1NpB2P/5P2/R2QK1R1 w Q - 0 1", solution: ["Nxf5","Rxf5","Rxg7+","Kxg7","Qg4+","Kf6","Ne4+","Ke5","Ng3"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_2 = [
+const WOODPECKER_PUZZLES_2 = [
   { fen: "1r1q2k1/R4p2/3Pb2p/4Q1p1/1p2B3/2p3PP/1P3P2/6K1 w - - 0 1", solution: ["Bh7+","Kxh7","Qxe6"] },
   { fen: "3r2k1/p4p2/3qbPp1/3pR2p/1r1P4/2N1Q3/1P5P/5R1K w - - 0 1", solution: ["Rxe6","fxe6","Qh6"] },
   { fen: "4rrk1/pb3ppp/1p6/n2p1N2/6Q1/P2B4/3B1PPP/b5K1 w - - 0 1", solution: ["Nxg7","Bxg7","Bh6"] },
@@ -1897,7 +1897,7 @@ const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_2 = [
   { fen: "1r2r3/3b3k/2p1ppnp/p2p3B/3P1P1P/P3RN2/1P3P2/1K2R3 w - - 0 1", solution: ["f5","exf5","Rg1","Nf4","Bxe8"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_3 = [
+const WOODPECKER_PUZZLES_3 = [
   { fen: "4k3/p4p2/1P2p2p/8/2pq3P/2Nr2r1/1P1nQPP1/R2R2K1 b - - 0 1", solution: ["Rxg2+","Kxg2","Qg7+","Kh2","Nf3+","Qxf3","Rxf3"] },
   { fen: "3rr3/5pk1/p2q2p1/PbnNp3/8/1B3Q1P/5PP1/2R1R1K1 w - - 0 1", solution: ["Rxc5","Qxc5","Qf6+","Kg8","Ne3"] },
   { fen: "6k1/3b1q2/1pNpNnnb/3Pp3/4P3/r4BB1/P1R3K1/7Q b - - 0 1", solution: ["Nxd5","Rf2","Bxc6","Qxh6","Qxe6","exd5","Bxd5","Bxd5","Qxd5+","Kh2"] },
@@ -1951,7 +1951,7 @@ const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_3 = [
   { fen: "5rk1/1b3r1p/4p1pb/pp1q4/2pP4/2P2PB1/P1N1Q1PP/3R1R1K b - - 0 1", solution: ["Rxf3","gxf3","Rxf3","Rxf3","Qxf3+","Qxf3","Bxf3+","Kg1","Bxd1"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_4 = [
+const WOODPECKER_PUZZLES_4 = [
   { fen: "r1b3k1/p1q2pp1/2p4p/4b3/4r3/1P5P/PNP1BPP1/1R1Q1R1K b - - 0 1", solution: ["Be6"] },
   { fen: "r2r1nk1/ppq1bppp/2p1pn2/5N2/2PP4/3B1Q2/PP3PPP/2BRR1K1 w - - 0 1", solution: ["Qg3","Qxg3","Nxe7+","Kh8","hxg3","Re8","Nxc6"] },
   { fen: "r1b1k2r/pp3ppp/2nBpn2/2P4Q/4P3/P2Bq3/2P1N1PP/R3KR2 w Qkq - 0 1", solution: ["Rxf6","gxf6","Bf4"] },
@@ -2005,7 +2005,7 @@ const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_4 = [
   { fen: "r2q1r1k/1b1PNpbp/p2Q4/2p3N1/1pP1p2P/5P1R/PP2nP2/1K1R4 w - - 0 1", solution: ["Qxc5","Nf4","Qf5","Ng6","h5","Qxe7","hxg6"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_5 = [
+const WOODPECKER_PUZZLES_5 = [
   { fen: "r3r1k1/pp3p2/3p1b1R/2pPnBpQ/4P3/5q2/PP2N3/1K4R1 w - - 0 1", solution: ["Rxg5+","Kf8","Rxf6","Qd3+","Kc1","Qe3+","Kd1","Qd3+","Ke1","Qb1+","Kf2"] },
   { fen: "1r4k1/8/b2pRqp1/p1pP1p2/P1P2P2/2p2Q2/5PB1/6K1 b - - 0 1", solution: ["Qxe6","dxe6","c2","Qe3","Rb1+","Kh2","c1=Q"] },
   { fen: "1r4k1/RB2rpp1/8/1R4p1/8/1PPn3P/5P2/7K w - - 0 1", solution: ["Be4","Nxf2+","Kg2","Ree8","Rxb8","Rxb8","Kxf2"] },
@@ -2058,7 +2058,7 @@ const PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_5 = [
   { fen: "5rk1/1b5p/1q2p1p1/1p2P3/3RPn2/5N1P/1P3QP1/5BK1 b - - 0 1", solution: ["Nxh3+","gxh3","Rxf3","Qxf3","Qxd4+"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_1 = [
+const WOODPECKER_PUZZLES_1 = [
   { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["Z0"] },
   { fen: "r1b1k1r1/ppppnpq1/8/n3P2p/2B4N/5QB1/P4PP1/3RR1K1 w q - 0 1", solution: ["e6","dxe6","Bb5+","c6","Bc7","Bd7","Bxa5","Qg4","Qd3","Nd5","Re4"] },
   { fen: "r2q2k1/pp1b1rpp/1b1Q1p2/4N1B1/4R3/8/PP3PPP/4R1K1 b - - 0 1", solution: ["Bxf2+","Kh1","Be8","Nxf7","Bxf7","Qxd8+","Rxd8"] },
@@ -2112,7 +2112,7 @@ const PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_1 = [
   { fen: "3rk1n1/5p2/p3pPp1/1pq5/5Q1P/1B2P3/PP2KP2/3R4 w - - 0 1", solution: ["Rxd8+","Kxd8","Qb8+","Qc8","Qxc8+","Kxc8","Bxe6+"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_2 = [
+const WOODPECKER_PUZZLES_2 = [
   { fen: "8/1pk5/2p1P3/3r4/6Q1/1p1q4/PP3P2/K5R1 w - - 0 1", solution: ["e7","Re5","Qg7","Kd6","Qxe5+"] },
   { fen: "r4r1k/p1pb4/1p1p3p/3Pq2P/2P1pp2/3BB3/PPQN1P1P/6RK w - - 0 1", solution: ["Nf3","exd3","Qxd3","Bf5","Qe2","fxe3","Nxe5","exf2","Rg2","Be4","Ng6+","Bxg6","Rxf2"] },
   { fen: "r2q1rk1/pp2pp2/3pnbp1/3R4/2P3BQ/4BR2/PP4PP/6K1 w - - 0 1", solution: ["Qh6","Bg7","Qxg6","Nf4","Rxf4","fxg6","Be6+","Rf7","Rxf7","Kh8","Rg5","b5","Rg3"] },
@@ -2162,7 +2162,7 @@ const PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_2 = [
   { fen: "5rk1/2N2ppp/4p3/R1b2q2/4b3/6Q1/5PPP/5RK1 b - - 0 1", solution: ["Bxf2+","Qxf2","Qxa5","Nxe6","Bxg2","Kxg2","Qa8+","Kg1","fxe6"] }
 ]
 
-const PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_3 = [
+const WOODPECKER_PUZZLES_3 = [
   { fen: "br3r2/5ppk/p2pp3/2q1b1BP/N3P3/n4P2/KP1QB3/6RR b - - 0 1", solution: ["Nc2","Kb1","Qa3"] },
   { fen: "3q2k1/1b2rpp1/1n5p/pP2p3/2B1P3/1Q3NP1/5PP1/2R3K1 w - - 0 1", solution: ["Bxf7+","Kh7","Rd1"] },
   { fen: "2r4k/6p1/1p2P2p/p2p4/3P2RP/KP1bP3/P1r2P2/6RB b - - 0 1", solution: ["b5","Ra1","Bf5","Rg2","Bxe6","f4","b4+","Ka4","R2c5"] },
@@ -2213,29 +2213,29 @@ const PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_3 = [
 ]
 
 const SEED_BLOCKS_WOODPECKER_PUZZLES = [
-  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: PUZZLES_WOODPECKER_PUZZLES_BLOQUE_1 },
-  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: PUZZLES_WOODPECKER_PUZZLES_BLOQUE_2 },
-  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: PUZZLES_WOODPECKER_PUZZLES_BLOQUE_3 },
-  { name: "Bloque 4", description: "Bloque 4", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: PUZZLES_WOODPECKER_PUZZLES_BLOQUE_4 },
-  { name: "Bloque 5", description: "Bloque 5", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: PUZZLES_WOODPECKER_PUZZLES_BLOQUE_5 },
-  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 1", puzzles: PUZZLES_WOODPECKER_PUZZLES2_BLOQUE_1 },
-  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 2", puzzles: PUZZLES_WOODPECKER_PUZZLES3_BLOQUE_1 },
-  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 3", puzzles: PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_1 },
-  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 3", puzzles: PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_2 },
-  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 3", puzzles: PUZZLES_WOODPECKER_PUZZLES4_BLOQUE_3 },
-  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 4", puzzles: PUZZLES_WOODPECKER_PUZZLES5_BLOQUE_1 },
-  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 5", puzzles: PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_1 },
-  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 5", puzzles: PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_2 },
-  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 5", puzzles: PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_3 },
-  { name: "Bloque 4", description: "Bloque 4", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 5", puzzles: PUZZLES_WOODPECKER_PUZZLES6_BLOQUE_4 },
-  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_1 },
-  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_2 },
-  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_3 },
-  { name: "Bloque 4", description: "Bloque 4", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_4 },
-  { name: "Bloque 5", description: "Bloque 5", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: PUZZLES_WOODPECKER_PUZZLES7_BLOQUE_5 },
-  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Advanced Exercises", puzzles: PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_1 },
-  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Advanced Exercises", puzzles: PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_2 },
-  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Advanced Exercises", puzzles: PUZZLES_WOODPECKER_PUZZLES8_BLOQUE_3 }
+  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: WOODPECKER_PUZZLES_1 },
+  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: WOODPECKER_PUZZLES_2 },
+  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: WOODPECKER_PUZZLES_3 },
+  { name: "Bloque 4", description: "Bloque 4", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: WOODPECKER_PUZZLES_4 },
+  { name: "Bloque 5", description: "Bloque 5", category: "woodpecker_puzzles", subcategory: "Easy Exercices", puzzles: WOODPECKER_PUZZLES_5 },
+  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 1", puzzles: WOODPECKER_PUZZLES_11 },
+  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 2", puzzles: WOODPECKER_PUZZLES_12 },
+  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 3", puzzles: WOODPECKER_PUZZLES_13 },
+  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 3", puzzles: WOODPECKER_PUZZLES_23 },
+  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 3", puzzles: WOODPECKER_PUZZLES_33 },
+  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 4", puzzles: WOODPECKER_PUZZLES_14 },
+  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 5", puzzles: WOODPECKER_PUZZLES_15 },
+  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 5", puzzles: WOODPECKER_PUZZLES_25 },
+  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 5", puzzles: WOODPECKER_PUZZLES_35 },
+  { name: "Bloque 4", description: "Bloque 4", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 5", puzzles: WOODPECKER_PUZZLES_45 },
+  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: WOODPECKER_PUZZLES_16 },
+  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: WOODPECKER_PUZZLES_26 },
+  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: WOODPECKER_PUZZLES_36 },
+  { name: "Bloque 4", description: "Bloque 4", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: WOODPECKER_PUZZLES_46 },
+  { name: "Bloque 5", description: "Bloque 5", category: "woodpecker_puzzles", subcategory: "Intermediate Exercises 6", puzzles: WOODPECKER_PUZZLES_56 },
+  { name: "Bloque 1", description: "Bloque 1", category: "woodpecker_puzzles", subcategory: "Advanced Exercises", puzzles: WOODPECKER_PUZZLES_17 },
+  { name: "Bloque 2", description: "Bloque 2", category: "woodpecker_puzzles", subcategory: "Advanced Exercises", puzzles: WOODPECKER_PUZZLES_27 },
+  { name: "Bloque 3", description: "Bloque 3", category: "woodpecker_puzzles", subcategory: "Advanced Exercises", puzzles: WOODPECKER_PUZZLES_37 }
 ]
 
 const SEED_BLOCKS = [
