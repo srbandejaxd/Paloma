@@ -2984,27 +2984,27 @@ const PUZZLES_WOODPECKER_METHOD2_BLOQUE_1F = [
 ]
 
 const SEED_BLOCKS_WOODPECKER_METHOD2 = [
-  { name: "Bloque 1a", description: "Bloque 1a", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1A },
-  { name: "Bloque 2a", description: "Bloque 2a", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_2A },
-  { name: "Bloque 3a", description: "Bloque 3a", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_3A },
-  { name: "Bloque 4a", description: "Bloque 4a", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_4A },
-  { name: "Bloque 5a", description: "Bloque 5a", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_5A },
-  { name: "Bloque 6a", description: "Bloque 6a", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_6A },
-  { name: "Bloque 1b", description: "Bloque 1b", category: "woodpecker_method2", subcategory: "Ejercicios de Examen", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1B },
-  { name: "Bloque 1c", description: "Bloque 1c", category: "woodpecker_method2", subcategory: "Ejercicios de Nivel Academico", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1C },
-  { name: "Bloque 2c", description: "Bloque 2c", category: "woodpecker_method2", subcategory: "Ejercicios de Nivel Academico", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_2C },
-  { name: "Bloque 3c", description: "Bloque 3c", category: "woodpecker_method2", subcategory: "Ejercicios de Nivel Academico", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_3C },
-  { name: "Bloque 4c", description: "Bloque 4c", category: "woodpecker_method2", subcategory: "Ejercicios de Nivel Academico", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_4C },
-  { name: "Bloque 1d", description: "Bloque 1d", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Media", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1D },
-  { name: "Bloque 2d", description: "Bloque 2d", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Media", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_2D },
-  { name: "Bloque 3d", description: "Bloque 3d", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Media", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_3D },
-  { name: "Bloque 4d", description: "Bloque 4d", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Media", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_4D },
-  { name: "Bloque 1e", description: "Bloque 1e", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1E },
-  { name: "Bloque 2e", description: "Bloque 2e", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_2E },
-  { name: "Bloque 3e", description: "Bloque 3e", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_3E },
-  { name: "Bloque 4e", description: "Bloque 4e", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_4E },
-  { name: "Bloque 5e", description: "Bloque 5e", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_5E },
-  { name: "Bloque 1f", description: "Bloque 1f", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Experta", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1F }
+  { name: "Bloque 1aa", description: "Bloque 1aa", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1A },
+  { name: "Bloque 2aa", description: "Bloque 2aa", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_2A },
+  { name: "Bloque 3aa", description: "Bloque 3aa", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_3A },
+  { name: "Bloque 4aa", description: "Bloque 4aa", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_4A },
+  { name: "Bloque 5aa", description: "Bloque 5aa", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_5A },
+  { name: "Bloque 6aa", description: "Bloque 6aa", category: "woodpecker_method2", subcategory: "Ejercicios de Educacion Publica", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_6A },
+  { name: "Bloque 1ba", description: "Bloque 1ba", category: "woodpecker_method2", subcategory: "Ejercicios de Examen", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1B },
+  { name: "Bloque 1ca", description: "Bloque 1ca", category: "woodpecker_method2", subcategory: "Ejercicios de Nivel Academico", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1C },
+  { name: "Bloque 2ca", description: "Bloque 2ca", category: "woodpecker_method2", subcategory: "Ejercicios de Nivel Academico", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_2C },
+  { name: "Bloque 3ca", description: "Bloque 3ca", category: "woodpecker_method2", subcategory: "Ejercicios de Nivel Academico", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_3C },
+  { name: "Bloque 4ca", description: "Bloque 4ca", category: "woodpecker_method2", subcategory: "Ejercicios de Nivel Academico", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_4C },
+  { name: "Bloque 1da", description: "Bloque 1da", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Media", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1D },
+  { name: "Bloque 2da", description: "Bloque 2da", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Media", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_2D },
+  { name: "Bloque 3da", description: "Bloque 3da", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Media", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_3D },
+  { name: "Bloque 4da", description: "Bloque 4da", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Media", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_4D },
+  { name: "Bloque 1ea", description: "Bloque 1ea", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1E },
+  { name: "Bloque 2ea", description: "Bloque 2ea", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_2E },
+  { name: "Bloque 3ea", description: "Bloque 3ea", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_3E },
+  { name: "Bloque 4ea", description: "Bloque 4ea", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_4E },
+  { name: "Bloque 5ea", description: "Bloque 5ea", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Dificil", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_5E },
+  { name: "Bloque 1fa", description: "Bloque 1fa", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Experta", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1F }
 ]
 
 const SEED_BLOCKS = [
