@@ -6,9 +6,9 @@ import { Puzzle, Block } from '../types'
 import PuzzleBoard from '../components/Board/PuzzleBoard'
 
 const CATEGORIES = [
-  { id: 'woodpecker2', label: 'Woodpecker 2' },
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual" },
   { id: "palomita", label: "Woodpecker Method" },
+  { id: "woodpecker_method2", label: "Woodpecker Method 2", description: "Puzzles Posicionales" },
 ]
 
 export default function Puzzles() {

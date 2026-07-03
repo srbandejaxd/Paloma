@@ -6,9 +6,9 @@ import { Block, AttemptRecord } from '../types'
 import { formatTimeLong } from '../lib/time'
 
 const CATEGORIES = [
-  { id: 'woodpecker2', label: 'Woodpecker 2' },
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual" },
   { id: "palomita", label: "Woodpecker Method" },
+  { id: "woodpecker_method2", label: "Woodpecker Method 2" },
 ]
 
 export default function History() {
