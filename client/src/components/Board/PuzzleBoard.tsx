@@ -88,6 +88,7 @@ export default function PuzzleBoard({
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
   const [dragPiece, setDragPiece] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [promotionMove, setPromotionMove] = useState<{ from: string; to: string; piece: string } | null>(null)
 
   const startTimeRef = useRef<number>(Date.now())
   const feedbackTimeout = useRef<ReturnType<typeof setTimeout>>()
@@ -263,7 +264,7 @@ export default function PuzzleBoard({
   // Ref para processMove para evitar stale closure en window events
   const processMoveRef = useRef<(src: string, tgt: string, piece: string) => boolean>(() => false)
 
-  function processMove(sourceSquare: string, targetSquare: string, piece: string): boolean {
+  function processMove(sourceSquare: string, targetSquare: string, piece: string, promotionPiece?: string): boolean {
     if (disabled || feedbackRef.current === 'opponent' || feedbackRef.current === 'skipping') return false
 
     const currentGame = gameRef.current
@@ -276,7 +277,11 @@ export default function PuzzleBoard({
     try {
       const isPromotion = piece.toLowerCase().includes('p') &&
         (targetSquare[1] === '8' || targetSquare[1] === '1')
-      moveResult = gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: isPromotion ? 'q' : undefined })
+      if (isPromotion && !promotionPiece) {
+        setPromotionMove({ from: sourceSquare, to: targetSquare, piece })
+        return false
+      }
+      moveResult = gameCopy.move({ from: sourceSquare, to: targetSquare, promotion: promotionPiece })
     } catch { return false }
 
     if (!moveResult) return false
@@ -518,6 +523,31 @@ export default function PuzzleBoard({
         {feedback === 'skipping' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-red-900/20 rounded-sm">
             <span className="font-mono text-red-400 text-lg font-bold opacity-90">Siguiente →</span>
+          </div>
+        )}
+        {promotionMove && (
+          <div className="absolute inset-0 flex items-center justify-center bg-void/80 z-50 rounded-sm">
+            <div className="bg-void-2 border border-void-4 p-4 rounded-sm">
+              <p className="font-mono text-xs text-bone-3 mb-3 text-center uppercase tracking-widest">Promocionar a</p>
+              <div className="flex gap-2">
+                {(['q','r','b','n'] as const).map(p => {
+                  const labels: Record<string, string> = { q: '♛ Dama', r: '♜ Torre', b: '♝ Alfil', n: '♞ Caballo' }
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        const { from, to, piece: pc } = promotionMove
+                        setPromotionMove(null)
+                        processMove(from, to, pc, p)
+                      }}
+                      className="px-4 py-3 font-mono text-sm border border-void-4 hover:border-amber hover:text-amber transition-colors text-bone"
+                    >
+                      {labels[p]}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
