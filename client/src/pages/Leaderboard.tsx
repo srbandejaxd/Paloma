@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { fetchBlocks, fetchBlockAttempts } from '../lib/api'
+import { fetchBlocks, fetchAttempts } from '../lib/api'
 import { Block } from '../types'
 
 interface BlockAttempt {
@@ -78,15 +78,15 @@ export default function Leaderboard() {
     if (!selectedBlockId) return
     
     setLoading(true)
-    fetchBlockAttempts(selectedBlockId)
-      .then(attempts => {
+    fetchAttempts(selectedBlockId)
+      .then((attempts: BlockAttempt[]) => {
         const selectedBlock = blocks.find(b => b.id === selectedBlockId)
         if (!selectedBlock) return
 
         // Agrupar intentos por usuario y calcular el mejor score
         const userMap = new Map<number, { nickname: string; attempts: BlockAttempt[] }>()
         
-        attempts.forEach(attempt => {
+        attempts.forEach((attempt: BlockAttempt) => {
           if (!userMap.has(attempt.userId)) {
             userMap.set(attempt.userId, { nickname: attempt.userNickname, attempts: [] })
           }
@@ -129,7 +129,7 @@ export default function Leaderboard() {
         setRanking(rankingData)
         setLoading(false)
       })
-      .catch(err => {
+      .catch((err: Error) => {
         console.error('Error loading attempts:', err)
         setLoading(false)
       })
@@ -416,7 +416,7 @@ export default function Leaderboard() {
 
                 <div className="space-y-3">
                   {rest.map((player) => {
-                    const isCurrentUser = player.userId === user?.id
+                    const isCurrentUser = player.nickname === user?.nickname
                     return (
                       <div
                         key={player.userId}
