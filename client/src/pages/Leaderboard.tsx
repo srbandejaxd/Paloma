@@ -34,10 +34,18 @@ function MoonIcon() {
   )
 }
 
+const CATEGORIES = [
+  { id: "checkmate_patterns", label: "Checkmate Patterns Manual" },
+  { id: "palomita", label: "Woodpecker Method" },
+  { id: "woodpecker_method2", label: "Woodpecker Method 2" },
+]
+
 export default function Leaderboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [blocks, setBlocks] = useState<Block[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const [selectedBlockId, setSelectedBlockId] = useState<number | null>(null)
   const [ranking, setRanking] = useState<RankingEntry[]>([])
   const [dark, setDark] = useState(true)
@@ -58,12 +66,32 @@ export default function Leaderboard() {
     if (!user) { navigate('/'); return }
     fetchBlocks().then(b => {
       setBlocks(b)
-      if (b.length > 0) setSelectedBlockId(b[0].id)
+      setLoading(false)
     }).catch(console.error)
   }, [user, navigate])
 
+  // Obtener categorías únicas
+  const categories = CATEGORIES.filter(cat => blocks.some(b => b.category === cat.id))
+
+  // Obtener subcategorías para la categoría seleccionada
+  const blocksForCategory = selectedCategory ? blocks.filter(b => b.category === selectedCategory) : []
+  const subcategoriesForCategory = selectedCategory
+    ? [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
+    : []
+
+  // Obtener bloques para mostrar (según categoría y subcategoría)
+  const blocksToShow = selectedCategory
+    ? selectedSubcategory
+      ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
+      : blocksForCategory.filter(b => !b.subcategory)
+    : []
+
+  // Cargar ranking cuando se selecciona un bloque
   useEffect(() => {
-    if (!selectedBlockId) return
+    if (!selectedBlockId) {
+      setRanking([])
+      return
+    }
     
     setLoading(true)
     fetchAttempts(selectedBlockId)
@@ -84,8 +112,6 @@ export default function Leaderboard() {
 
         // Calcular ranking
         const rankingData: RankingEntry[] = Array.from(userMap.entries()).map(([userId, data]) => {
-          // El score ya viene en AttemptRecord, pero lo recalculamos con la fórmula si es necesario
-          // Score = 1000 * N - tiempo_en_segundos
           const N = selectedBlock.puzzleCount
           
           // Encontrar el mejor intento (score más alto = menor tiempo)
@@ -128,7 +154,6 @@ export default function Leaderboard() {
     bg: 'bg-[#0A0A0F]',
     bg2: 'bg-[#12121A]',
     bg3: 'bg-[#1C1C28]',
-    bgSubtle: 'bg-[#15151D]',
     border: 'border-[#1F1F2E]',
     borderLight: 'border-[#2A2A3A]',
     text: 'text-[#E8E6E0]',
@@ -136,13 +161,12 @@ export default function Leaderboard() {
     text3: 'text-[#7A776E]',
     accent: 'text-[#D4A017]',
     accentBg: 'bg-[#D4A017]',
-    inputBg: 'bg-[#12121A] border-[#1F1F2E] focus:border-[#D4A017]',
+    inputBg: 'bg-[#12121A] border-[#1F1F2E] focus:border-[#D4A017] text-[#E8E6E0]',
     track: 'bg-[#1F1F2E]',
   } : {
     bg: 'bg-[#FAFAF7]',
     bg2: 'bg-[#F3EFE7]',
     bg3: 'bg-[#EDE8DF]',
-    bgSubtle: 'bg-[#F6F2EA]',
     border: 'border-[#E5DFD5]',
     borderLight: 'border-[#D9D2C8]',
     text: 'text-[#1A1814]',
@@ -150,7 +174,7 @@ export default function Leaderboard() {
     text3: 'text-[#8A8478]',
     accent: 'text-[#A07810]',
     accentBg: 'bg-[#A07810]',
-    inputBg: 'bg-[#F3EFE7] border-[#E5DFD5] focus:border-[#A07810]',
+    inputBg: 'bg-[#F3EFE7] border-[#E5DFD5] focus:border-[#A07810] text-[#1A1814]',
     track: 'bg-[#E5DFD5]',
   }
 
@@ -163,14 +187,14 @@ export default function Leaderboard() {
     { path: '/blind', label: 'Ciego', icon: '🎲' },
   ]
 
-  const selectedBlock = blocks.find(b => b.id === selectedBlockId)
   const top3 = ranking.slice(0, 3)
   const rest = ranking.slice(3)
+  const selectedBlock = blocks.find(b => b.id === selectedBlockId)
 
-  if (loading && selectedBlockId) {
+  if (loading) {
     return (
       <div className={`min-h-screen ${t.bg} flex items-center justify-center`}>
-        <p className={t.text3}>Cargando ranking...</p>
+        <p className={t.text3}>Cargando bloques...</p>
       </div>
     )
   }
@@ -218,269 +242,332 @@ export default function Leaderboard() {
       <div className="max-w-7xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-12 animate-slide-up">
-          <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Clasificaciones por bloque</p>
+          <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Clasificaciones</p>
           <h2 className={`text-5xl font-bold ${t.text} mb-4 leading-none`} style={{ letterSpacing: '-0.02em' }}>
-            Ranking de {selectedBlock?.name || 'Bloques'}
+            Ranking por bloque
           </h2>
           <p className={`text-lg max-w-2xl ${t.text2} leading-relaxed`}>
-            Los mejores tiempos y scores en este bloque. Formula: score = 1000×N - tiempo(segundos)
+            Selecciona una categoría, subcategoría y bloque para ver el ranking de ese bloque específico.
           </p>
         </div>
 
-        {/* Block Selector */}
-        <div className="mb-16">
-          <p className={`text-sm uppercase tracking-widest ${t.text3} mb-4`}>Selecciona un bloque</p>
-          <div className="flex flex-wrap gap-3">
-            {blocks.map(block => (
-              <button
-                key={block.id}
-                onClick={() => setSelectedBlockId(block.id)}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                  selectedBlockId === block.id
-                    ? `${t.accentBg} text-white shadow-lg`
-                    : `${t.bg2} ${t.border} border ${t.text2} hover:${t.text}`
-                }`}
+        {/* Selectors Section */}
+        <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-16 animate-slide-up`}>
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Categoria Dropdown */}
+            <div>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                Categoría
+              </label>
+              <select
+                value={selectedCategory || ''}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value || null)
+                  setSelectedSubcategory(null)
+                  setSelectedBlockId(null)
+                }}
+                className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold`}
               >
-                {block.name}
-              </button>
-            ))}
+                <option value="">Elige una categoría...</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Subcategoria Dropdown */}
+            <div>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                Subcategoría
+              </label>
+              <select
+                value={selectedSubcategory || ''}
+                onChange={(e) => {
+                  setSelectedSubcategory(e.target.value || null)
+                  setSelectedBlockId(null)
+                }}
+                disabled={!selectedCategory || subcategoriesForCategory.length === 0}
+                className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <option value="">
+                  {subcategoriesForCategory.length === 0 ? 'Sin subcategorías' : 'Elige una subcategoría...'}
+                </option>
+                {subcategoriesForCategory.map(sub => (
+                  <option key={sub} value={sub}>
+                    {sub}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Bloque Dropdown */}
+            <div>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                Bloque
+              </label>
+              <select
+                value={selectedBlockId || ''}
+                onChange={(e) => setSelectedBlockId(e.target.value ? Number(e.target.value) : null)}
+                disabled={!selectedCategory || blocksToShow.length === 0}
+                className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <option value="">
+                  {blocksToShow.length === 0 ? 'Sin bloques' : 'Elige un bloque...'}
+                </option>
+                {blocksToShow.map(block => (
+                  <option key={block.id} value={block.id}>
+                    {block.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* TOP 3 PODIO OLÍMPICO */}
-        {ranking.length > 0 ? (
-          <div className="mb-20">
-            <div className="relative h-80 flex items-flex-end justify-center gap-12 mb-8">
-              {/* Posición 2 (Plata) */}
-              <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                <div className={`text-center`}>
-                  <div className="mb-6">
-                    <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
-                      2️⃣
-                    </div>
-                    <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[1]?.nickname}</h3>
-                    <p className={`text-sm ${t.text3} mt-1`}>{top3[1]?.attempts} intento{top3[1]?.attempts !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-                
-                {/* Podio Plata */}
-                <div 
-                  className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg`}
-                  style={{ 
-                    backgroundColor: dark ? '#C0C0C0' : '#E8E0D0',
-                    borderColor: '#C0C0C0',
-                    height: '140px'
-                  }}
-                >
-                  <div className="p-4 h-full flex flex-col items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Plata</span>
-                    <span className="text-2xl font-bold text-gray-800">
-                      {Math.round(top3[1]?.bestScore || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Posición 1 (Oro) */}
-              <div className="flex flex-col items-center gap-4 animate-slide-up z-10">
-                <div className={`text-center scale-110`}>
-                  <div className="relative mb-6">
-                    <div className="absolute -inset-2 rounded-full" style={{ background: `radial-gradient(circle, ${accentColor}40, transparent)` }} />
-                    <div className={`relative w-24 h-24 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-4xl font-bold mx-auto shadow-lg`}>
-                      👑
-                    </div>
-                  </div>
-                  <h3 className={`text-2xl font-bold ${t.text} leading-tight`}>{top3[0]?.nickname}</h3>
-                  <p className={`text-sm ${t.text3} mt-1`}>{top3[0]?.attempts} intento{top3[0]?.attempts !== 1 ? 's' : ''}</p>
-                </div>
-                
-                {/* Podio Oro */}
-                <div 
-                  className={`w-40 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg shadow-lg`}
-                  style={{ 
-                    backgroundColor: '#FFD700',
-                    borderColor: '#FFD700',
-                    height: '180px'
-                  }}
-                >
-                  <div className="p-4 h-full flex flex-col items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Oro</span>
-                    <span className="text-3xl font-bold text-gray-800">
-                      {Math.round(top3[0]?.bestScore || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Posición 3 (Bronce) */}
-              <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                <div className={`text-center`}>
-                  <div className="mb-6">
-                    <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
-                      3️⃣
-                    </div>
-                    <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[2]?.nickname}</h3>
-                    <p className={`text-sm ${t.text3} mt-1`}>{top3[2]?.attempts} intento{top3[2]?.attempts !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-                
-                {/* Podio Bronce */}
-                <div 
-                  className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg`}
-                  style={{ 
-                    backgroundColor: '#CD7F32',
-                    borderColor: '#CD7F32',
-                    height: '100px'
-                  }}
-                >
-                  <div className="p-4 h-full flex flex-col items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Bronce</span>
-                    <span className="text-xl font-bold text-gray-700">
-                      {Math.round(top3[2]?.bestScore || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+        {/* Ranking Section - Solo aparece si hay bloque seleccionado */}
+        {selectedBlockId && selectedBlock && ranking.length > 0 ? (
+          <div className="animate-slide-up">
+            <div className="mb-12">
+              <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>{selectedBlock.name}</p>
+              <h3 className={`text-3xl font-bold ${t.text} leading-none mb-2`} style={{ letterSpacing: '-0.02em' }}>
+                Top ranking
+              </h3>
+              <p className={`text-sm ${t.text2}`}>Formula: score = 1000×N - tiempo(segundos)</p>
             </div>
 
-            {/* Stats del Top 3 */}
-            <div className="grid md:grid-cols-3 gap-4 mb-16">
-              {top3.map((player, idx) => (
-                <div key={player.userId} className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                      style={{ 
-                        backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
-                      }}
-                    >
-                      {idx + 1}
-                    </div>
-                    <div>
-                      <p className={`text-sm font-bold ${t.text}`}>{player.nickname}</p>
-                      <p className={`text-xs ${t.text3}`}>Rank #{player.rank}</p>
+            {/* TOP 3 PODIO OLÍMPICO */}
+            <div className="mb-20">
+              <div className="relative h-80 flex items-flex-end justify-center gap-12 mb-8">
+                {/* Posición 2 (Plata) */}
+                <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                  <div className={`text-center`}>
+                    <div className="mb-6">
+                      <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
+                        2️⃣
+                      </div>
+                      <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[1]?.nickname}</h3>
+                      <p className={`text-sm ${t.text3} mt-1`}>{top3[1]?.attempts} intento{top3[1]?.attempts !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Mejor tiempo</span>
-                      <span className={`text-sm font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</span>
-                    </div>
-                    <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
-                      <div 
-                        className="h-full transition-all rounded-full" 
-                        style={{ width: `${Math.min((player.bestTime / 300) * 100, 100)}%`, backgroundColor: accentColor }}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
-                      <div>
-                        <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Score</p>
-                        <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
-                      </div>
-                      <div>
-                        <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Intentos</p>
-                        <p className={`text-lg font-bold ${t.text}`}>{player.attempts}</p>
-                      </div>
+                  <div 
+                    className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg`}
+                    style={{ 
+                      backgroundColor: dark ? '#C0C0C0' : '#E8E0D0',
+                      borderColor: '#C0C0C0',
+                      height: '140px'
+                    }}
+                  >
+                    <div className="p-4 h-full flex flex-col items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Plata</span>
+                      <span className="text-2xl font-bold text-gray-800">
+                        {Math.round(top3[1]?.bestScore || 0)}
+                      </span>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Separador */}
-            {rest.length > 0 && <div className={`h-px ${t.track} my-16`} />}
-
-            {/* Rest of Leaderboard */}
-            {rest.length > 0 && (
-              <div className="mb-20">
-                <div className="mb-8">
-                  <h3 className={`text-2xl font-bold ${t.text} leading-none mb-2`} style={{ letterSpacing: '-0.02em' }}>
-                    Resto del ranking
-                  </h3>
-                  <p className={`text-sm ${t.text2}`}>{rest.length} jugador{rest.length !== 1 ? 'es' : ''} más</p>
+                {/* Posición 1 (Oro) */}
+                <div className="flex flex-col items-center gap-4 animate-slide-up z-10">
+                  <div className={`text-center scale-110`}>
+                    <div className="relative mb-6">
+                      <div className="absolute -inset-2 rounded-full" style={{ background: `radial-gradient(circle, ${accentColor}40, transparent)` }} />
+                      <div className={`relative w-24 h-24 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-4xl font-bold mx-auto shadow-lg`}>
+                        👑
+                      </div>
+                    </div>
+                    <h3 className={`text-2xl font-bold ${t.text} leading-tight`}>{top3[0]?.nickname}</h3>
+                    <p className={`text-sm ${t.text3} mt-1`}>{top3[0]?.attempts} intento{top3[0]?.attempts !== 1 ? 's' : ''}</p>
+                  </div>
+                  
+                  <div 
+                    className={`w-40 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg shadow-lg`}
+                    style={{ 
+                      backgroundColor: '#FFD700',
+                      borderColor: '#FFD700',
+                      height: '180px'
+                    }}
+                  >
+                    <div className="p-4 h-full flex flex-col items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Oro</span>
+                      <span className="text-3xl font-bold text-gray-800">
+                        {Math.round(top3[0]?.bestScore || 0)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  {rest.map((player) => {
-                    const isCurrentUser = player.nickname === user?.nickname
-                    return (
-                      <div
-                        key={player.userId}
-                        className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}
-                        style={isCurrentUser ? { boxShadow: `0 0 0 2px ${accentColor}` } : {}}
-                      >
-                        <div className="flex items-center justify-between gap-4">
-                          {/* Rank y Nombre */}
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <div className={`w-12 h-12 rounded-lg ${t.bg3} flex items-center justify-center flex-shrink-0`}>
-                              <span className={`text-sm font-bold ${t.text}`}>{player.rank}</span>
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h4 className={`font-bold ${t.text} truncate`}>{player.nickname}</h4>
-                                {isCurrentUser && (
-                                  <span className={`text-xs px-2 py-0.5 rounded-md ${t.bg3} ${t.text3} whitespace-nowrap`}>
-                                    Tú
-                                  </span>
-                                )}
-                              </div>
-                              <p className={`text-xs ${t.text3} mt-1`}>{player.attempts} intento{player.attempts !== 1 ? 's' : ''}</p>
-                            </div>
-                          </div>
-
-                          {/* Stats Grid */}
-                          <div className="hidden sm:grid grid-cols-3 gap-8">
-                            <div className="text-right">
-                              <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Score</p>
-                              <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Tiempo</p>
-                              <p className={`text-lg font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</p>
-                            </div>
-                            <div className="text-right">
-                              <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Precisión</p>
-                              <p className={`text-lg font-bold ${t.text}`}>{player.averageAccuracy.toFixed(0)}%</p>
-                            </div>
-                          </div>
-
-                          {/* Arrow for mobile */}
-                          <div className="sm:hidden">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
-                              <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                          </div>
-                        </div>
-
-                        {/* Barra de tiempo */}
-                        <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Tiempo de mejor intento</span>
-                            <span className={`text-sm font-semibold ${t.text}`}>{player.bestTime.toFixed(1)}s</span>
-                          </div>
-                          <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
-                            <div 
-                              className="h-full transition-all rounded-full" 
-                              style={{ width: `${Math.min((player.bestTime / 300) * 100, 100)}%`, backgroundColor: accentColor }}
-                            />
-                          </div>
-                        </div>
+                {/* Posición 3 (Bronce) */}
+                <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                  <div className={`text-center`}>
+                    <div className="mb-6">
+                      <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
+                        3️⃣
                       </div>
-                    )
-                  })}
+                      <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[2]?.nickname}</h3>
+                      <p className={`text-sm ${t.text3} mt-1`}>{top3[2]?.attempts} intento{top3[2]?.attempts !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg`}
+                    style={{ 
+                      backgroundColor: '#CD7F32',
+                      borderColor: '#CD7F32',
+                      height: '100px'
+                    }}
+                  >
+                    <div className="p-4 h-full flex flex-col items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Bronce</span>
+                      <span className="text-xl font-bold text-gray-700">
+                        {Math.round(top3[2]?.bestScore || 0)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
+
+              {/* Stats del Top 3 */}
+              <div className="grid md:grid-cols-3 gap-4 mb-16">
+                {top3.map((player, idx) => (
+                  <div key={player.userId} className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                        style={{ 
+                          backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <p className={`text-sm font-bold ${t.text}`}>{player.nickname}</p>
+                        <p className={`text-xs ${t.text3}`}>Rank #{player.rank}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Mejor tiempo</span>
+                        <span className={`text-sm font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</span>
+                      </div>
+                      <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
+                        <div 
+                          className="h-full transition-all rounded-full" 
+                          style={{ width: `${Math.min((player.bestTime / 300) * 100, 100)}%`, backgroundColor: accentColor }}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
+                        <div>
+                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Score</p>
+                          <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
+                        </div>
+                        <div>
+                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Intentos</p>
+                          <p className={`text-lg font-bold ${t.text}`}>{player.attempts}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Separador */}
+              {rest.length > 0 && <div className={`h-px ${t.track} my-16`} />}
+
+              {/* Rest of Leaderboard */}
+              {rest.length > 0 && (
+                <div className="mb-20">
+                  <div className="mb-8">
+                    <h3 className={`text-2xl font-bold ${t.text} leading-none mb-2`} style={{ letterSpacing: '-0.02em' }}>
+                      Resto del ranking
+                    </h3>
+                    <p className={`text-sm ${t.text2}`}>{rest.length} jugador{rest.length !== 1 ? 'es' : ''} más</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {rest.map((player) => {
+                      const isCurrentUser = player.nickname === user?.nickname
+                      return (
+                        <div
+                          key={player.userId}
+                          className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}
+                          style={isCurrentUser ? { boxShadow: `0 0 0 2px ${accentColor}` } : {}}
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            {/* Rank y Nombre */}
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                              <div className={`w-12 h-12 rounded-lg ${t.bg3} flex items-center justify-center flex-shrink-0`}>
+                                <span className={`text-sm font-bold ${t.text}`}>{player.rank}</span>
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h4 className={`font-bold ${t.text} truncate`}>{player.nickname}</h4>
+                                  {isCurrentUser && (
+                                    <span className={`text-xs px-2 py-0.5 rounded-md ${t.bg3} ${t.text3} whitespace-nowrap`}>
+                                      Tú
+                                    </span>
+                                  )}
+                                </div>
+                                <p className={`text-xs ${t.text3} mt-1`}>{player.attempts} intento{player.attempts !== 1 ? 's' : ''}</p>
+                              </div>
+                            </div>
+
+                            {/* Stats Grid */}
+                            <div className="hidden sm:grid grid-cols-3 gap-8">
+                              <div className="text-right">
+                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Score</p>
+                                <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Tiempo</p>
+                                <p className={`text-lg font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</p>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Precisión</p>
+                                <p className={`text-lg font-bold ${t.text}`}>{player.averageAccuracy.toFixed(0)}%</p>
+                              </div>
+                            </div>
+
+                            {/* Arrow for mobile */}
+                            <div className="sm:hidden">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                              </svg>
+                            </div>
+                          </div>
+
+                          {/* Barra de tiempo */}
+                          <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Tiempo de mejor intento</span>
+                              <span className={`text-sm font-semibold ${t.text}`}>{player.bestTime.toFixed(1)}s</span>
+                            </div>
+                            <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
+                              <div 
+                                className="h-full transition-all rounded-full" 
+                                style={{ width: `${Math.min((player.bestTime / 300) * 100, 100)}%`, backgroundColor: accentColor }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border`}>
+        ) : selectedBlockId && selectedBlock && ranking.length === 0 ? (
+          <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border animate-slide-up`}>
             <p className={`text-lg ${t.text2}`}>No hay datos de intentos para este bloque aún</p>
             <p className={`text-sm ${t.text3} mt-2`}>Completa algunos cycles para ver el ranking</p>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Footer */}
