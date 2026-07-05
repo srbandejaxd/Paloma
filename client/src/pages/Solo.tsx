@@ -15,6 +15,14 @@ const CATEGORIES = [
   { id: "woodpecker_method2", label: "Woodpecker Method 2", description: "Puzzles Posicionales" },
 ]
 
+const NAV_LINKS = [
+  { path: '/puzzles', label: 'Puzzles' },
+  { path: '/vision', label: 'Visión' },
+  { path: '/history', label: 'Historial' },
+  { path: '/leaderboard', label: 'Ranking' },
+  { path: '/blind', label: 'Ciego' },
+]
+
 interface FailedPuzzle {
   puzzleId: number
   idx: number
@@ -128,29 +136,46 @@ export default function Solo() {
 
   const handleError = useCallback(() => setPuzzleErrors(prev => prev + 1), [])
 
+  // ── SHARED: top nav pill bar (category / subcategory / select phases) ──────
+  function TopBar() {
+    return (
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <p className="text-bone-3 font-mono text-xs">Bienvenido,</p>
+          <p className="text-amber font-mono font-bold">{user?.nickname}</p>
+        </div>
+        <div className="flex items-center gap-1 bg-void-2 border border-void-4 rounded-sm p-1">
+          {NAV_LINKS.map(link => (
+            <button
+              key={link.path}
+              onClick={() => navigate(link.path)}
+              className="px-3 py-1.5 font-mono text-xs text-bone-3 hover:text-bone rounded-sm transition-colors"
+            >
+              {link.label}
+            </button>
+          ))}
+          <button
+            onClick={logout}
+            className="px-3 py-1.5 font-mono text-xs text-bone-3 hover:text-red-400 rounded-sm transition-colors"
+          >
+            Salir
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   // ── CATEGORY ─────────────────────────────────────────────────────────────────
   if (phase === 'category') {
     return (
       <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md animate-slide-up">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-bone-3 font-mono text-xs">Bienvenido,</p>
-              <p className="text-amber font-mono font-bold">{user?.nickname}</p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => navigate('/puzzles')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Puzzles</button>
-              <button onClick={() => navigate('/vision')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Visión</button>
-              <button onClick={() => navigate('/history')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Historial</button>
-              <button onClick={() => navigate('/leaderboard')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Ranking</button>
-              <button onClick={() => navigate('/blind')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors px-3 py-1.5 border border-void-4 hover:border-bone-3 rounded-sm">Ciego</button>
-              <button onClick={logout} className="text-bone-3 font-mono text-xs hover:text-red-400 transition-colors">Salir</button>
-            </div>
-          </div>
+          <TopBar />
 
-          <div className="mb-8">
-            <h2 className="text-2xl font-mono font-bold text-bone">Elige una categoría</h2>
-            <p className="text-bone-3 font-mono text-sm mt-1">¿Qué quieres entrenar hoy?</p>
+          <div className="text-center mb-8">
+            <div className="text-4xl mb-3">🪃</div>
+            <h2 className="text-2xl font-mono font-bold text-bone tracking-tight">Elige una categoría</h2>
+            <p className="text-bone-3 font-mono text-sm mt-2">¿Qué quieres entrenar hoy?</p>
           </div>
 
           <div className="space-y-3">
@@ -164,10 +189,10 @@ export default function Solo() {
                   const subs = [...new Set(catBlocks.map(b => b.subcategory).filter(Boolean))]
                   setPhase(subs.length > 0 ? 'subcategory' : 'select')
                 }}
-                className="w-full flex items-center justify-between px-5 py-5 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
+                className="w-full flex items-center justify-between px-5 py-4 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
               >
                 <div className="text-left">
-                  <div className="font-mono text-base font-bold text-bone group-hover:text-amber transition-colors">{cat.label}</div>
+                  <div className="font-mono text-sm font-bold text-bone group-hover:text-amber transition-colors">{cat.label}</div>
                   <div className="font-mono text-xs text-bone-3 mt-1">{cat.description}</div>
                 </div>
                 <span className="font-mono text-amber text-lg opacity-0 group-hover:opacity-100 transition-opacity">→</span>
@@ -186,10 +211,12 @@ export default function Solo() {
       <div className="min-h-screen bg-void flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md animate-slide-up">
           <button onClick={() => setPhase('category')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-6 block">← Categorías</button>
+
           <div className="mb-8">
             <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-1">{catLabel}</p>
-            <h2 className="text-2xl font-mono font-bold text-bone">Elige una subcategoría</h2>
+            <h2 className="text-2xl font-mono font-bold text-bone tracking-tight">Elige una subcategoría</h2>
           </div>
+
           <div className="space-y-3">
             {subcategoriesForCategory.map(sub => {
               const subBlocks = blocksForCategory.filter(b => b.subcategory === sub)
@@ -197,10 +224,10 @@ export default function Solo() {
                 <button
                   key={sub}
                   onClick={() => { setSelectedSubcategory(sub); setPhase('select') }}
-                  className="w-full flex items-center justify-between px-5 py-5 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
+                  className="w-full flex items-center justify-between px-5 py-4 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
                 >
                   <div className="text-left">
-                    <div className="font-mono text-base font-bold text-bone group-hover:text-amber transition-colors">{sub}</div>
+                    <div className="font-mono text-sm font-bold text-bone group-hover:text-amber transition-colors">{sub}</div>
                     <div className="font-mono text-xs text-bone-3 mt-1">{subBlocks.length} bloque{subBlocks.length !== 1 ? 's' : ''}</div>
                   </div>
                   <span className="font-mono text-amber text-lg opacity-0 group-hover:opacity-100 transition-opacity">→</span>
@@ -223,8 +250,8 @@ export default function Solo() {
 
           <div className="mb-8">
             <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-1">{catLabel}</p>
-            <h2 className="text-2xl font-mono font-bold text-bone">Elige un bloque</h2>
-            <p className="text-bone-3 font-mono text-sm mt-1">Cada repetición del bloque es un cycle</p>
+            <h2 className="text-2xl font-mono font-bold text-bone tracking-tight">Elige un bloque</h2>
+            <p className="text-bone-3 font-mono text-sm mt-2">Cada repetición del bloque es un cycle</p>
           </div>
 
           <div className="space-y-2">
@@ -232,9 +259,9 @@ export default function Solo() {
               <button
                 key={block.id}
                 onClick={() => startSolo(block)}
-                className="w-full flex items-center justify-between px-5 py-4 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
+                className="w-full flex items-center justify-between px-5 py-3.5 bg-void-2 border border-void-4 hover:border-amber rounded-sm transition-all group"
               >
-                <div>
+                <div className="text-left">
                   <div className="font-mono text-sm text-bone group-hover:text-amber transition-colors">{block.name}</div>
                   {block.description && <div className="font-mono text-xs text-bone-3 mt-0.5">{block.description}</div>}
                 </div>
@@ -255,14 +282,15 @@ export default function Solo() {
     return (
       <div className="min-h-screen bg-void flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center animate-slide-up">
+          <div className="text-4xl mb-4">🪃</div>
           <p className="text-bone-3 font-mono text-xs uppercase tracking-widest mb-6">Cycle completado</p>
-          <div className="text-6xl font-mono font-bold text-amber mb-1">{formatTimeLong(finalTime)}</div>
+          <div className="text-6xl font-mono font-bold text-amber mb-1 tracking-tight">{formatTimeLong(finalTime)}</div>
           <p className="text-bone-3 font-mono text-sm mb-8">{totalErrors} errores</p>
           <div className="space-y-3">
             <button onClick={() => startSolo(selectedBlock!)} className="w-full py-4 bg-amber text-void font-mono font-bold text-sm tracking-widest uppercase hover:bg-amber-glow transition-colors rounded-sm">
               Repetir bloque
             </button>
-            <button onClick={() => navigate('/history')} className="w-full py-3 bg-void-3 text-bone font-mono text-sm border border-void-4 hover:border-bone-3 transition-colors rounded-sm">
+            <button onClick={() => navigate('/history')} className="w-full py-3 bg-void-2 text-bone font-mono text-sm border border-void-4 hover:border-bone-3 transition-colors rounded-sm">
               Ver historial
             </button>
             <button onClick={() => setPhase('category')} className="w-full py-3 text-bone-3 font-mono text-sm hover:text-bone transition-colors">
