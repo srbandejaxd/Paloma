@@ -2,19 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { fetchBlocks, fetchAttempts } from '../lib/api'
-import { Block } from '../types'
-
-interface BlockAttempt {
-  id: number
-  userId: number
-  userNickname: string
-  blockId: number
-  totalTimeMs: number
-  solved: number
-  totalPuzzles: number
-  errors: number
-  createdAt: string
-}
+import { Block, AttemptRecord } from '../types'
 
 interface RankingEntry {
   nickname: string
@@ -79,27 +67,28 @@ export default function Leaderboard() {
     
     setLoading(true)
     fetchAttempts(selectedBlockId)
-      .then((attempts: BlockAttempt[]) => {
+      .then((attempts: AttemptRecord[]) => {
         const selectedBlock = blocks.find(b => b.id === selectedBlockId)
         if (!selectedBlock) return
 
         // Agrupar intentos por usuario y calcular el mejor score
-        const userMap = new Map<number, { nickname: string; attempts: BlockAttempt[] }>()
+        const userMap = new Map<number, { nickname: string; attempts: AttemptRecord[] }>()
         
-        attempts.forEach((attempt: BlockAttempt) => {
-          if (!userMap.has(attempt.userId)) {
-            userMap.set(attempt.userId, { nickname: attempt.userNickname, attempts: [] })
+        attempts.forEach((attempt: AttemptRecord) => {
+          const userId = attempt.userId || 0
+          if (!userMap.has(userId)) {
+            userMap.set(userId, { nickname: attempt.nickname, attempts: [] })
           }
-          userMap.get(attempt.userId)!.attempts.push(attempt)
+          userMap.get(userId)!.attempts.push(attempt)
         })
 
         // Calcular ranking
         const rankingData: RankingEntry[] = Array.from(userMap.entries()).map(([userId, data]) => {
+          // El score ya viene en AttemptRecord, pero lo recalculamos con la fórmula si es necesario
           // Score = 1000 * N - tiempo_en_segundos
-          // Donde N es la cantidad de puzzles del bloque
           const N = selectedBlock.puzzleCount
           
-          // Encontrar el mejor intento (score más alto)
+          // Encontrar el mejor intento (score más alto = menor tiempo)
           const best = data.attempts.reduce((prev, current) => {
             const prevScore = 1000 * N - (prev.totalTimeMs / 1000)
             const currentScore = 1000 * N - (current.totalTimeMs / 1000)
@@ -107,7 +96,6 @@ export default function Leaderboard() {
           })
 
           const bestScore = 1000 * N - (best.totalTimeMs / 1000)
-          const avgAccuracy = (best.solved / best.totalPuzzles) * 100
 
           return {
             nickname: data.nickname,
@@ -115,7 +103,7 @@ export default function Leaderboard() {
             bestScore,
             bestTime: best.totalTimeMs / 1000,
             attempts: data.attempts.length,
-            averageAccuracy: avgAccuracy,
+            averageAccuracy: best.accuracy,
             rank: 0
           }
         })
