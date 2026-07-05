@@ -10,17 +10,17 @@ import PuzzleBoard from '../components/Board/PuzzleBoard'
 type Phase = 'category' | 'subcategory' | 'select' | 'racing' | 'done'
 
 const CATEGORIES = [
-  { id: "checkmate_patterns", label: "The Checkmate Patterns Manual", description: "El Manual de patrones de mate te muestra los 34 patrones de mate que todo jugador de ajedrez debe conocer.", icon: '♚' },
-  { id: "palomita", label: "Woodpecker Method", description: "Puzzles Faciles, Intermedios y Dificiles", icon: '🪃' },
-  { id: "woodpecker_method2", label: "Woodpecker Method 2", description: "Puzzles Posicionales", icon: '♞' },
+  { id: "checkmate_patterns", label: "Checkmate Patterns Manual", description: "Domina los 34 patrones de mate esenciales", icon: '♚' },
+  { id: "palomita", label: "Woodpecker Method", description: "Puzzles de todas las dificultades", icon: '🪃' },
+  { id: "woodpecker_method2", label: "Woodpecker Method 2", description: "Puzzles posicionales avanzados", icon: '♞' },
 ]
 
-const NAV_LINKS = [
-  { path: '/puzzles', label: 'Puzzles' },
-  { path: '/vision', label: 'Visión' },
-  { path: '/history', label: 'Historial' },
-  { path: '/leaderboard', label: 'Ranking' },
-  { path: '/blind', label: 'Ciego' },
+const NAV_ITEMS = [
+  { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
+  { path: '/vision', label: 'Visión', icon: '👁' },
+  { path: '/history', label: 'Historial', icon: '📋' },
+  { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
+  { path: '/blind', label: 'Ciego', icon: '🎲' },
 ]
 
 interface FailedPuzzle {
@@ -168,198 +168,213 @@ export default function Solo() {
 
   const handleError = useCallback(() => setPuzzleErrors(prev => prev + 1), [])
 
-  // ── THEME TOKENS (mirrors Home.tsx) ─────────────────────────────────────────
+  // ── THEME TOKENS ────────────────────────────────────────────────────────────
   const t = dark ? {
     bg: 'bg-[#0A0A0F]',
     bg2: 'bg-[#12121A]',
     bg3: 'bg-[#1C1C28]',
-    border: 'border-[#252535]',
+    bgSubtle: 'bg-[#15151D]',
+    border: 'border-[#1F1F2E]',
+    borderLight: 'border-[#2A2A3A]',
     text: 'text-[#E8E6E0]',
     text2: 'text-[#B8B5AC]',
     text3: 'text-[#7A776E]',
     accent: 'text-[#D4A017]',
     accentBg: 'bg-[#D4A017]',
-    accentBorder: 'border-[#D4A017]',
-    inputBg: 'bg-[#12121A] border-[#252535] focus:border-[#D4A017]',
-    cardBg: 'bg-[#12121A] border-[#252535]',
-    cardBgHover: 'hover:border-[#D4A017]',
-    pill: 'bg-[#1C1C28] border-[#252535]',
-    toggleBg: 'bg-[#1C1C28] border-[#252535] text-[#7A776E] hover:text-[#E8E6E0]',
-    heroBadge: 'bg-[#1C1C28] border-[#252535] text-[#D4A017]',
-    divider: 'border-[#252535]',
-    footerText: 'text-[#252535]',
-    track: 'bg-[#252535]',
-    red: '#E74C3C',
-    green: '#2ECC71',
+    accentMuted: 'text-[#A0791B]',
+    inputBg: 'bg-[#12121A] border-[#1F1F2E] focus:border-[#D4A017]',
+    track: 'bg-[#1F1F2E]',
   } : {
-    bg: 'bg-[#F5F0E8]',
-    bg2: 'bg-[#EDE8DF]',
-    bg3: 'bg-[#E2DBD0]',
-    border: 'border-[#D4CABF]',
+    bg: 'bg-[#FAFAF7]',
+    bg2: 'bg-[#F3EFE7]',
+    bg3: 'bg-[#EDE8DF]',
+    bgSubtle: 'bg-[#F6F2EA]',
+    border: 'border-[#E5DFD5]',
+    borderLight: 'border-[#D9D2C8]',
     text: 'text-[#1A1814]',
     text2: 'text-[#4A4640]',
     text3: 'text-[#8A8478]',
     accent: 'text-[#A07810]',
     accentBg: 'bg-[#A07810]',
-    accentBorder: 'border-[#A07810]',
-    inputBg: 'bg-[#EDE8DF] border-[#D4CABF] focus:border-[#A07810]',
-    cardBg: 'bg-[#EDE8DF] border-[#D4CABF]',
-    cardBgHover: 'hover:border-[#A07810]',
-    pill: 'bg-[#E2DBD0] border-[#D4CABF]',
-    toggleBg: 'bg-[#E2DBD0] border-[#D4CABF] text-[#8A8478] hover:text-[#1A1814]',
-    heroBadge: 'bg-[#E2DBD0] border-[#D4CABF] text-[#A07810]',
-    divider: 'border-[#D4CABF]',
-    footerText: 'text-[#D4CABF]',
-    track: 'bg-[#D4CABF]',
-    red: '#C0392B',
-    green: '#27965A',
+    accentMuted: 'text-[#C49A35]',
+    inputBg: 'bg-[#F3EFE7] border-[#E5DFD5] focus:border-[#A07810]',
+    track: 'bg-[#E5DFD5]',
   }
 
   const accentColor = dark ? '#D4A017' : '#A07810'
-  const accentSoft = dark ? 'text-[#0A0A0F]' : 'text-[#F5F0E8]'
 
-  // ── SHARED: top nav (mirrors Home.tsx fixed nav) ────────────────────────────
-  function TopNav() {
+  // ── NAVBAR PROFESIONAL ──────────────────────────────────────────────────────
+  function ProfessionalNav() {
     return (
-      <nav className={`fixed top-0 left-0 right-0 z-50 ${t.bg} border-b ${t.border} backdrop-blur-sm bg-opacity-90`}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">🪃</span>
-            <span className={`font-bold text-sm tracking-widest uppercase ${t.text}`}>Woodpecker</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className={`hidden md:flex items-center gap-1 border rounded-sm p-1 ${t.pill}`}>
-              {NAV_LINKS.map(link => (
-                <button
-                  key={link.path}
-                  onClick={() => navigate(link.path)}
-                  className={`px-3 py-1.5 font-mono text-xs uppercase tracking-widest rounded-sm transition-colors ${t.text3} hover:${t.text}`}
-                >
-                  {link.label}
-                </button>
-              ))}
-            </div>
-            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 border rounded-sm text-xs ${t.heroBadge}`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-current inline-block" />
-              <span className="font-mono">{user?.nickname}</span>
+      <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95 transition-colors duration-300`}>
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          {/* Header row con nickname grande */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <p className={`text-xs uppercase tracking-[0.15em] ${t.text3} mb-1`}>Bienvenido de vuelta</p>
+              <h1 className={`text-3xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>
+                {user?.nickname}
+              </h1>
             </div>
             <button
               onClick={toggleTheme}
-              className={`p-2 border rounded-sm transition-all ${t.toggleBg}`}
-              title={dark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+              className={`flex items-center justify-center w-10 h-10 rounded-lg ${t.bg3} ${t.border} border transition-all hover:scale-105 ${t.text3} hover:${t.text}`}
+              title={dark ? 'Tema claro' : 'Tema oscuro'}
             >
               {dark ? <SunIcon /> : <MoonIcon />}
             </button>
-            <button
-              onClick={logout}
-              className={`px-3 py-2 border rounded-sm font-mono text-xs uppercase tracking-widest transition-colors ${t.border} ${t.text3} hover:text-red-500`}
-            >
-              Salir
-            </button>
+          </div>
+
+          {/* Navigation horizontal con separadores finos */}
+          <div className="flex items-center gap-0 overflow-x-auto pb-2">
+            {NAV_ITEMS.map((item, idx) => (
+              <div key={item.path} className="flex items-center">
+                <button
+                  onClick={() => navigate(item.path)}
+                  className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all ${t.text2} hover:${t.text} relative group`}
+                >
+                  <span className="text-lg">{item.icon}</span>
+                  <span className="whitespace-nowrap">{item.label}</span>
+                  <div className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all scale-x-0 group-hover:scale-x-100`} style={{ backgroundColor: accentColor }} />
+                </button>
+                {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
+              </div>
+            ))}
           </div>
         </div>
       </nav>
     )
   }
 
-  function MobileSubNav() {
-    return (
-      <div className={`md:hidden flex items-center gap-1 border rounded-sm p-1 mb-8 overflow-x-auto ${t.pill}`}>
-        {NAV_LINKS.map(link => (
-          <button
-            key={link.path}
-            onClick={() => navigate(link.path)}
-            className={`px-3 py-1.5 font-mono text-xs uppercase tracking-widest rounded-sm whitespace-nowrap transition-colors ${t.text3} hover:${t.text}`}
-          >
-            {link.label}
-          </button>
-        ))}
-      </div>
-    )
-  }
-
-  // ── CATEGORY ─────────────────────────────────────────────────────────────────
+  // ── CATEGORY ────────────────────────────────────────────────────────────────
   if (phase === 'category') {
     return (
-      <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300`}>
-        <TopNav />
-        <div className="pt-32 pb-20 px-6">
-          <div className="max-w-3xl mx-auto animate-slide-up">
-            <MobileSubNav />
-
-            <div className={`inline-flex items-center gap-2 px-3 py-1.5 border rounded-sm text-xs tracking-widest uppercase mb-6 ${t.heroBadge}`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-current inline-block" />
-              Modo Solo
-            </div>
-
-            <h1 className={`text-4xl font-bold leading-none mb-3 ${t.text}`} style={{ letterSpacing: '-0.02em' }}>
-              Elige una <span style={{ color: accentColor }}>categoría</span>
-            </h1>
-            <p className={`text-sm leading-relaxed mb-10 max-w-md ${t.text2}`}>
-              ¿Qué quieres entrenar hoy? Cada categoría contiene bloques con sus propios puzzles y su propio historial de ciclos.
+      <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+        <ProfessionalNav />
+        
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <div className="mb-16 animate-slide-up">
+            <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Elige tu entrenamiento</p>
+            <h2 className={`text-5xl font-bold ${t.text} mb-4 leading-none`} style={{ letterSpacing: '-0.02em' }}>
+              ¿Qué categoría te llamará hoy?
+            </h2>
+            <p className={`text-lg max-w-2xl ${t.text2} mt-4 leading-relaxed`}>
+              Selecciona una categoría y elige el bloque de puzzles en el que deseas entrenar. Cada sesión es un cycle, y tu progreso se mantiene guardado.
             </p>
+          </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat.id)
-                    setSelectedSubcategory(null)
-                    const catBlocks = blocks.filter(b => b.category === cat.id)
-                    const subs = [...new Set(catBlocks.map(b => b.subcategory).filter(Boolean))]
-                    setPhase(subs.length > 0 ? 'subcategory' : 'select')
-                  }}
-                  className={`text-left border rounded-sm p-6 transition-all group ${t.cardBg} ${t.cardBgHover}`}
-                >
-                  <div className="text-2xl mb-4">{cat.icon}</div>
-                  <div className={`text-sm font-bold mb-2 ${t.text}`}>{cat.label}</div>
-                  <div className={`text-xs leading-relaxed mb-4 ${t.text3}`}>{cat.description}</div>
-                  <div className="flex items-center gap-1 text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accentColor }}>
-                    Empezar <span>→</span>
+          {/* Grid de categorías con más detalle */}
+          <div className="grid md:grid-cols-3 gap-6">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  setSelectedCategory(cat.id)
+                  setSelectedSubcategory(null)
+                  const catBlocks = blocks.filter(b => b.category === cat.id)
+                  const subs = [...new Set(catBlocks.map(b => b.subcategory).filter(Boolean))]
+                  setPhase(subs.length > 0 ? 'subcategory' : 'select')
+                }}
+                className={`group relative overflow-hidden rounded-xl ${t.bg2} ${t.border} border transition-all duration-300 hover:border-opacity-100 hover:shadow-lg hover:-translate-y-1`}
+              >
+                {/* Fondo gradiente sutil en hover */}
+                <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300`} style={{ background: `linear-gradient(135deg, ${accentColor}20, transparent)` }} />
+                
+                <div className="relative p-8">
+                  <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-300">{cat.icon}</div>
+                  
+                  <h3 className={`text-xl font-bold ${t.text} mb-3 text-left leading-tight`}>{cat.label}</h3>
+                  
+                  <p className={`text-sm ${t.text2} text-left mb-6 leading-relaxed`}>{cat.description}</p>
+                  
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1">
+                    <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: accentColor }}>
+                      Empezar
+                    </span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: accentColor }}>
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
                   </div>
-                </button>
-              ))}
-            </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer navbar con logout */}
+        <div className={`fixed bottom-0 left-0 right-0 ${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end">
+            <button
+              onClick={logout}
+              className={`px-5 py-2 rounded-lg ${t.bg3} ${t.border} border text-sm font-medium transition-all ${t.text3} hover:${t.text} hover:shadow-sm`}
+            >
+              Cerrar sesión
+            </button>
           </div>
         </div>
       </div>
     )
   }
 
-  // ── SUBCATEGORY ────────────────────────────────────────────────────────────
+  // ── SUBCATEGORY ─────────────────────────────────────────────────────────────
   if (phase === 'subcategory') {
     const catLabel = CATEGORIES.find(c => c.id === selectedCategory)?.label
     return (
-      <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300`}>
-        <TopNav />
-        <div className="pt-32 pb-20 px-6">
-          <div className="max-w-3xl mx-auto animate-slide-up">
-            <button onClick={() => setPhase('category')} className={`text-xs mb-6 block ${t.text3} hover:${t.text} transition-colors`}>← Categorías</button>
+      <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+        <ProfessionalNav />
+        
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <button
+            onClick={() => setPhase('category')}
+            className={`flex items-center gap-2 text-sm font-medium ${t.text3} hover:${t.text} transition-colors mb-12`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Volver a categorías
+          </button>
 
-            <p className={`text-xs uppercase tracking-widest mb-2 ${t.text3}`}>{catLabel}</p>
-            <h2 className={`text-3xl font-bold mb-8 ${t.text}`} style={{ letterSpacing: '-0.02em' }}>Elige una subcategoría</h2>
+          <div className="mb-16 animate-slide-up">
+            <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>{catLabel}</p>
+            <h2 className={`text-5xl font-bold ${t.text} leading-none mb-4`} style={{ letterSpacing: '-0.02em' }}>
+              Elige una subcategoría
+            </h2>
+          </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              {subcategoriesForCategory.map(sub => {
-                const subBlocks = blocksForCategory.filter(b => b.subcategory === sub)
-                return (
-                  <button
-                    key={sub}
-                    onClick={() => { setSelectedSubcategory(sub); setPhase('select') }}
-                    className={`text-left border rounded-sm p-5 transition-all group ${t.cardBg} ${t.cardBgHover}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className={`text-sm font-bold ${t.text}`}>{sub}</div>
-                        <div className={`text-xs mt-1 ${t.text3}`}>{subBlocks.length} bloque{subBlocks.length !== 1 ? 's' : ''}</div>
-                      </div>
-                      <span className="text-lg opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accentColor }}>→</span>
+          <div className="grid sm:grid-cols-2 gap-4 mb-20">
+            {subcategoriesForCategory.map(sub => {
+              const subBlocks = blocksForCategory.filter(b => b.subcategory === sub)
+              return (
+                <button
+                  key={sub}
+                  onClick={() => { setSelectedSubcategory(sub); setPhase('select') }}
+                  className={`group relative p-6 rounded-xl ${t.bg2} ${t.border} border transition-all duration-300 text-left hover:border-opacity-100 hover:shadow-lg hover:-translate-y-0.5`}
+                >
+                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 rounded-xl transition-opacity`} style={{ background: `linear-gradient(135deg, ${accentColor}20, transparent)` }} />
+                  <div className="relative">
+                    <h3 className={`text-lg font-bold ${t.text} mb-2`}>{sub}</h3>
+                    <p className={`text-sm ${t.text2} mb-4`}>{subBlocks.length} bloque{subBlocks.length !== 1 ? 's' : ''} disponible{subBlocks.length !== 1 ? 's' : ''}</p>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accentColor }}>
+                      <span className="text-xs font-semibold">Seleccionar</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                      </svg>
                     </div>
-                  </button>
-                )
-              })}
-            </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className={`fixed bottom-0 left-0 right-0 ${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end">
+            <button
+              onClick={logout}
+              className={`px-5 py-2 rounded-lg ${t.bg3} ${t.border} border text-sm font-medium transition-all ${t.text3} hover:${t.text}`}
+            >
+              Cerrar sesión
+            </button>
           </div>
         </div>
       </div>
@@ -370,79 +385,123 @@ export default function Solo() {
   if (phase === 'select') {
     const catLabel = CATEGORIES.find(c => c.id === selectedCategory)?.label
     return (
-      <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300`}>
-        <TopNav />
-        <div className="pt-32 pb-20 px-6">
-          <div className="max-w-3xl mx-auto animate-slide-up">
-            <button onClick={() => setPhase(hasSubcategories ? 'subcategory' : 'category')} className={`text-xs mb-6 block ${t.text3} hover:${t.text} transition-colors`}>← Categorías</button>
+      <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+        <ProfessionalNav />
+        
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <button
+            onClick={() => setPhase(hasSubcategories ? 'subcategory' : 'category')}
+            className={`flex items-center gap-2 text-sm font-medium ${t.text3} hover:${t.text} transition-colors mb-12`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Volver atrás
+          </button>
 
-            <p className={`text-xs uppercase tracking-widest mb-2 ${t.text3}`}>{catLabel}{selectedSubcategory ? ` · ${selectedSubcategory}` : ''}</p>
-            <h2 className={`text-3xl font-bold mb-2 ${t.text}`} style={{ letterSpacing: '-0.02em' }}>Elige un bloque</h2>
-            <p className={`text-sm mb-8 ${t.text2}`}>Cada repetición del bloque es un cycle. Tu tiempo baja — eso es el método funcionando.</p>
+          <div className="mb-16 animate-slide-up">
+            <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>{catLabel}{selectedSubcategory ? ` · ${selectedSubcategory}` : ''}</p>
+            <h2 className={`text-5xl font-bold ${t.text} leading-none mb-4`} style={{ letterSpacing: '-0.02em' }}>
+              Elige un bloque
+            </h2>
+            <p className={`text-lg ${t.text2} mt-4 max-w-2xl leading-relaxed`}>
+              Cada bloque contiene un conjunto de puzzles. Completa el bloque y ese será un cycle. Tu progreso se guarda automáticamente.
+            </p>
+          </div>
 
-            <div className="space-y-3">
-              {blocksForSelection.map(block => (
-                <button
-                  key={block.id}
-                  onClick={() => startSolo(block)}
-                  className={`w-full flex items-center justify-between text-left border rounded-sm px-5 py-4 transition-all group ${t.cardBg} ${t.cardBgHover}`}
-                >
-                  <div>
-                    <div className={`text-sm font-bold ${t.text}`}>{block.name}</div>
-                    {block.description && <div className={`text-xs mt-0.5 ${t.text3}`}>{block.description}</div>}
+          <div className="space-y-3 mb-20">
+            {blocksForSelection.map((block, idx) => (
+              <button
+                key={block.id}
+                onClick={() => startSolo(block)}
+                className={`group w-full flex items-center justify-between p-6 rounded-xl ${t.bg2} ${t.border} border transition-all duration-300 hover:border-opacity-100 hover:shadow-lg hover:-translate-x-1`}
+              >
+                <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 rounded-xl transition-opacity`} style={{ background: `linear-gradient(90deg, ${accentColor}20, transparent)` }} />
+                
+                <div className="relative flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`text-xs font-semibold uppercase tracking-widest ${t.text3}`}>Bloque {idx + 1}</span>
+                    <span className={`text-xs px-2 py-1 rounded-md ${t.bg3} ${t.text3}`}>{block.puzzleCount} puzzles</span>
                   </div>
-                  <div className="text-right shrink-0 pl-4">
-                    <div className={`text-xs ${t.text3}`}>{block.puzzleCount} puzzles</div>
-                    <div className="text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accentColor }}>Iniciar →</div>
-                  </div>
-                </button>
-              ))}
-
-              {blocksForSelection.length === 0 && (
-                <div className={`border rounded-sm p-8 text-center ${t.cardBg}`}>
-                  <p className={`text-sm ${t.text3}`}>No hay bloques disponibles en esta selección.</p>
+                  <h3 className={`text-lg font-bold ${t.text} leading-none`}>{block.name}</h3>
+                  {block.description && <p className={`text-sm ${t.text2} mt-2`}>{block.description}</p>}
                 </div>
-              )}
-            </div>
+                
+                <div className="relative flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1">
+                  <span className="text-sm font-semibold" style={{ color: accentColor }}>Iniciar</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: accentColor }}>
+                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </div>
+              </button>
+            ))}
+
+            {blocksForSelection.length === 0 && (
+              <div className={`text-center py-12 rounded-xl ${t.bg2} ${t.border} border`}>
+                <p className={`text-sm ${t.text3}`}>No hay bloques disponibles en esta categoría.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className={`fixed bottom-0 left-0 right-0 ${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end">
+            <button
+              onClick={logout}
+              className={`px-5 py-2 rounded-lg ${t.bg3} ${t.border} border text-sm font-medium transition-all ${t.text3} hover:${t.text}`}
+            >
+              Cerrar sesión
+            </button>
           </div>
         </div>
       </div>
     )
   }
 
-  // ── DONE ───────────────────────────────────────────────────────────────────
+  // ── DONE ────────────────────────────────────────────────────────────────────
   if (phase === 'done') {
+    const accuracy = ((solved / puzzles.length) * 100).toFixed(0)
     return (
-      <div className={`min-h-screen ${t.bg} ${t.text} font-mono flex items-center justify-center p-6 transition-colors duration-300`}>
-        <div className="w-full max-w-sm text-center animate-slide-up">
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 border rounded-sm text-xs tracking-widest uppercase mb-8 ${t.heroBadge}`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-current inline-block" />
-            Cycle completado
-          </div>
-
-          <div className={`border rounded-sm p-8 mb-4 ${t.cardBg}`}>
-            <div className="text-6xl font-bold mb-2 tracking-tight" style={{ letterSpacing: '-0.02em', color: accentColor }}>
-              {formatTimeLong(finalTime)}
+      <div className={`min-h-screen ${t.bg} flex items-center justify-center px-6 py-16 transition-colors duration-300`}>
+        <div className="w-full max-w-2xl text-center animate-slide-up">
+          <div className="mb-12">
+            <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-4`}>Cycle completado</p>
+            <div className={`rounded-2xl ${t.bg2} ${t.border} border p-10 mb-8`}>
+              <div className="text-7xl font-bold leading-none mb-4" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
+                {formatTimeLong(finalTime)}
+              </div>
+              <div className="flex items-center justify-center gap-8 mt-8">
+                <div>
+                  <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Precisión</p>
+                  <p className={`text-3xl font-bold ${t.text}`}>{accuracy}%</p>
+                  <p className={`text-xs ${t.text3} mt-1`}>{solved}/{puzzles.length} resueltos</p>
+                </div>
+                <div className={`w-px h-16 ${t.borderLight}`} />
+                <div>
+                  <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Errores</p>
+                  <p className="text-3xl font-bold" style={{ color: totalErrors > 5 ? '#E74C3C' : accentColor }}>{totalErrors}</p>
+                  <p className={`text-xs ${t.text3} mt-1`}>en todo el bloque</p>
+                </div>
+              </div>
             </div>
-            <p className={`text-sm ${t.text3}`}>{solved}/{puzzles.length} resueltos · {totalErrors} errores</p>
           </div>
 
           <div className="space-y-3">
             <button
               onClick={() => startSolo(selectedBlock!)}
-              className={`w-full py-3.5 ${t.accentBg} ${accentSoft} font-bold text-sm tracking-widest uppercase rounded-sm hover:opacity-90 transition-opacity`}
+              className={`w-full py-4 ${t.accentBg} text-white font-bold text-sm tracking-widest uppercase rounded-xl transition-all hover:opacity-90 hover:shadow-lg transform hover:scale-105`}
             >
               Repetir bloque
             </button>
             <button
               onClick={() => navigate('/history')}
-              className={`w-full py-3 border rounded-sm text-sm transition-colors ${t.cardBg} ${t.text} hover:border-opacity-70`}
+              className={`w-full py-3 ${t.bg2} ${t.border} border rounded-xl text-sm font-semibold transition-all hover:shadow-sm ${t.text}`}
             >
-              Ver historial
+              Ver historial completo
             </button>
             <button
               onClick={() => setPhase('category')}
-              className={`w-full py-3 text-sm transition-colors ${t.text3} hover:${t.text}`}
+              className={`w-full py-3 text-sm font-semibold transition-all ${t.text3} hover:${t.text}`}
             >
               Elegir otra categoría
             </button>
@@ -457,40 +516,55 @@ export default function Solo() {
   const progress = (solved / puzzles.length) * 100
 
   return (
-    <div className={`min-h-screen ${t.bg} ${t.text} font-mono flex flex-col transition-colors duration-300`}>
-      <div className={`border-b ${t.border} ${t.bg2}`}>
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between">
-          <div>
-            <div className="text-3xl font-bold tracking-tight" style={{ letterSpacing: '-0.02em', color: accentColor }}>
-              {formatTimerDisplay(elapsed)}
+    <div className={`min-h-screen ${t.bg} flex flex-col transition-colors duration-300`}>
+      {/* Racing Header */}
+      <div className={`${t.bg2} ${t.border} border-b sticky top-0 z-40 backdrop-blur-xl bg-opacity-95`}>
+        <div className="max-w-6xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>{selectedBlock?.name}</p>
+              <div className="text-4xl font-bold" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
+                {formatTimerDisplay(elapsed)}
+              </div>
             </div>
-            <div className={`text-xs ${t.text3}`}>{selectedBlock?.name}</div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <div className={`text-xl font-bold ${t.text}`}>{solved}<span className={t.text3}>/{puzzles.length}</span></div>
-              {puzzleErrors > 0 && <div className="text-red-400 text-xs">{puzzleErrors} error{puzzleErrors !== 1 ? 'es' : ''}</div>}
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Progreso</p>
+                <p className={`text-3xl font-bold ${t.text}`}>{solved}<span className={`text-lg font-semibold ${t.text2}`}>/{puzzles.length}</span></p>
+              </div>
+              <button
+                onClick={toggleTheme}
+                className={`flex items-center justify-center w-10 h-10 rounded-lg ${t.bg3} ${t.border} border transition-all hover:scale-105 ${t.text3} hover:${t.text}`}
+              >
+                {dark ? <SunIcon /> : <MoonIcon />}
+              </button>
             </div>
-            <button
-              onClick={toggleTheme}
-              className={`p-2 border rounded-sm transition-all ${t.toggleBg}`}
-              title={dark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
-            >
-              {dark ? <SunIcon /> : <MoonIcon />}
-            </button>
           </div>
-        </div>
-        <div className={`h-1 ${t.track}`}>
-          <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: accentColor }} />
+          
+          {/* Progress bar con detalle */}
+          <div className={`h-1 ${t.track} rounded-full overflow-hidden`}>
+            <div 
+              className="h-full transition-all duration-300 rounded-full"
+              style={{ width: `${progress}%`, backgroundColor: accentColor }}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 flex items-start justify-center pt-4 sm:pt-8 px-0 sm:px-4">
-        <div className="w-full max-w-[540px]">
-          <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
-            <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Puzzle {currentIdx + 1}</span>
-            <span className={`text-xs ${t.text3}`}>#{currentPuzzle?.orderInBlock} del bloque</span>
+      {/* Board Area */}
+      <div className="flex-1 flex items-start justify-center pt-8 px-6">
+        <div className="w-full max-w-[560px]">
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className={`text-xs uppercase tracking-widest font-semibold ${t.text3}`}>Puzzle {currentIdx + 1} de {puzzles.length}</span>
+              {puzzleErrors > 0 && (
+                <span className="text-xs px-2 py-1 rounded-md bg-red-500 bg-opacity-20 text-red-400">
+                  {puzzleErrors} error{puzzleErrors !== 1 ? 'es' : ''}
+                </span>
+              )}
+            </div>
           </div>
+          
           {currentPuzzle && (
             <PuzzleBoard
               key={currentPuzzle.id}
