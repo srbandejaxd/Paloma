@@ -1,232 +1,441 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchBlocks, fetchLeaderboard, fetchVisionLeaderboard, LeaderboardEntry, VisionLeaderboardEntry } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { Block } from '../types'
-import { formatTimeLong } from '../lib/time'
 
-const CATEGORIES = [
-  { id: "checkmate_patterns", label: "The Checkmate Patterns Manual" },
-  { id: "palomita", label: "Woodpecker Method" },
-  { id: "woodpecker_method2", label: "Woodpecker Method 2" },
-]
+interface LeaderboardUser {
+  id: number
+  nickname: string
+  totalScore: number
+  cyclesCompleted: number
+  averageAccuracy: number
+  fastestTime: number
+  totalPuzzlesSolved: number
+  rank: number
+}
+
+function SunIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  )
+}
 
 export default function Leaderboard() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([])
+  const [dark, setDark] = useState(true)
+  const [filter, setFilter] = useState<'score' | 'cycles' | 'accuracy'>('score')
+  const [loading, setLoading] = useState(true)
 
-  const [blocks, setBlocks] = useState<Block[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('woodpecker')
-  const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(false)
-  const [visionMode, setVisionMode] = useState(false)
-  const [visionEntries, setVisionEntries] = useState<VisionLeaderboardEntry[]>([])
-  const [blockDropdownOpen, setBlockDropdownOpen] = useState(false)
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
+  useEffect(() => {
+    const saved = localStorage.getItem('wp_theme')
+    if (saved) setDark(saved === 'dark')
+  }, [])
+
+  function toggleTheme() {
+    const next = !dark
+    setDark(next)
+    localStorage.setItem('wp_theme', next ? 'dark' : 'light')
+  }
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
-    fetchBlocks().then(b => {
-      setBlocks(b)
-      const first = b.find(block => block.category === 'woodpecker')
-      if (first) setSelectedBlock(first.id)
-    }).catch(console.error)
+    // Simular datos del leaderboard
+    const mockData: LeaderboardUser[] = [
+      { id: 1, nickname: 'ChessGod', totalScore: 24850, cyclesCompleted: 145, averageAccuracy: 92.5, fastestTime: 45000, totalPuzzlesSolved: 3245, rank: 1 },
+      { id: 2, nickname: 'PuzzleMaster', totalScore: 23120, cyclesCompleted: 138, averageAccuracy: 90.1, fastestTime: 51000, totalPuzzlesSolved: 3012, rank: 2 },
+      { id: 3, nickname: 'TacticalMind', totalScore: 21890, cyclesCompleted: 132, averageAccuracy: 88.7, fastestTime: 53000, totalPuzzlesSolved: 2876, rank: 3 },
+      { id: 4, nickname: user.nickname, totalScore: 18750, cyclesCompleted: 108, averageAccuracy: 86.2, fastestTime: 62000, totalPuzzlesSolved: 2341, rank: 4 },
+      { id: 5, nickname: 'RookAttack', totalScore: 17920, cyclesCompleted: 102, averageAccuracy: 85.3, fastestTime: 58000, totalPuzzlesSolved: 2198, rank: 5 },
+      { id: 6, nickname: 'KnightMoves', totalScore: 16450, cyclesCompleted: 95, averageAccuracy: 83.9, fastestTime: 65000, totalPuzzlesSolved: 2045, rank: 6 },
+      { id: 7, nickname: 'BishopControl', totalScore: 15780, cyclesCompleted: 89, averageAccuracy: 82.4, fastestTime: 67000, totalPuzzlesSolved: 1923, rank: 7 },
+      { id: 8, nickname: 'PawnPusher', totalScore: 14320, cyclesCompleted: 81, averageAccuracy: 80.1, fastestTime: 72000, totalPuzzlesSolved: 1745, rank: 8 },
+      { id: 9, nickname: 'SilentKnight', totalScore: 13450, cyclesCompleted: 76, averageAccuracy: 79.2, fastestTime: 75000, totalPuzzlesSolved: 1623, rank: 9 },
+      { id: 10, nickname: 'CheckMate', totalScore: 12890, cyclesCompleted: 71, averageAccuracy: 77.8, fastestTime: 78000, totalPuzzlesSolved: 1512, rank: 10 },
+    ]
+    setLeaderboard(mockData)
+    setLoading(false)
   }, [user, navigate])
 
-  useEffect(() => {
-    if (selectedBlock === null) return
-    setLoading(true)
-    fetchLeaderboard(selectedBlock)
-      .then(setEntries)
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [selectedBlock])
+  // ── THEME TOKENS ────────────────────────────────────────────────────────────
+  const t = dark ? {
+    bg: 'bg-[#0A0A0F]',
+    bg2: 'bg-[#12121A]',
+    bg3: 'bg-[#1C1C28]',
+    bgSubtle: 'bg-[#15151D]',
+    border: 'border-[#1F1F2E]',
+    borderLight: 'border-[#2A2A3A]',
+    text: 'text-[#E8E6E0]',
+    text2: 'text-[#B8B5AC]',
+    text3: 'text-[#7A776E]',
+    accent: 'text-[#D4A017]',
+    accentBg: 'bg-[#D4A017]',
+    accentMuted: 'text-[#A0791B]',
+    inputBg: 'bg-[#12121A] border-[#1F1F2E] focus:border-[#D4A017]',
+    track: 'bg-[#1F1F2E]',
+  } : {
+    bg: 'bg-[#FAFAF7]',
+    bg2: 'bg-[#F3EFE7]',
+    bg3: 'bg-[#EDE8DF]',
+    bgSubtle: 'bg-[#F6F2EA]',
+    border: 'border-[#E5DFD5]',
+    borderLight: 'border-[#D9D2C8]',
+    text: 'text-[#1A1814]',
+    text2: 'text-[#4A4640]',
+    text3: 'text-[#8A8478]',
+    accent: 'text-[#A07810]',
+    accentBg: 'bg-[#A07810]',
+    accentMuted: 'text-[#C49A35]',
+    inputBg: 'bg-[#F3EFE7] border-[#E5DFD5] focus:border-[#A07810]',
+    track: 'bg-[#E5DFD5]',
+  }
 
-  useEffect(() => {
-    if (!visionMode) return
-    setLoading(true)
-    fetchVisionLeaderboard('coordinates')
-      .then(setVisionEntries)
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [visionMode])
+  const accentColor = dark ? '#D4A017' : '#A07810'
+  const NAV_ITEMS = [
+    { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
+    { path: '/solo', label: 'Solo', icon: '🪃' },
+    { path: '/vision', label: 'Visión', icon: '👁' },
+    { path: '/history', label: 'Historial', icon: '📋' },
+    { path: '/blind', label: 'Ciego', icon: '🎲' },
+  ]
 
-  const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
-  const subcategoriesForCategory = [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
-  const hasSubcategories = subcategoriesForCategory.length > 0
-  const blocksForSelection = hasSubcategories && selectedSubcategory
-    ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
-    : hasSubcategories ? [] : blocksForCategory
-  const medals = ['🥇', '🥈', '🥉']
+  const top3 = leaderboard.slice(0, 3)
+  const rest = leaderboard.slice(3)
+  const userRank = leaderboard.find(u => u.nickname === user?.nickname)
 
-  function selectCategory(catId: string) {
-    setSelectedCategory(catId)
-    setBlockDropdownOpen(false)
-    setSelectedSubcategory(null)
-    const catBlocks = blocks.filter(b => b.category === catId)
-    const subs = [...new Set(catBlocks.map(b => b.subcategory).filter(Boolean))]
-    if (subs.length === 0) {
-      const first = catBlocks[0]
-      if (first) setSelectedBlock(first.id)
-    } else {
-      setSelectedBlock(null)
-    }
+  if (loading) {
+    return (
+      <div className={`min-h-screen ${t.bg} flex items-center justify-center`}>
+        <p className={t.text3}>Cargando ranking...</p>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-void">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <button onClick={() => navigate('/solo')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors mb-6 block">← Inicio</button>
+    <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+      {/* Navbar Profesional */}
+      <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95 transition-colors duration-300`}>
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <p className={`text-xs uppercase tracking-[0.15em] ${t.text3} mb-1`}>Bienvenido de vuelta</p>
+              <h1 className={`text-3xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>
+                {user?.nickname}
+              </h1>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className={`flex items-center justify-center w-10 h-10 rounded-lg ${t.bg3} ${t.border} border transition-all hover:scale-105 ${t.text3} hover:${t.text}`}
+              title={dark ? 'Tema claro' : 'Tema oscuro'}
+            >
+              {dark ? <SunIcon /> : <MoonIcon />}
+            </button>
+          </div>
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-mono font-bold text-bone">Ranking</h2>
-          <p className="text-bone-3 font-mono text-sm mt-1">Mejor score por bloque</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <button onClick={() => setVisionMode(false)} className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${!visionMode ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}>Puzzles</button>
-          <button onClick={() => setVisionMode(true)} className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${visionMode ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}>Visión</button>
-        </div>
-
-        {!visionMode && (
-          <>
-            {/* Selector de categoría */}
-            <div className="flex gap-2 mb-4">
-              {CATEGORIES.map(cat => (
+          <div className="flex items-center gap-0 overflow-x-auto pb-2">
+            {NAV_ITEMS.map((item, idx) => (
+              <div key={item.path} className="flex items-center">
                 <button
-                  key={cat.id}
-                  onClick={() => selectCategory(cat.id)}
-                  className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedCategory === cat.id ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+                  onClick={() => navigate(item.path)}
+                  className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all ${t.text2} hover:${t.text} relative group`}
                 >
-                  {cat.label}
+                  <span className="text-lg">{item.icon}</span>
+                  <span className="whitespace-nowrap">{item.label}</span>
+                  <div className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all scale-x-0 group-hover:scale-x-100`} style={{ backgroundColor: accentColor }} />
                 </button>
-              ))}
-            </div>
-
-            {/* Selector de subcategoría */}
-            {hasSubcategories && (
-              <div className="flex gap-2 mb-4 flex-wrap">
-                {subcategoriesForCategory.map(sub => (
-                  <button
-                    key={sub}
-                    onClick={() => {
-                      setSelectedSubcategory(sub)
-                      setBlockDropdownOpen(false)
-                      const first = blocksForCategory.find(b => b.subcategory === sub)
-                      if (first) setSelectedBlock(first.id)
-                    }}
-                    className={`px-4 py-2 font-mono text-xs border rounded-sm transition-all ${selectedSubcategory === sub ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
-                  >
-                    {sub}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Selector de bloque (dropdown) */}
-            {(!hasSubcategories || selectedSubcategory) && (
-            <div className="relative mb-8" style={{ maxWidth: 320 }}>
-              <button
-                onClick={() => setBlockDropdownOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2.5 font-mono text-xs border border-void-4 hover:border-bone-3 rounded-sm transition-colors bg-void-2 text-bone"
-              >
-                <span>{blocksForSelection.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque'}</span>
-                <span className={`text-bone-3 transition-transform ${blockDropdownOpen ? 'rotate-180' : ''}`}>▾</span>
-              </button>
-              {blockDropdownOpen && (
-                <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-void-2 border border-void-4 rounded-sm overflow-hidden max-h-64 overflow-y-auto">
-                  {blocksForSelection.map(b => (
-                    <button
-                      key={b.id}
-                      onClick={() => { setSelectedBlock(b.id); setBlockDropdownOpen(false) }}
-                      className={`w-full text-left px-4 py-2.5 font-mono text-xs transition-colors border-t border-void-4 first:border-t-0 ${selectedBlock === b.id ? 'bg-amber/10 text-amber' : 'text-bone-3 hover:bg-void-3 hover:text-bone'}`}
-                    >
-                      {b.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            )}
-
-            {loading && <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>}
-
-            {!loading && entries.length === 0 && (
-              <div className="text-center py-16 border border-void-4 rounded-sm">
-                <p className="text-bone-3 font-mono text-sm">Nadie ha completado este bloque todavía</p>
-                <p className="text-bone-3 font-mono text-xs mt-2">¡Sé el primero!</p>
-              </div>
-            )}
-
-            {!loading && entries.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 px-4 py-2 font-mono text-xs text-bone-3 uppercase tracking-widest">
-                  <span className="w-8">#</span>
-                  <span className="flex-1">Jugador</span>
-                  <span className="w-28 text-right">Score</span>
-                  <span className="w-24 text-right">Mejor tiempo</span>
-                  <span className="w-20 text-right">Puzzles</span>
-                  <span className="w-16 text-right">Cycles</span>
-                </div>
-
-                {entries.map((entry, i) => (
-                  <div
-                    key={entry.nickname}
-                    className={`flex items-center gap-3 px-4 py-3 border rounded-sm transition-all ${
-                      entry.nickname === user?.nickname
-                        ? 'border-amber/40 bg-amber/5'
-                        : 'border-void-4 bg-void-2'
-                    }`}
-                  >
-                    <span className="w-8 font-mono text-sm text-bone-3">
-                      {i < 3 ? medals[i] : `${i + 1}`}
-                    </span>
-                    <span className={`flex-1 font-mono text-sm font-bold ${entry.nickname === user?.nickname ? 'text-amber' : 'text-bone'}`}>
-                      {entry.nickname}
-                      {entry.nickname === user?.nickname && <span className="text-xs font-normal ml-2 text-bone-3">(tú)</span>}
-                    </span>
-                    <span className="w-28 font-mono text-sm font-bold text-amber text-right">{entry.bestScore.toLocaleString()} pts</span>
-                    <span className="w-24 font-mono text-sm text-bone text-right">{formatTimeLong(entry.bestTimeMs)}</span>
-                    <span className="w-20 font-mono text-sm text-bone-3 text-right">{entry.bestSolved}/{entry.totalPuzzles}</span>
-                    <span className="w-16 font-mono text-xs text-bone-3 text-right">{entry.totalCycles}x</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {visionMode && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 px-4 py-2 font-mono text-xs text-bone-3 uppercase tracking-widest">
-              <span className="w-8">#</span>
-              <span className="flex-1">Jugador</span>
-              <span className="w-24 text-right">Score</span>
-              <span className="w-28 text-right">Correctas/Errores</span>
-              <span className="w-20 text-right">Sesiones</span>
-            </div>
-            {loading && <p className="text-bone-3 font-mono text-sm animate-pulse-amber">Cargando...</p>}
-            {!loading && visionEntries.length === 0 && (
-              <div className="text-center py-16 border border-void-4 rounded-sm">
-                <p className="text-bone-3 font-mono text-sm">Sin sesiones todavía</p>
-              </div>
-            )}
-            {!loading && visionEntries.map((entry, i) => (
-              <div key={entry.nickname} className={`flex items-center gap-3 px-4 py-3 border rounded-sm ${entry.nickname === user?.nickname ? 'border-amber/40 bg-amber/5' : 'border-void-4 bg-void-2'}`}>
-                <span className="w-8 font-mono text-sm text-bone-3">{i < 3 ? medals[i] : `${i + 1}`}</span>
-                <span className={`flex-1 font-mono text-sm font-bold ${entry.nickname === user?.nickname ? 'text-amber' : 'text-bone'}`}>
-                  {entry.nickname}
-                  {entry.nickname === user?.nickname && <span className="text-xs font-normal ml-2 text-bone-3">(tú)</span>}
-                </span>
-                <span className="w-24 font-mono text-sm font-bold text-amber text-right">{entry.bestScore - entry.bestErrors}</span>
-                <span className="w-28 font-mono text-xs text-bone-3 text-right">{entry.bestScore}✓ / {entry.bestErrors}✗</span>
-                <span className="w-20 font-mono text-xs text-bone-3 text-right">{entry.totalSessions}x</span>
+                {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
               </div>
             ))}
           </div>
-        )}
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        {/* Header */}
+        <div className="mb-20 animate-slide-up">
+          <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Top de jugadores</p>
+          <h2 className={`text-5xl font-bold ${t.text} mb-4 leading-none`} style={{ letterSpacing: '-0.02em' }}>
+            Ranking global
+          </h2>
+          <p className={`text-lg max-w-2xl ${t.text2} leading-relaxed`}>
+            Los mejores jugadores del Método Woodpecker. Completa cycles, mejora tu precisión y sube en el ranking.
+          </p>
+        </div>
+
+        {/* TOP 3 PODIO OLÍMPICO */}
+        <div className="mb-20">
+          <div className="relative h-80 flex items-flex-end justify-center gap-12 mb-8">
+            {/* Posición 2 (Plata) - Izquierda */}
+            <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+              <div className={`text-center`}>
+                <div className="mb-6">
+                  <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
+                    2️⃣
+                  </div>
+                  <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[1]?.nickname}</h3>
+                  <p className={`text-sm ${t.text3} mt-1`}>{top3[1]?.cyclesCompleted} cycles</p>
+                </div>
+              </div>
+              
+              {/* Podio Plata */}
+              <div 
+                className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg ${t.bg2} ${t.border}`}
+                style={{ 
+                  backgroundColor: dark ? '#C0C0C0' : '#E8E0D0',
+                  borderColor: '#C0C0C0',
+                  height: '140px'
+                }}
+              >
+                <div className="p-4 h-full flex flex-col items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Plata</span>
+                  <span className="text-2xl font-bold" style={{ color: dark ? '#333' : '#444' }}>
+                    {top3[1]?.totalScore.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Posición 1 (Oro) - Centro */}
+            <div className="flex flex-col items-center gap-4 animate-slide-up z-10">
+              <div className={`text-center scale-110`}>
+                <div className="relative mb-6">
+                  <div className="absolute -inset-2 rounded-full" style={{ background: `radial-gradient(circle, ${accentColor}40, transparent)` }} />
+                  <div className={`relative w-24 h-24 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-4xl font-bold mx-auto shadow-lg`}>
+                    👑
+                  </div>
+                </div>
+                <h3 className={`text-2xl font-bold ${t.text} leading-tight`}>{top3[0]?.nickname}</h3>
+                <p className={`text-sm ${t.text3} mt-1`}>{top3[0]?.cyclesCompleted} cycles</p>
+              </div>
+              
+              {/* Podio Oro */}
+              <div 
+                className={`w-40 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg shadow-lg ${t.bg2} ${t.border}`}
+                style={{ 
+                  backgroundColor: '#FFD700',
+                  borderColor: '#FFD700',
+                  height: '180px'
+                }}
+              >
+                <div className="p-4 h-full flex flex-col items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Oro</span>
+                  <span className="text-3xl font-bold text-gray-800">
+                    {top3[0]?.totalScore.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Posición 3 (Bronce) - Derecha */}
+            <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <div className={`text-center`}>
+                <div className="mb-6">
+                  <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
+                    3️⃣
+                  </div>
+                  <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[2]?.nickname}</h3>
+                  <p className={`text-sm ${t.text3} mt-1`}>{top3[2]?.cyclesCompleted} cycles</p>
+                </div>
+              </div>
+              
+              {/* Podio Bronce */}
+              <div 
+                className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg ${t.bg2} ${t.border}`}
+                style={{ 
+                  backgroundColor: '#CD7F32',
+                  borderColor: '#CD7F32',
+                  height: '100px'
+                }}
+              >
+                <div className="p-4 h-full flex flex-col items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Bronce</span>
+                  <span className="text-xl font-bold text-gray-700">
+                    {top3[2]?.totalScore.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats del Top 3 */}
+          <div className="grid md:grid-cols-3 gap-4">
+            {top3.map((player, idx) => (
+              <div key={player.id} className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div 
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                    style={{ 
+                      backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
+                    }}
+                  >
+                    {idx + 1}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-bold ${t.text}`}>{player.nickname}</p>
+                    <p className={`text-xs ${t.text3}`}>Rank #{player.rank}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Precisión</span>
+                    <span className={`text-sm font-bold ${t.text}`}>{player.averageAccuracy}%</span>
+                  </div>
+                  <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
+                    <div 
+                      className="h-full transition-all rounded-full" 
+                      style={{ width: `${player.averageAccuracy}%`, backgroundColor: accentColor }}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
+                    <div>
+                      <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Puzzles</p>
+                      <p className={`text-lg font-bold ${t.text}`}>{player.totalPuzzlesSolved}</p>
+                    </div>
+                    <div>
+                      <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Cycles</p>
+                      <p className={`text-lg font-bold ${t.text}`}>{player.cyclesCompleted}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Separador */}
+        <div className={`h-px ${t.track} my-16`} />
+
+        {/* Rest of Leaderboard */}
+        <div className="mb-20">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className={`text-2xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>
+                Resto del ranking
+              </h3>
+              <p className={`text-sm ${t.text2} mt-2`}>{rest.length} jugadores más</p>
+            </div>
+            
+            {/* Filter buttons */}
+            <div className={`flex gap-2 p-1 rounded-lg ${t.bg2} ${t.border} border`}>
+              {(['score', 'cycles', 'accuracy'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-widest rounded transition-all ${
+                    filter === f 
+                      ? `${t.accentBg} text-white` 
+                      : `${t.text2} hover:${t.text}`
+                  }`}
+                >
+                  {f === 'score' ? 'Puntos' : f === 'cycles' ? 'Cycles' : 'Precisión'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {rest.map((player, idx) => {
+              const isCurrentUser = player.nickname === user?.nickname
+              return (
+                <div
+                  key={player.id}
+                  className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg ${
+                    isCurrentUser ? `ring-2 ring-opacity-50` : ''
+                  }`}
+                  style={isCurrentUser ? { ringColor: accentColor } : {}}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Rank y Nombre */}
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className={`w-12 h-12 rounded-lg ${t.bg3} flex items-center justify-center flex-shrink-0`}>
+                        <span className={`text-sm font-bold ${t.text}`}>{player.rank}</span>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className={`font-bold ${t.text} truncate`}>{player.nickname}</h4>
+                          {isCurrentUser && (
+                            <span className={`text-xs px-2 py-0.5 rounded-md ${t.bg3} ${t.text3}`}>
+                              Tú
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-xs ${t.text3} mt-1`}>{player.cyclesCompleted} cycles completados</p>
+                      </div>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="hidden sm:grid grid-cols-3 gap-8">
+                      <div className="text-right">
+                        <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Puntos</p>
+                        <p className={`text-lg font-bold ${t.text}`}>{player.totalScore.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Precisión</p>
+                        <p className={`text-lg font-bold`} style={{ color: accentColor }}>{player.averageAccuracy}%</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Mejor tiempo</p>
+                        <p className={`text-lg font-bold ${t.text}`}>{(player.fastestTime / 1000).toFixed(1)}s</p>
+                      </div>
+                    </div>
+
+                    {/* Arrow for mobile */}
+                    <div className="sm:hidden">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Barra de precisión */}
+                  <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Precisión</span>
+                      <span className={`text-sm font-semibold ${t.text}`}>{player.averageAccuracy}%</span>
+                    </div>
+                    <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
+                      <div 
+                        className="h-full transition-all rounded-full" 
+                        style={{ width: `${player.averageAccuracy}%`, backgroundColor: accentColor }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className={`${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
+        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+          <p className={`text-sm ${t.text3}`}>El ranking se actualiza cada 24 horas</p>
+          <button
+            onClick={logout}
+            className={`px-5 py-2 rounded-lg ${t.bg3} ${t.border} border text-sm font-medium transition-all ${t.text3} hover:${t.text}`}
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </div>
     </div>
   )
