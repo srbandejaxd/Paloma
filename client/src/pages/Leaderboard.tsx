@@ -356,10 +356,8 @@ export default function Leaderboard() {
               return (
                 <div
                   key={player.id}
-                  className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg ${
-                    isCurrentUser ? `ring-2 ring-opacity-50` : ''
-                  }`}
-                  style={isCurrentUser ? { ringColor: accentColor } : {}}
+                  className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}
+                  style={isCurrentUser ? { boxShadow: `0 0 0 2px ${accentColor}` } : {}}
                 >
                   <div className="flex items-center justify-between gap-4">
                     {/* Rank y Nombre */}
