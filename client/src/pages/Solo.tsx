@@ -331,18 +331,6 @@ export default function Solo() {
         <ProfessionalNav />
         
         <div className="max-w-7xl mx-auto px-6 py-16">
-          <button
-            onClick={() => {
-              setSelectedCategory(null)
-              setSelectedSubcategory(null)
-            }}
-            className={`flex items-center gap-2 text-sm font-medium ${t.text3} hover:${t.text} transition-colors mb-12`}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-            </svg>
-            Volver atrás
-          </button>
 
           <div className="mb-16 animate-slide-up">
             <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>{catLabel}</p>
@@ -405,12 +393,18 @@ export default function Solo() {
             </div>
 
             {selectedBlock && (
-              <button
-                onClick={() => startSolo(selectedBlock)}
-                className={`w-full py-4 ${t.accentBg} text-white font-bold text-sm tracking-widest uppercase rounded-xl transition-all hover:opacity-90 hover:shadow-lg transform hover:scale-105`}
-              >
-                Empezar Cycle
-              </button>
+               <div className="space-y-4">
+                    <div className={`rounded-lg ${t.bg3} p-4 text-center`}>
+                        <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Puzzles en este bloque</p>
+                        <p className={`text-3xl font-bold`} style={{ color: accentColor }}>{selectedBlock.puzzleCount}</p>
+                    </div>
+                    <button
+                        onClick={() => startSolo(selectedBlock)}
+                        className={`w-full py-4 ${t.accentBg} text-white font-bold text-sm tracking-widest uppercase rounded-xl transition-all hover:opacity-90 hover:shadow-lg transform hover:scale-105`}
+                    >
+                     Empezar Cycle
+                    </button>
+               </div>
             )}
           </div>
         </div>
