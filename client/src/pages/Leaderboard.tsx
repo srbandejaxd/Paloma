@@ -1,19 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { fetchBlocks, fetchAttempts } from '../lib/api'
-import { Block, AttemptRecord } from '../types'
+import { fetchBlocks, fetchLeaderboard, LeaderboardEntry } from '../lib/api'
+import { Block } from '../types'
 
-interface RankingEntry {
-  nickname: string
-  userId: number
-  bestScore: number
-  bestTime: number
-  attempts: number
-  averageAccuracy: number
-  errors: number
-  solved: number
-  totalPuzzles: number
+interface RankingEntry extends LeaderboardEntry {
   rank: number
 }
 
@@ -37,11 +28,26 @@ function MoonIcon() {
   )
 }
 
+function CrownIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M2 18h20l-1.5-9-4.5 3.5-4-6.5-4 6.5L3.5 9 2 18z"/>
+    </svg>
+  )
+}
+
 const CATEGORIES = [
   { id: "checkmate_patterns", label: "Checkmate Patterns Manual" },
   { id: "palomita", label: "Woodpecker Method" },
   { id: "woodpecker_method2", label: "Woodpecker Method 2" },
 ]
+
+function formatMMSS(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+  const m = Math.floor(totalSeconds / 60)
+  const s = totalSeconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
 
 export default function Leaderboard() {
   const { user, logout } = useAuth()
@@ -53,6 +59,7 @@ export default function Leaderboard() {
   const [ranking, setRanking] = useState<RankingEntry[]>([])
   const [dark, setDark] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [rankingLoading, setRankingLoading] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -73,87 +80,39 @@ export default function Leaderboard() {
     }).catch(console.error)
   }, [user, navigate])
 
-  // Obtener categorías únicas
   const categories = CATEGORIES.filter(cat => blocks.some(b => b.category === cat.id))
-
-  // Obtener subcategorías para la categoría seleccionada
   const blocksForCategory = selectedCategory ? blocks.filter(b => b.category === selectedCategory) : []
   const subcategoriesForCategory = selectedCategory
     ? [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
     : []
-
-  // Obtener bloques para mostrar (según categoría y subcategoría)
   const blocksToShow = selectedCategory
     ? selectedSubcategory
       ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
       : blocksForCategory.filter(b => !b.subcategory)
     : []
 
-  // Cargar ranking cuando se selecciona un bloque
+  // Cargar ranking real (global, todos los jugadores) cuando se selecciona un bloque
   useEffect(() => {
     if (!selectedBlockId) {
       setRanking([])
       return
     }
-    
-    setLoading(true)
-    fetchAttempts(selectedBlockId)
-      .then((attempts: AttemptRecord[]) => {
-        const selectedBlock = blocks.find(b => b.id === selectedBlockId)
-        if (!selectedBlock) return
 
-        // Agrupar intentos por usuario y calcular el mejor score
-        const userMap = new Map<number, { nickname: string; attempts: AttemptRecord[] }>()
-        
-        attempts.forEach((attempt: AttemptRecord) => {
-          const userId = attempt.userId || 0
-          if (!userMap.has(userId)) {
-            userMap.set(userId, { nickname: attempt.nickname, attempts: [] })
-          }
-          userMap.get(userId)!.attempts.push(attempt)
-        })
-
-        // Calcular ranking
-        const rankingData: RankingEntry[] = Array.from(userMap.entries()).map(([userId, data]) => {
-          const N = selectedBlock.puzzleCount
-          
-          // Encontrar el mejor intento (score más alto = menor tiempo)
-          const best = data.attempts.reduce((prev, current) => {
-            const prevScore = 1000 * N - (prev.totalTimeMs / 1000)
-            const currentScore = 1000 * N - (current.totalTimeMs / 1000)
-            return currentScore > prevScore ? current : prev
-          })
-
-          const bestScore = 1000 * N - (best.totalTimeMs / 1000)
-
-          return {
-            nickname: data.nickname,
-            userId,
-            bestScore,
-            bestTime: best.totalTimeMs / 1000,
-            attempts: data.attempts.length,
-            averageAccuracy: best.accuracy,
-            errors: best.errors,
-            solved: best.solved,
-            totalPuzzles: best.totalPuzzles,
-            rank: 0
-          }
-        })
-
-        // Ordenar por score y asignar ranks
-        rankingData.sort((a, b) => b.bestScore - a.bestScore)
-        rankingData.forEach((entry, idx) => {
-          entry.rank = idx + 1
-        })
-
+    setRankingLoading(true)
+    fetchLeaderboard(selectedBlockId)
+      .then((entries: LeaderboardEntry[]) => {
+        const rankingData: RankingEntry[] = entries.map((entry, idx) => ({
+          ...entry,
+          rank: idx + 1,
+        }))
         setRanking(rankingData)
-        setLoading(false)
+        setRankingLoading(false)
       })
       .catch((err: Error) => {
-        console.error('Error loading attempts:', err)
-        setLoading(false)
+        console.error('Error loading leaderboard:', err)
+        setRankingLoading(false)
       })
-  }, [selectedBlockId, blocks])
+  }, [selectedBlockId])
 
   // ── THEME TOKENS ────────────────────────────────────────────────────────────
   const t = dark ? {
@@ -205,9 +164,13 @@ export default function Leaderboard() {
     )
   }
 
+  const first = top3[0]
+  const second = top3[1]
+  const third = top3[2]
+
   return (
     <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
-      {/* Navbar Profesional */}
+      {/* Navbar */}
       <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95 transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-start justify-between mb-6">
@@ -245,7 +208,7 @@ export default function Leaderboard() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      <div className="max-w-5xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-12 animate-slide-up">
           <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Clasificaciones</p>
@@ -253,14 +216,13 @@ export default function Leaderboard() {
             Ranking por bloque
           </h2>
           <p className={`text-lg max-w-2xl ${t.text2} leading-relaxed`}>
-            Selecciona una categoría, subcategoría y bloque para ver el ranking de ese bloque específico.
+            Selecciona una categoría, subcategoría y bloque para ver el ranking global de ese bloque.
           </p>
         </div>
 
         {/* Selectors Section */}
         <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-16 animate-slide-up`}>
           <div className="grid md:grid-cols-3 gap-6">
-            {/* Categoria Dropdown */}
             <div>
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
                 Categoría
@@ -283,7 +245,6 @@ export default function Leaderboard() {
               </select>
             </div>
 
-            {/* Subcategoria Dropdown */}
             <div>
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
                 Subcategoría
@@ -308,7 +269,6 @@ export default function Leaderboard() {
               </select>
             </div>
 
-            {/* Bloque Dropdown */}
             <div>
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
                 Bloque
@@ -333,243 +293,136 @@ export default function Leaderboard() {
         </div>
 
         {/* Ranking Section - Solo aparece si hay bloque seleccionado */}
-        {selectedBlockId && selectedBlock && ranking.length > 0 ? (
+        {rankingLoading ? (
+          <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border animate-slide-up`}>
+            <p className={`text-lg ${t.text2}`}>Cargando ranking...</p>
+          </div>
+        ) : selectedBlockId && selectedBlock && ranking.length > 0 ? (
           <div className="animate-slide-up">
             <div className="mb-12">
               <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>{selectedBlock.name}</p>
               <h3 className={`text-3xl font-bold ${t.text} leading-none mb-2`} style={{ letterSpacing: '-0.02em' }}>
                 Top ranking
               </h3>
-              <p className={`text-sm ${t.text2}`}>Formula: score = 1000×N - tiempo(segundos)</p>
+              <p className={`text-sm ${t.text2}`}>Score = 1000×N puzzles − tiempo (segundos)</p>
             </div>
 
-            {/* TOP 3 PODIO OLÍMPICO */}
-            <div className="mb-20">
-              <div className="relative h-80 flex items-flex-end justify-center gap-12 mb-8">
-                {/* Posición 2 (Plata) */}
-                <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                  <div className={`text-center`}>
-                    <div className="mb-6">
-                      <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
-                        2️⃣
+            {/* PODIO */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-end mb-12 px-0 md:px-8">
+              {/* 2do lugar */}
+              <div className="order-2 md:order-1">
+                {second ? (
+                  <div className={`rounded-2xl ${t.bg2} border-t-4 p-6 flex flex-col items-center text-center relative h-56 justify-end transition-transform hover:-translate-y-1`} style={{ borderTopColor: '#C0C0C0' }}>
+                    <div className="absolute -top-8 w-16 h-16 rounded-full flex items-center justify-center border-2" style={{ backgroundColor: dark ? '#0A0A0F' : '#FAFAF7', borderColor: '#C0C0C0', boxShadow: '0 0 15px rgba(192,192,192,0.3)' }}>
+                      <span className="text-xl font-bold" style={{ color: '#9CA3AF' }}>{second.nickname.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold mb-2" style={{ backgroundColor: 'rgba(192,192,192,0.12)', color: '#9CA3AF' }}>2</div>
+                    <h3 className={`font-bold text-lg ${t.text} leading-tight truncate max-w-full`}>{second.nickname}</h3>
+                    <div className={`w-full ${t.bg3} rounded-lg p-2 mt-4`}>
+                      <div className="font-mono text-xl font-bold" style={{ color: '#9CA3AF' }}>
+                        {Math.round(second.bestScore).toLocaleString('en-US')} <span className={`text-xs font-sans font-normal ${t.text3}`}>pts</span>
                       </div>
-                      <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[1]?.nickname}</h3>
-                      <p className={`text-sm ${t.text3} mt-1`}>{top3[1]?.attempts} intento{top3[1]?.attempts !== 1 ? 's' : ''}</p>
+                      <div className={`font-mono text-xs ${t.text3}`}>{formatMMSS(second.bestTimeMs)} min</div>
                     </div>
                   </div>
-                  
-                  <div 
-                    className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg`}
-                    style={{ 
-                      backgroundColor: dark ? '#C0C0C0' : '#E8E0D0',
-                      borderColor: '#C0C0C0',
-                      height: '140px'
-                    }}
-                  >
-                    <div className="p-4 h-full flex flex-col items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Plata</span>
-                      <span className="text-2xl font-bold text-gray-800">
-                        {Math.round(top3[1]?.bestScore || 0)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Posición 1 (Oro) */}
-                <div className="flex flex-col items-center gap-4 animate-slide-up z-10">
-                  <div className={`text-center scale-110`}>
-                    <div className="relative mb-6">
-                      <div className="absolute -inset-2 rounded-full" style={{ background: `radial-gradient(circle, ${accentColor}40, transparent)` }} />
-                      <div className={`relative w-24 h-24 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-4xl font-bold mx-auto shadow-lg`}>
-                        👑
-                      </div>
-                    </div>
-                    <h3 className={`text-2xl font-bold ${t.text} leading-tight`}>{top3[0]?.nickname}</h3>
-                    <p className={`text-sm ${t.text3} mt-1`}>{top3[0]?.attempts} intento{top3[0]?.attempts !== 1 ? 's' : ''}</p>
-                  </div>
-                  
-                  <div 
-                    className={`w-40 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg shadow-lg`}
-                    style={{ 
-                      backgroundColor: '#FFD700',
-                      borderColor: '#FFD700',
-                      height: '180px'
-                    }}
-                  >
-                    <div className="p-4 h-full flex flex-col items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Oro</span>
-                      <span className="text-3xl font-bold text-gray-800">
-                        {Math.round(top3[0]?.bestScore || 0)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Posición 3 (Bronce) */}
-                <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                  <div className={`text-center`}>
-                    <div className="mb-6">
-                      <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
-                        3️⃣
-                      </div>
-                      <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[2]?.nickname}</h3>
-                      <p className={`text-sm ${t.text3} mt-1`}>{top3[2]?.attempts} intento{top3[2]?.attempts !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                  
-                  <div 
-                    className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg`}
-                    style={{ 
-                      backgroundColor: '#CD7F32',
-                      borderColor: '#CD7F32',
-                      height: '100px'
-                    }}
-                  >
-                    <div className="p-4 h-full flex flex-col items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Bronce</span>
-                      <span className="text-xl font-bold text-gray-700">
-                        {Math.round(top3[2]?.bestScore || 0)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                ) : <div className="h-56" />}
               </div>
 
-              {/* Stats del Top 3 */}
-              <div className="grid md:grid-cols-3 gap-4 mb-16">
-                {top3.map((player, idx) => (
-                  <div key={player.userId} className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                        style={{ 
-                          backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
-                        }}
-                      >
-                        {idx + 1}
-                      </div>
-                      <div>
-                        <p className={`text-sm font-bold ${t.text}`}>{player.nickname}</p>
-                        <p className={`text-xs ${t.text3}`}>Rank #{player.rank}</p>
+              {/* 1er lugar */}
+              <div className="order-1 md:order-2">
+                {first ? (
+                  <div className={`rounded-2xl ${t.bg2} border-t-4 border-amber p-6 flex flex-col items-center text-center relative h-64 justify-end transform md:-translate-y-4 z-10 transition-transform hover:-translate-y-1 md:hover:-translate-y-5`} style={{ boxShadow: '0 0 20px rgba(212,160,23,0.15)' }}>
+                    <div className="absolute -top-12 flex flex-col items-center">
+                      <span style={{ color: accentColor, filter: 'drop-shadow(0 0 8px rgba(212,160,23,0.8))' }} className="mb-1">
+                        <CrownIcon />
+                      </span>
+                      <div className="w-20 h-20 rounded-full flex items-center justify-center border-2" style={{ backgroundColor: dark ? '#0A0A0F' : '#FAFAF7', borderColor: accentColor, boxShadow: '0 0 20px rgba(212,160,23,0.4)' }}>
+                        <span className="text-2xl font-bold" style={{ color: accentColor }}>{first.nickname.charAt(0).toUpperCase()}</span>
                       </div>
                     </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Mejor tiempo</span>
-                        <span className={`text-sm font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</span>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold mb-2" style={{ backgroundColor: 'rgba(212,160,23,0.12)', color: accentColor }}>1</div>
+                    <h3 className="font-bold text-xl leading-tight truncate max-w-full" style={{ color: accentColor }}>{first.nickname}</h3>
+                    <div className="w-full rounded-lg p-3 mt-4 border" style={{ backgroundColor: 'rgba(212,160,23,0.1)', borderColor: 'rgba(212,160,23,0.2)' }}>
+                      <div className="font-mono text-2xl font-black" style={{ color: accentColor }}>
+                        {Math.round(first.bestScore).toLocaleString('en-US')} <span className="text-xs font-sans font-normal opacity-70">pts</span>
                       </div>
-                      <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
-                        <div 
-                          className="h-full transition-all rounded-full" 
-                          style={{ width: `${Math.min((player.bestTime / 300) * 100, 100)}%`, backgroundColor: accentColor }}
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
-                        <div>
-                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Score</p>
-                          <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
-                        </div>
-                        <div>
-                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Errores</p>
-                          <p className={`text-lg font-bold ${t.text}`}>{player.errors}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Puzzles</p>
-                          <p className={`text-lg font-bold ${t.text}`}>{player.solved}<span className={`text-xs ${t.text3}`}>/{player.totalPuzzles}</span></p>
-                        </div>
-                      </div>
+                      <div className="font-mono text-sm opacity-80" style={{ color: accentColor }}>{formatMMSS(first.bestTimeMs)} min</div>
                     </div>
                   </div>
-                ))}
+                ) : <div className="h-64" />}
               </div>
 
-              {/* Separador */}
-              {rest.length > 0 && <div className={`h-px ${t.track} my-16`} />}
-
-              {/* Rest of Leaderboard */}
-              {rest.length > 0 && (
-                <div className="mb-20">
-                  <div className="mb-8">
-                    <h3 className={`text-2xl font-bold ${t.text} leading-none mb-2`} style={{ letterSpacing: '-0.02em' }}>
-                      Resto del ranking
-                    </h3>
-                    <p className={`text-sm ${t.text2}`}>{rest.length} jugador{rest.length !== 1 ? 'es' : ''} más</p>
+              {/* 3er lugar */}
+              <div className="order-3 md:order-3">
+                {third ? (
+                  <div className={`rounded-2xl ${t.bg2} border-t-4 p-6 flex flex-col items-center text-center relative h-52 justify-end transition-transform hover:-translate-y-1`} style={{ borderTopColor: '#CD7F32' }}>
+                    <div className="absolute -top-8 w-16 h-16 rounded-full flex items-center justify-center border-2" style={{ backgroundColor: dark ? '#0A0A0F' : '#FAFAF7', borderColor: '#CD7F32', boxShadow: '0 0 15px rgba(205,127,50,0.3)' }}>
+                      <span className="text-xl font-bold" style={{ color: '#CD7F32' }}>{third.nickname.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold mb-2" style={{ backgroundColor: 'rgba(205,127,50,0.12)', color: '#CD7F32' }}>3</div>
+                    <h3 className={`font-bold text-lg ${t.text} leading-tight truncate max-w-full`}>{third.nickname}</h3>
+                    <div className={`w-full ${t.bg3} rounded-lg p-2 mt-4`}>
+                      <div className="font-mono text-xl font-bold" style={{ color: '#CD7F32' }}>
+                        {Math.round(third.bestScore).toLocaleString('en-US')} <span className={`text-xs font-sans font-normal ${t.text3}`}>pts</span>
+                      </div>
+                      <div className={`font-mono text-xs ${t.text3}`}>{formatMMSS(third.bestTimeMs)} min</div>
+                    </div>
                   </div>
+                ) : <div className="h-52" />}
+              </div>
+            </div>
 
-                  <div className="space-y-3">
-                    {rest.map((player) => {
-                      const isCurrentUser = player.nickname === user?.nickname
-                      return (
+            {/* TABLA / RESTO DEL RANKING (incluye del 1º en adelante, formato lista) */}
+            <div className={`rounded-2xl ${t.bg2} ${t.border} border overflow-hidden`}>
+              <div className={`hidden md:grid grid-cols-[60px_1fr_120px_100px_100px] gap-4 px-6 py-4 ${t.bg3} border-b ${t.border} text-xs font-semibold ${t.text3} uppercase tracking-wider`}>
+                <div className="text-center">Rank</div>
+                <div>Jugador</div>
+                <div className="text-right">Score</div>
+                <div className="text-right">Mejor tiempo</div>
+                <div className="text-right">Puzzles</div>
+              </div>
+
+              <div className={`divide-y ${t.border}`}>
+                {ranking.map(player => {
+                  const isCurrentUser = player.nickname === user?.nickname
+                  return (
+                    <div
+                      key={`${player.nickname}-${player.rank}`}
+                      className={`grid grid-cols-[60px_1fr_auto] md:grid-cols-[60px_1fr_120px_100px_100px] gap-4 px-6 py-4 items-center transition-colors relative ${
+                        isCurrentUser ? 'border-l-4' : `hover:${t.bg3}`
+                      }`}
+                      style={isCurrentUser ? { backgroundColor: 'rgba(212,160,23,0.05)', borderLeftColor: accentColor } : {}}
+                    >
+                      <div className={`font-mono text-sm font-bold text-center ${isCurrentUser ? '' : t.text3}`} style={isCurrentUser ? { color: accentColor } : {}}>
+                        {player.rank}
+                      </div>
+                      <div className="flex items-center gap-3 min-w-0">
                         <div
-                          key={player.userId}
-                          className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}
-                          style={isCurrentUser ? { boxShadow: `0 0 0 2px ${accentColor}` } : {}}
+                          className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0"
+                          style={isCurrentUser ? { backgroundColor: 'rgba(212,160,23,0.2)', color: accentColor } : { backgroundColor: dark ? '#1F1F2E' : '#E5DFD5', color: dark ? '#7A776E' : '#8A8478' }}
                         >
-                          <div className="flex items-center justify-between gap-4">
-                            {/* Rank y Nombre */}
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                              <div className={`w-12 h-12 rounded-lg ${t.bg3} flex items-center justify-center flex-shrink-0`}>
-                                <span className={`text-sm font-bold ${t.text}`}>{player.rank}</span>
-                              </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h4 className={`font-bold ${t.text} truncate`}>{player.nickname}</h4>
-                                  {isCurrentUser && (
-                                    <span className={`text-xs px-2 py-0.5 rounded-md ${t.bg3} ${t.text3} whitespace-nowrap`}>
-                                      Tú
-                                    </span>
-                                  )}
-                                </div>
-                                <p className={`text-xs ${t.text3} mt-1`}>{player.attempts} intento{player.attempts !== 1 ? 's' : ''}</p>
-                              </div>
-                            </div>
-
-                            {/* Stats Grid */}
-                            <div className="hidden sm:grid grid-cols-3 gap-8">
-                              <div className="text-right">
-                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Score</p>
-                                <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Tiempo</p>
-                                <p className={`text-lg font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</p>
-                              </div>
-                              <div className="text-right">
-                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Puzzles</p>
-                                <p className={`text-lg font-bold ${t.text}`}>{player.solved}<span className={`text-xs ${t.text3}`}>/{player.totalPuzzles}</span></p>
-                              </div>
-                            </div>
-
-                            {/* Arrow for mobile */}
-                            <div className="sm:hidden">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                              </svg>
-                            </div>
-                          </div>
-
-                          {/* Barra de tiempo */}
-                          <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Tiempo de mejor intento</span>
-                              <span className={`text-sm font-semibold ${t.text}`}>{player.bestTime.toFixed(1)}s</span>
-                            </div>
-                            <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
-                              <div 
-                                className="h-full transition-all rounded-full" 
-                                style={{ width: `${Math.min((player.bestTime / 300) * 100, 100)}%`, backgroundColor: accentColor }}
-                              />
-                            </div>
+                          {player.nickname.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className={`font-bold text-sm flex items-center gap-2 truncate ${isCurrentUser ? '' : t.text}`} style={isCurrentUser ? { color: accentColor } : {}}>
+                            <span className="truncate">{player.nickname}</span>
+                            {isCurrentUser && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-bold flex-shrink-0" style={{ backgroundColor: 'rgba(212,160,23,0.2)', color: accentColor }}>
+                                Tú
+                              </span>
+                            )}
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+                      </div>
+                      <div className={`font-mono font-bold text-right text-base md:text-sm ${isCurrentUser ? '' : t.text}`} style={isCurrentUser ? { color: accentColor } : {}}>
+                        {Math.round(player.bestScore).toLocaleString('en-US')} <span className={`md:hidden text-xs ${t.text3}`}>pts</span>
+                      </div>
+                      <div className={`hidden md:block font-mono text-sm ${t.text} text-right`}>{formatMMSS(player.bestTimeMs)}</div>
+                      <div className={`hidden md:block font-mono text-sm ${t.text3} text-right`}>{player.bestSolved}/{player.totalPuzzles}</div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         ) : selectedBlockId && selectedBlock && ranking.length === 0 ? (
