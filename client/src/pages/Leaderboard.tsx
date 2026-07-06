@@ -11,6 +11,9 @@ interface RankingEntry {
   bestTime: number
   attempts: number
   averageAccuracy: number
+  errors: number
+  solved: number
+  totalPuzzles: number
   rank: number
 }
 
@@ -130,6 +133,9 @@ export default function Leaderboard() {
             bestTime: best.totalTimeMs / 1000,
             attempts: data.attempts.length,
             averageAccuracy: best.accuracy,
+            errors: best.errors,
+            solved: best.solved,
+            totalPuzzles: best.totalPuzzles,
             rank: 0
           }
         })
@@ -466,8 +472,12 @@ export default function Leaderboard() {
                           <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
                         </div>
                         <div>
-                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Intentos</p>
-                          <p className={`text-lg font-bold ${t.text}`}>{player.attempts}</p>
+                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Errores</p>
+                          <p className={`text-lg font-bold ${t.text}`}>{player.errors}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Puzzles</p>
+                          <p className={`text-lg font-bold ${t.text}`}>{player.solved}<span className={`text-xs ${t.text3}`}>/{player.totalPuzzles}</span></p>
                         </div>
                       </div>
                     </div>
@@ -528,8 +538,8 @@ export default function Leaderboard() {
                                 <p className={`text-lg font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</p>
                               </div>
                               <div className="text-right">
-                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Precisión</p>
-                                <p className={`text-lg font-bold ${t.text}`}>{player.averageAccuracy.toFixed(0)}%</p>
+                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Puzzles</p>
+                                <p className={`text-lg font-bold ${t.text}`}>{player.solved}<span className={`text-xs ${t.text3}`}>/{player.totalPuzzles}</span></p>
                               </div>
                             </div>
 
