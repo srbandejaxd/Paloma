@@ -40,6 +40,7 @@ export default function History() {
   const [attempts, setAttempts] = useState<AttemptRecord[]>([])
   const [dark, setDark] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [allAttempts, setAllAttempts] = useState<AttemptRecord[]>([])
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -81,6 +82,7 @@ export default function History() {
     fetchAttempts(selectedBlockId)
       .then((data: AttemptRecord[]) => {
         setAttempts(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+        setAllAttempts(data)
         setLoading(false)
       })
       .catch((err: Error) => {
@@ -89,28 +91,91 @@ export default function History() {
       })
   }, [selectedBlockId])
 
-  // Calcular racha (intentos consecutivos sin errores)
-  const calculateStreak = () => {
+  // Cargar TODOS los intentos del usuario para calcular racha de días
+  useEffect(() => {
+    if (!blocks.length) return
+    const loadAllAttempts = async () => {
+      try {
+        const allData: AttemptRecord[] = []
+        for (const block of blocks) {
+          const blockData = await fetchAttempts(block.id)
+          allData.push(...blockData)
+        }
+        setAllAttempts(allData)
+      } catch (err) {
+        console.error('Error loading all attempts:', err)
+      }
+    }
+    loadAllAttempts()
+  }, [blocks])
+
+  // Calcular racha de días (días consecutivos que entró a la página)
+  const calculateDayStreak = () => {
+    const uniqueDays = new Set(allAttempts.map(a => {
+      const date = new Date(a.createdAt)
+      return date.toISOString().split('T')[0]
+    }))
+    
+    const sortedDays = Array.from(uniqueDays).sort().reverse()
+    
     let streak = 0
-    for (const attempt of attempts) {
-      if (attempt.errors === 0 && attempt.solved === attempt.totalPuzzles) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    for (let i = 0; i < sortedDays.length; i++) {
+      const checkDate = new Date(sortedDays[i])
+      checkDate.setHours(0, 0, 0, 0)
+      
+      const expectedDate = new Date(today)
+      expectedDate.setDate(expectedDate.getDate() - i)
+      
+      if (checkDate.getTime() === expectedDate.getTime()) {
         streak++
       } else {
         break
       }
     }
+    
     return streak
+  }
+
+  // Obtener actividad del mes actual (para el calendario)
+  const getMonthActivity = () => {
+    const daysWithAttempts = new Set(allAttempts.map(a => {
+      const date = new Date(a.createdAt)
+      return date.getDate()
+    }))
+    return daysWithAttempts
+  }
+
+  // Generar días del calendario
+  const generateCalendarDays = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    
+    const days = []
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(i)
+    }
+    
+    return days
   }
 
   // Estadísticas generales
   const stats = {
     totalAttempts: attempts.length,
-    streak: calculateStreak(),
+    dayStreak: calculateDayStreak(),
     bestScore: attempts.length > 0 ? Math.max(...attempts.map(a => a.score)) : 0,
     avgAccuracy: attempts.length > 0 ? (attempts.reduce((sum, a) => sum + a.accuracy, 0) / attempts.length) : 0,
     bestTime: attempts.length > 0 ? Math.min(...attempts.map(a => a.totalTimeMs)) / 1000 : 0,
-    totalTime: attempts.reduce((sum, a) => sum + a.totalTimeMs, 0) / 1000,
   }
+
+  const monthActivity = getMonthActivity()
+  const calendarDays = generateCalendarDays()
 
   const t = dark ? {
     bg: 'bg-[#0A0A0F]',
@@ -211,6 +276,52 @@ export default function History() {
           </p>
         </div>
 
+        {/* Racha y Calendario */}
+        <div className={`grid md:grid-cols-2 gap-6 mb-16 animate-slide-up`}>
+          {/* Racha de días */}
+          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 text-center`}>
+            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Tu racha actual</p>
+            <div className="flex items-end justify-center gap-3">
+              <div>
+                <p className={`text-7xl font-bold`} style={{ color: accentColor }}>
+                  {stats.dayStreak}
+                </p>
+                <p className={`text-sm ${t.text3} mt-2`}>días consecutivos</p>
+              </div>
+              <div className="text-5xl mb-2">🔥</div>
+            </div>
+          </div>
+
+          {/* Mini Calendario */}
+          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8`}>
+            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Actividad de {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</p>
+            <div className="grid grid-cols-7 gap-2">
+              {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(day => (
+                <div key={day} className="text-center">
+                  <p className={`text-xs font-semibold ${t.text3}`}>{day}</p>
+                </div>
+              ))}
+              {calendarDays.map(day => {
+                const hasActivity = monthActivity.has(day)
+                return (
+                  <div key={day} className="flex justify-center">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all`}
+                      style={{
+                        backgroundColor: hasActivity ? '#27ae60' : dark ? '#1F1F2E' : '#E5DFD5',
+                        color: hasActivity ? 'white' : 'currentColor',
+                      }}
+                      title={hasActivity ? `${day} - Entrenaste` : `${day} - Sin entrenamiento`}
+                    >
+                      {day}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
         {/* Selectors */}
         <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-16 animate-slide-up`}>
           <div className="grid md:grid-cols-3 gap-6">
@@ -288,20 +399,7 @@ export default function History() {
           <div className="animate-slide-up">
             {/* Estadísticas principales */}
             <div className="mb-16">
-              <div className="grid md:grid-cols-5 gap-4 mb-8">
-                {/* Racha */}
-                <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 transition-all hover:shadow-lg`}>
-                  <div className="mb-4">
-                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>🔥 Racha actual</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-5xl font-bold`} style={{ color: accentColor }}>
-                      {stats.streak}
-                    </p>
-                    <p className={`text-xs ${t.text3} mt-2`}>intentos sin errores</p>
-                  </div>
-                </div>
-
+              <div className="grid md:grid-cols-4 gap-4 mb-8">
                 {/* Mejor Score */}
                 <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 transition-all hover:shadow-lg`}>
                   <div className="mb-4">
@@ -372,13 +470,11 @@ export default function History() {
                   const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
                   const N = selectedBlock.puzzleCount
                   const score = 1000 * N - (attempt.totalTimeMs / 1000)
-                  const isStreak = idx < stats.streak
 
                   return (
                     <div
                       key={attempt.id}
                       className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}
-                      style={isStreak ? { borderColor: accentColor, borderWidth: '2px' } : {}}
                     >
                       <div className="flex items-center justify-between gap-4">
                         {/* Fecha y número */}
@@ -389,14 +485,7 @@ export default function History() {
                           </div>
                           
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className={`font-bold ${t.text}`}>Intento #{stats.totalAttempts - idx}</h4>
-                              {isStreak && (
-                                <span className="text-xs px-2 py-0.5 rounded-md" style={{ backgroundColor: accentColor, color: dark ? '#0A0A0F' : '#FAFAF7' }}>
-                                  🔥 Racha
-                                </span>
-                              )}
-                            </div>
+                            <h4 className={`font-bold ${t.text}`}>Intento #{stats.totalAttempts - idx}</h4>
                             <p className={`text-xs ${t.text3}`}>{(attempt.totalTimeMs / 1000).toFixed(1)}s • {attempt.solved}/{attempt.totalPuzzles} correctos</p>
                           </div>
                         </div>
