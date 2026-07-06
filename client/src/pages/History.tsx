@@ -41,6 +41,7 @@ export default function History() {
   const [dark, setDark] = useState(true)
   const [loading, setLoading] = useState(true)
   const [allAttempts, setAllAttempts] = useState<AttemptRecord[]>([])
+  const [expandedAttemptId, setExpandedAttemptId] = useState<number | null>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
