@@ -7,7 +7,7 @@ import { useTimer } from '../hooks/useTimer'
 import { formatTimerDisplay, formatTimeLong } from '../lib/time'
 import PuzzleBoard from '../components/Board/PuzzleBoard'
 
-type Phase = 'category' | 'subcategory' | 'select' | 'racing' | 'done'
+type Phase = 'category' | 'select' | 'racing' | 'done'
 
 const CATEGORIES = [
   { id: "checkmate_patterns", label: "Checkmate Patterns Manual", description: "Domina los 34 patrones de mate esenciales", icon: '♚' },
@@ -97,9 +97,9 @@ export default function Solo() {
   const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
   const subcategoriesForCategory = [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
   const hasSubcategories = subcategoriesForCategory.length > 0
-  const blocksForSelection = hasSubcategories
+  const blocksToShow = hasSubcategories
     ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
-    : blocksForCategory
+    : blocksForCategory.filter(b => !b.subcategory)
 
   async function startSolo(block: Block) {
     setSelectedBlock(block)
@@ -168,12 +168,11 @@ export default function Solo() {
 
   const handleError = useCallback(() => setPuzzleErrors(prev => prev + 1), [])
 
-  // ── THEME TOKENS ────────────────────────────────────────────────────────────
+  // THEME TOKENS
   const t = dark ? {
     bg: 'bg-[#0A0A0F]',
     bg2: 'bg-[#12121A]',
     bg3: 'bg-[#1C1C28]',
-    bgSubtle: 'bg-[#15151D]',
     border: 'border-[#1F1F2E]',
     borderLight: 'border-[#2A2A3A]',
     text: 'text-[#E8E6E0]',
@@ -181,14 +180,12 @@ export default function Solo() {
     text3: 'text-[#7A776E]',
     accent: 'text-[#D4A017]',
     accentBg: 'bg-[#D4A017]',
-    accentMuted: 'text-[#A0791B]',
-    inputBg: 'bg-[#12121A] border-[#1F1F2E] focus:border-[#D4A017]',
+    inputBg: 'bg-[#12121A] border-[#1F1F2E] focus:border-[#D4A017] text-[#E8E6E0]',
     track: 'bg-[#1F1F2E]',
   } : {
     bg: 'bg-[#FAFAF7]',
     bg2: 'bg-[#F3EFE7]',
     bg3: 'bg-[#EDE8DF]',
-    bgSubtle: 'bg-[#F6F2EA]',
     border: 'border-[#E5DFD5]',
     borderLight: 'border-[#D9D2C8]',
     text: 'text-[#1A1814]',
@@ -196,19 +193,17 @@ export default function Solo() {
     text3: 'text-[#8A8478]',
     accent: 'text-[#A07810]',
     accentBg: 'bg-[#A07810]',
-    accentMuted: 'text-[#C49A35]',
-    inputBg: 'bg-[#F3EFE7] border-[#E5DFD5] focus:border-[#A07810]',
+    inputBg: 'bg-[#F3EFE7] border-[#E5DFD5] focus:border-[#A07810] text-[#1A1814]',
     track: 'bg-[#E5DFD5]',
   }
 
   const accentColor = dark ? '#D4A017' : '#A07810'
 
-  // ── NAVBAR PROFESIONAL ──────────────────────────────────────────────────────
+  // NAVBAR
   function ProfessionalNav() {
     return (
       <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95 transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-6 py-5">
-          {/* Header row con nickname grande */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex-1">
               <p className={`text-xs uppercase tracking-[0.15em] ${t.text3} mb-1`}>Bienvenido de vuelta</p>
@@ -225,8 +220,25 @@ export default function Solo() {
             </button>
           </div>
 
-          {/* Navigation horizontal con separadores finos */}
           <div className="flex items-center gap-0 overflow-x-auto pb-2">
+            {/* Solo Button - Siempre visible */}
+            <div className="flex items-center">
+              <button
+                onClick={() => {
+                  setPhase('category')
+                  setSelectedCategory(null)
+                  setSelectedSubcategory(null)
+                  setSelectedBlock(null)
+                }}
+                className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all ${t.text2} hover:${t.text} relative group`}
+              >
+                <span className="text-lg">🪃</span>
+                <span className="whitespace-nowrap">Solo</span>
+                <div className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all scale-x-0 group-hover:scale-x-100`} style={{ backgroundColor: accentColor }} />
+              </button>
+              <div className={`w-px h-4 ${t.borderLight}`} />
+            </div>
+
             {NAV_ITEMS.map((item, idx) => (
               <div key={item.path} className="flex items-center">
                 <button
@@ -246,7 +258,7 @@ export default function Solo() {
     )
   }
 
-  // ── CATEGORY ────────────────────────────────────────────────────────────────
+  // CATEGORY SCREEN
   if (phase === 'category') {
     return (
       <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
@@ -263,21 +275,13 @@ export default function Solo() {
             </p>
           </div>
 
-          {/* Grid de categorías con más detalle */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 mb-20">
             {CATEGORIES.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => {
-                  setSelectedCategory(cat.id)
-                  setSelectedSubcategory(null)
-                  const catBlocks = blocks.filter(b => b.category === cat.id)
-                  const subs = [...new Set(catBlocks.map(b => b.subcategory).filter(Boolean))]
-                  setPhase(subs.length > 0 ? 'subcategory' : 'select')
-                }}
+                onClick={() => setSelectedCategory(cat.id)}
                 className={`group relative overflow-hidden rounded-xl ${t.bg2} ${t.border} border transition-all duration-300 hover:border-opacity-100 hover:shadow-lg hover:-translate-y-1`}
               >
-                {/* Fondo gradiente sutil en hover */}
                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300`} style={{ background: `linear-gradient(135deg, ${accentColor}20, transparent)` }} />
                 
                 <div className="relative p-8">
@@ -289,7 +293,7 @@ export default function Solo() {
                   
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1">
                     <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: accentColor }}>
-                      Empezar
+                      Seleccionar
                     </span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: accentColor }}>
                       <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -298,72 +302,6 @@ export default function Solo() {
                 </div>
               </button>
             ))}
-          </div>
-        </div>
-
-        {/* Footer navbar con logout */}
-        <div className={`fixed bottom-0 left-0 right-0 ${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
-          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end">
-            <button
-              onClick={logout}
-              className={`px-5 py-2 rounded-lg ${t.bg3} ${t.border} border text-sm font-medium transition-all ${t.text3} hover:${t.text} hover:shadow-sm`}
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── SUBCATEGORY ─────────────────────────────────────────────────────────────
-  if (phase === 'subcategory') {
-    const catLabel = CATEGORIES.find(c => c.id === selectedCategory)?.label
-    return (
-      <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
-        <ProfessionalNav />
-        
-        <div className="max-w-7xl mx-auto px-6 py-16">
-          <button
-            onClick={() => setPhase('category')}
-            className={`flex items-center gap-2 text-sm font-medium ${t.text3} hover:${t.text} transition-colors mb-12`}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-            </svg>
-            Volver a categorías
-          </button>
-
-          <div className="mb-16 animate-slide-up">
-            <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>{catLabel}</p>
-            <h2 className={`text-5xl font-bold ${t.text} leading-none mb-4`} style={{ letterSpacing: '-0.02em' }}>
-              Elige una subcategoría
-            </h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4 mb-20">
-            {subcategoriesForCategory.map(sub => {
-              const subBlocks = blocksForCategory.filter(b => b.subcategory === sub)
-              return (
-                <button
-                  key={sub}
-                  onClick={() => { setSelectedSubcategory(sub); setPhase('select') }}
-                  className={`group relative p-6 rounded-xl ${t.bg2} ${t.border} border transition-all duration-300 text-left hover:border-opacity-100 hover:shadow-lg hover:-translate-y-0.5`}
-                >
-                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 rounded-xl transition-opacity`} style={{ background: `linear-gradient(135deg, ${accentColor}20, transparent)` }} />
-                  <div className="relative">
-                    <h3 className={`text-lg font-bold ${t.text} mb-2`}>{sub}</h3>
-                    <p className={`text-sm ${t.text2} mb-4`}>{subBlocks.length} bloque{subBlocks.length !== 1 ? 's' : ''} disponible{subBlocks.length !== 1 ? 's' : ''}</p>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accentColor }}>
-                      <span className="text-xs font-semibold">Seleccionar</span>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-                      </svg>
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
           </div>
         </div>
 
@@ -381,16 +319,20 @@ export default function Solo() {
     )
   }
 
-  // ── SELECT ──────────────────────────────────────────────────────────────────
-  if (phase === 'select') {
+  // SELECT SCREEN (Subcategoría + Bloque)
+  if (phase === 'select' && selectedCategory) {
     const catLabel = CATEGORIES.find(c => c.id === selectedCategory)?.label
+    
     return (
       <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
         <ProfessionalNav />
         
         <div className="max-w-7xl mx-auto px-6 py-16">
           <button
-            onClick={() => setPhase(hasSubcategories ? 'subcategory' : 'category')}
+            onClick={() => {
+              setSelectedCategory(null)
+              setSelectedSubcategory(null)
+            }}
             className={`flex items-center gap-2 text-sm font-medium ${t.text3} hover:${t.text} transition-colors mb-12`}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -400,46 +342,72 @@ export default function Solo() {
           </button>
 
           <div className="mb-16 animate-slide-up">
-            <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>{catLabel}{selectedSubcategory ? ` · ${selectedSubcategory}` : ''}</p>
+            <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>{catLabel}</p>
             <h2 className={`text-5xl font-bold ${t.text} leading-none mb-4`} style={{ letterSpacing: '-0.02em' }}>
               Elige un bloque
             </h2>
             <p className={`text-lg ${t.text2} mt-4 max-w-2xl leading-relaxed`}>
-              Cada bloque contiene un conjunto de puzzles. Completa el bloque y ese será un cycle. Tu progreso se guarda automáticamente.
+              Cada bloque contiene un conjunto de puzzles. Completa el bloque y ese será un cycle.
             </p>
           </div>
 
-          <div className="space-y-3 mb-20">
-            {blocksForSelection.map((block, idx) => (
-              <button
-                key={block.id}
-                onClick={() => startSolo(block)}
-                className={`group w-full flex items-center justify-between p-6 rounded-xl ${t.bg2} ${t.border} border transition-all duration-300 hover:border-opacity-100 hover:shadow-lg hover:-translate-x-1`}
-              >
-                <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 rounded-xl transition-opacity`} style={{ background: `linear-gradient(90deg, ${accentColor}20, transparent)` }} />
-                
-                <div className="relative flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className={`text-xs font-semibold uppercase tracking-widest ${t.text3}`}>Bloque {idx + 1}</span>
-                    <span className={`text-xs px-2 py-1 rounded-md ${t.bg3} ${t.text3}`}>{block.puzzleCount} puzzles</span>
-                  </div>
-                  <h3 className={`text-lg font-bold ${t.text} leading-none`}>{block.name}</h3>
-                  {block.description && <p className={`text-sm ${t.text2} mt-2`}>{block.description}</p>}
+          {/* Selectors */}
+          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-16 animate-slide-up`}>
+            <div className={`grid ${hasSubcategories ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-6 mb-8`}>
+              {hasSubcategories && (
+                <div>
+                  <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                    Subcategoría
+                  </label>
+                  <select
+                    value={selectedSubcategory || ''}
+                    onChange={(e) => setSelectedSubcategory(e.target.value || null)}
+                    className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold`}
+                  >
+                    <option value="">Elige una subcategoría...</option>
+                    {subcategoriesForCategory.map(sub => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                
-                <div className="relative flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1">
-                  <span className="text-sm font-semibold" style={{ color: accentColor }}>Iniciar</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: accentColor }}>
-                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-                  </svg>
-                </div>
-              </button>
-            ))}
+              )}
 
-            {blocksForSelection.length === 0 && (
-              <div className={`text-center py-12 rounded-xl ${t.bg2} ${t.border} border`}>
-                <p className={`text-sm ${t.text3}`}>No hay bloques disponibles en esta categoría.</p>
+              <div>
+                <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                  Bloque
+                </label>
+                <select
+                  value={selectedBlock?.id || ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const block = blocks.find(b => b.id === Number(e.target.value))
+                      setSelectedBlock(block || null)
+                    }
+                  }}
+                  disabled={blocksToShow.length === 0}
+                  className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <option value="">
+                    {blocksToShow.length === 0 ? 'Sin bloques' : 'Elige un bloque...'}
+                  </option>
+                  {blocksToShow.map(block => (
+                    <option key={block.id} value={block.id}>
+                      {block.name}
+                    </option>
+                  ))}
+                </select>
               </div>
+            </div>
+
+            {selectedBlock && (
+              <button
+                onClick={() => startSolo(selectedBlock)}
+                className={`w-full py-4 ${t.accentBg} text-white font-bold text-sm tracking-widest uppercase rounded-xl transition-all hover:opacity-90 hover:shadow-lg transform hover:scale-105`}
+              >
+                Empezar Cycle
+              </button>
             )}
           </div>
         </div>
@@ -458,7 +426,7 @@ export default function Solo() {
     )
   }
 
-  // ── DONE ────────────────────────────────────────────────────────────────────
+  // DONE SCREEN
   if (phase === 'done') {
     const accuracy = ((solved / puzzles.length) * 100).toFixed(0)
     return (
@@ -500,7 +468,12 @@ export default function Solo() {
               Ver historial completo
             </button>
             <button
-              onClick={() => setPhase('category')}
+              onClick={() => {
+                setPhase('category')
+                setSelectedCategory(null)
+                setSelectedSubcategory(null)
+                setSelectedBlock(null)
+              }}
               className={`w-full py-3 text-sm font-semibold transition-all ${t.text3} hover:${t.text}`}
             >
               Elegir otra categoría
@@ -511,13 +484,12 @@ export default function Solo() {
     )
   }
 
-  // ── RACING ─────────────────────────────────────────────────────────────────
+  // RACING SCREEN
   const currentPuzzle = puzzles[currentIdx]
   const progress = (solved / puzzles.length) * 100
 
   return (
     <div className={`min-h-screen ${t.bg} flex flex-col transition-colors duration-300`}>
-      {/* Racing Header */}
       <div className={`${t.bg2} ${t.border} border-b sticky top-0 z-40 backdrop-blur-xl bg-opacity-95`}>
         <div className="max-w-6xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between mb-4">
@@ -541,7 +513,6 @@ export default function Solo() {
             </div>
           </div>
           
-          {/* Progress bar con detalle */}
           <div className={`h-1 ${t.track} rounded-full overflow-hidden`}>
             <div 
               className="h-full transition-all duration-300 rounded-full"
@@ -551,7 +522,6 @@ export default function Solo() {
         </div>
       </div>
 
-      {/* Board Area */}
       <div className="flex-1 flex items-start justify-center pt-8 px-6">
         <div className="w-full max-w-[560px]">
           <div className="mb-6">
