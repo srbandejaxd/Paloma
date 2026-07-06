@@ -282,7 +282,7 @@ export default function Solo() {
                 onClick={() => {
                     setSelectedCategory(cat.id)
                     setPhase('select')
-                }}onClick={() => setSelectedCategory(cat.id)}
+                }}
                 className={`group relative overflow-hidden rounded-xl ${t.bg2} ${t.border} border transition-all duration-300 hover:border-opacity-100 hover:shadow-lg hover:-translate-y-1`}
               >
                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300`} style={{ background: `linear-gradient(135deg, ${accentColor}20, transparent)` }} />
