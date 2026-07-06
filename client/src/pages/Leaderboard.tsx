@@ -37,6 +37,15 @@ function MoonIcon() {
   )
 }
 
+function CrownIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
+      <path d="M3 20h18" />
+    </svg>
+  )
+}
+
 const CATEGORIES = [
   { id: "checkmate_patterns", label: "Checkmate Patterns Manual" },
   { id: "palomita", label: "Woodpecker Method" },
@@ -73,23 +82,18 @@ export default function Leaderboard() {
     }).catch(console.error)
   }, [user, navigate])
 
-  // Obtener categorías únicas
   const categories = CATEGORIES.filter(cat => blocks.some(b => b.category === cat.id))
-
-  // Obtener subcategorías para la categoría seleccionada
   const blocksForCategory = selectedCategory ? blocks.filter(b => b.category === selectedCategory) : []
   const subcategoriesForCategory = selectedCategory
     ? [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
     : []
 
-  // Obtener bloques para mostrar (según categoría y subcategoría)
   const blocksToShow = selectedCategory
     ? selectedSubcategory
       ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
       : blocksForCategory.filter(b => !b.subcategory)
     : []
 
-  // Cargar ranking cuando se selecciona un bloque
   useEffect(() => {
     if (!selectedBlockId) {
       setRanking([])
@@ -102,22 +106,22 @@ export default function Leaderboard() {
         const selectedBlock = blocks.find(b => b.id === selectedBlockId)
         if (!selectedBlock) return
 
-        // Agrupar intentos por usuario y calcular el mejor score
         const userMap = new Map<number, { nickname: string; attempts: AttemptRecord[] }>()
         
         attempts.forEach((attempt: AttemptRecord) => {
-          const userId = attempt.userId || 0
+          // NOTA DIAGNÓSTICA PARA EL BUG: 
+          // Si attempt.userId viene undefined o null de tu API, todos los jugadores colapsarán en el ID 0.
+          // Asegúrate de que tu endpoint devuelva datos globales de todos los usuarios y contenga IDs únicos.
+          const userId = attempt.userId || attempt.id || Math.random() 
           if (!userMap.has(userId)) {
-            userMap.set(userId, { nickname: attempt.nickname, attempts: [] })
+            userMap.set(userId, { nickname: attempt.nickname || 'Anónimo', attempts: [] })
           }
           userMap.get(userId)!.attempts.push(attempt)
         })
 
-        // Calcular ranking
         const rankingData: RankingEntry[] = Array.from(userMap.entries()).map(([userId, data]) => {
           const N = selectedBlock.puzzleCount
           
-          // Encontrar el mejor intento (score más alto = menor tiempo)
           const best = data.attempts.reduce((prev, current) => {
             const prevScore = 1000 * N - (prev.totalTimeMs / 1000)
             const currentScore = 1000 * N - (current.totalTimeMs / 1000)
@@ -140,7 +144,6 @@ export default function Leaderboard() {
           }
         })
 
-        // Ordenar por score y asignar ranks
         rankingData.sort((a, b) => b.bestScore - a.bestScore)
         rankingData.forEach((entry, idx) => {
           entry.rank = idx + 1
@@ -257,10 +260,9 @@ export default function Leaderboard() {
           </p>
         </div>
 
-        {/* Selectors Section */}
+        {/* Selectors Section (Drop System mantenido intacto) */}
         <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-16 animate-slide-up`}>
           <div className="grid md:grid-cols-3 gap-6">
-            {/* Categoria Dropdown */}
             <div>
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
                 Categoría
@@ -283,7 +285,6 @@ export default function Leaderboard() {
               </select>
             </div>
 
-            {/* Subcategoria Dropdown */}
             <div>
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
                 Subcategoría
@@ -308,7 +309,6 @@ export default function Leaderboard() {
               </select>
             </div>
 
-            {/* Bloque Dropdown */}
             <div>
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
                 Bloque
@@ -332,7 +332,7 @@ export default function Leaderboard() {
           </div>
         </div>
 
-        {/* Ranking Section - Solo aparece si hay bloque seleccionado */}
+        {/* Ranking Section */}
         {selectedBlockId && selectedBlock && ranking.length > 0 ? (
           <div className="animate-slide-up">
             <div className="mb-12">
@@ -343,234 +343,127 @@ export default function Leaderboard() {
               <p className={`text-sm ${t.text2}`}>Formula: score = 1000×N - tiempo(segundos)</p>
             </div>
 
-            {/* TOP 3 PODIO OLÍMPICO */}
-            <div className="mb-20">
-              <div className="relative h-80 flex items-flex-end justify-center gap-12 mb-8">
-                {/* Posición 2 (Plata) */}
-                <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                  <div className={`text-center`}>
-                    <div className="mb-6">
-                      <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
-                        2️⃣
-                      </div>
-                      <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[1]?.nickname}</h3>
-                      <p className={`text-sm ${t.text3} mt-1`}>{top3[1]?.attempts} intento{top3[1]?.attempts !== 1 ? 's' : ''}</p>
-                    </div>
+            {/* NUEVO PODIO INTERACTIVO STYLE SAAS (Mapeado Dinámico) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end mt-12 px-2 mb-16">
+              
+              {/* Plata (Posición 2) */}
+              {top3[1] && (
+                <div className={`group relative rounded-2xl p-6 flex flex-col items-center text-center border h-64 justify-end order-2 md:order-1 transition-all hover:-translate-y-1 ${t.bg2} ${t.border} border-t-4`} style={{ borderTopColor: '#C0C0C0' }}>
+                  <div className={`absolute -top-8 w-16 h-16 rounded-full ${t.bg} border-2 flex items-center justify-center font-bold text-xl shadow-md`} style={{ borderColor: '#C0C0C0', color: '#C0C0C0' }}>
+                    {top3[1].nickname.substring(0, 2).toUpperCase()}
                   </div>
+                  <div className="w-7 h-7 rounded-full bg-opacity-10 flex items-center justify-center text-xs font-bold mb-2" style={{ backgroundColor: '#C0C0C0', color: '#C0C0C0' }}>2</div>
+                  <h3 className={`font-bold text-lg ${t.text} truncate max-w-full`}>{top3[1].nickname}</h3>
                   
-                  <div 
-                    className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg`}
-                    style={{ 
-                      backgroundColor: dark ? '#C0C0C0' : '#E8E0D0',
-                      borderColor: '#C0C0C0',
-                      height: '140px'
-                    }}
-                  >
-                    <div className="p-4 h-full flex flex-col items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Plata</span>
-                      <span className="text-2xl font-bold text-gray-800">
-                        {Math.round(top3[1]?.bestScore || 0)}
-                      </span>
+                  <div className={`w-full ${t.bg3} rounded-xl p-3 mt-4`}>
+                    <div className="font-mono text-xl font-bold" style={{ color: '#C0C0C0' }}>
+                      {Math.round(top3[1].bestScore)} <span className={`text-xs font-sans font-normal ${t.text3}`}>pts</span>
                     </div>
+                    <div className={`font-mono text-xs ${t.text2} mt-1`}>⏱ {top3[1].bestTime.toFixed(1)}s | ❌ {top3[1].errors}</div>
                   </div>
                 </div>
+              )}
 
-                {/* Posición 1 (Oro) */}
-                <div className="flex flex-col items-center gap-4 animate-slide-up z-10">
-                  <div className={`text-center scale-110`}>
-                    <div className="relative mb-6">
-                      <div className="absolute -inset-2 rounded-full" style={{ background: `radial-gradient(circle, ${accentColor}40, transparent)` }} />
-                      <div className={`relative w-24 h-24 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-4xl font-bold mx-auto shadow-lg`}>
-                        👑
-                      </div>
+              {/* Oro (Posición 1) */}
+              {top3[0] && (
+                <div className={`group relative rounded-2xl p-6 flex flex-col items-center text-center border h-72 justify-end order-1 md:order-2 transform md:-translate-y-4 shadow-xl z-10 transition-all hover:-translate-y-5 ${t.bg2} ${t.border} border-t-4`} style={{ borderTopColor: '#FFD700' }}>
+                  <div className="absolute -top-12 flex flex-col items-center">
+                    <CrownIcon className="text-gold mb-1 filter drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" style={{ color: '#FFD700' }} />
+                    <div className={`w-20 h-20 rounded-full ${t.bg} border-2 flex items-center justify-center font-bold text-2xl shadow-lg`} style={{ borderColor: '#FFD700', color: '#FFD700' }}>
+                      {top3[0].nickname.substring(0, 2).toUpperCase()}
                     </div>
-                    <h3 className={`text-2xl font-bold ${t.text} leading-tight`}>{top3[0]?.nickname}</h3>
-                    <p className={`text-sm ${t.text3} mt-1`}>{top3[0]?.attempts} intento{top3[0]?.attempts !== 1 ? 's' : ''}</p>
                   </div>
+                  <div className="w-7 h-7 rounded-full bg-opacity-10 flex items-center justify-center text-xs font-bold mb-2" style={{ backgroundColor: '#FFD700', color: '#FFD700' }}>1</div>
+                  <h3 className={`font-bold text-xl ${t.text} truncate max-w-full`}>{top3[0].nickname}</h3>
                   
-                  <div 
-                    className={`w-40 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg shadow-lg`}
-                    style={{ 
-                      backgroundColor: '#FFD700',
-                      borderColor: '#FFD700',
-                      height: '180px'
-                    }}
-                  >
-                    <div className="p-4 h-full flex flex-col items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Oro</span>
-                      <span className="text-3xl font-bold text-gray-800">
-                        {Math.round(top3[0]?.bestScore || 0)}
-                      </span>
+                  <div className={`w-full rounded-xl p-3 mt-4 border`} style={{ backgroundColor: dark ? '#1C1C28' : '#EDE8DF', borderColor: `${accentColor}30` }}>
+                    <div className="font-mono text-2xl font-black" style={{ color: '#FFD700' }}>
+                      {Math.round(top3[0].bestScore)} <span className={`text-xs font-sans font-normal ${t.text2}`}>pts</span>
                     </div>
+                    <div className={`font-mono text-xs mt-1`} style={{ color: accentColor }}>⏱ {top3[0].bestTime.toFixed(1)}s | ❌ {top3[0].errors}</div>
                   </div>
                 </div>
+              )}
 
-                {/* Posición 3 (Bronce) */}
-                <div className="flex flex-col items-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                  <div className={`text-center`}>
-                    <div className="mb-6">
-                      <div className={`w-20 h-20 rounded-full ${t.bg2} ${t.border} border-2 flex items-center justify-center text-3xl font-bold mx-auto mb-3`}>
-                        3️⃣
-                      </div>
-                      <h3 className={`text-xl font-bold ${t.text} leading-tight`}>{top3[2]?.nickname}</h3>
-                      <p className={`text-sm ${t.text3} mt-1`}>{top3[2]?.attempts} intento{top3[2]?.attempts !== 1 ? 's' : ''}</p>
-                    </div>
+              {/* Bronce (Posición 3) */}
+              {top3[2] && (
+                <div className={`group relative rounded-2xl p-6 flex flex-col items-center text-center border h-56 justify-end order-3 md:order-3 transition-all hover:-translate-y-1 ${t.bg2} ${t.border} border-t-4`} style={{ borderTopColor: '#CD7F32' }}>
+                  <div className={`absolute -top-8 w-16 h-16 rounded-full ${t.bg} border-2 flex items-center justify-center font-bold text-xl shadow-md`} style={{ borderColor: '#CD7F32', color: '#CD7F32' }}>
+                    {top3[2].nickname.substring(0, 2).toUpperCase()}
                   </div>
+                  <div className="w-7 h-7 rounded-full bg-opacity-10 flex items-center justify-center text-xs font-bold mb-2" style={{ backgroundColor: '#CD7F32', color: '#CD7F32' }}>3</div>
+                  <h3 className={`font-bold text-lg ${t.text} truncate max-w-full`}>{top3[2].nickname}</h3>
                   
-                  <div 
-                    className={`w-32 rounded-t-2xl border-t-4 border-l-2 border-r-2 transition-all hover:shadow-lg`}
-                    style={{ 
-                      backgroundColor: '#CD7F32',
-                      borderColor: '#CD7F32',
-                      height: '100px'
-                    }}
-                  >
-                    <div className="p-4 h-full flex flex-col items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Bronce</span>
-                      <span className="text-xl font-bold text-gray-700">
-                        {Math.round(top3[2]?.bestScore || 0)}
-                      </span>
+                  <div className={`w-full ${t.bg3} rounded-xl p-3 mt-4`}>
+                    <div className="font-mono text-xl font-bold" style={{ color: '#CD7F32' }}>
+                      {Math.round(top3[2].bestScore)} <span className={`text-xs font-sans font-normal ${t.text3}`}>pts</span>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats del Top 3 */}
-              <div className="grid md:grid-cols-3 gap-4 mb-16">
-                {top3.map((player, idx) => (
-                  <div key={player.userId} className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                        style={{ 
-                          backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
-                        }}
-                      >
-                        {idx + 1}
-                      </div>
-                      <div>
-                        <p className={`text-sm font-bold ${t.text}`}>{player.nickname}</p>
-                        <p className={`text-xs ${t.text3}`}>Rank #{player.rank}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Mejor tiempo</span>
-                        <span className={`text-sm font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</span>
-                      </div>
-                      <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
-                        <div 
-                          className="h-full transition-all rounded-full" 
-                          style={{ width: `${Math.min((player.bestTime / 300) * 100, 100)}%`, backgroundColor: accentColor }}
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
-                        <div>
-                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Score</p>
-                          <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
-                        </div>
-                        <div>
-                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Errores</p>
-                          <p className={`text-lg font-bold ${t.text}`}>{player.errors}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className={`text-xs ${t.text3} uppercase tracking-widest mb-1`}>Puzzles</p>
-                          <p className={`text-lg font-bold ${t.text}`}>{player.solved}<span className={`text-xs ${t.text3}`}>/{player.totalPuzzles}</span></p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Separador */}
-              {rest.length > 0 && <div className={`h-px ${t.track} my-16`} />}
-
-              {/* Rest of Leaderboard */}
-              {rest.length > 0 && (
-                <div className="mb-20">
-                  <div className="mb-8">
-                    <h3 className={`text-2xl font-bold ${t.text} leading-none mb-2`} style={{ letterSpacing: '-0.02em' }}>
-                      Resto del ranking
-                    </h3>
-                    <p className={`text-sm ${t.text2}`}>{rest.length} jugador{rest.length !== 1 ? 'es' : ''} más</p>
-                  </div>
-
-                  <div className="space-y-3">
-                    {rest.map((player) => {
-                      const isCurrentUser = player.nickname === user?.nickname
-                      return (
-                        <div
-                          key={player.userId}
-                          className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}
-                          style={isCurrentUser ? { boxShadow: `0 0 0 2px ${accentColor}` } : {}}
-                        >
-                          <div className="flex items-center justify-between gap-4">
-                            {/* Rank y Nombre */}
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                              <div className={`w-12 h-12 rounded-lg ${t.bg3} flex items-center justify-center flex-shrink-0`}>
-                                <span className={`text-sm font-bold ${t.text}`}>{player.rank}</span>
-                              </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h4 className={`font-bold ${t.text} truncate`}>{player.nickname}</h4>
-                                  {isCurrentUser && (
-                                    <span className={`text-xs px-2 py-0.5 rounded-md ${t.bg3} ${t.text3} whitespace-nowrap`}>
-                                      Tú
-                                    </span>
-                                  )}
-                                </div>
-                                <p className={`text-xs ${t.text3} mt-1`}>{player.attempts} intento{player.attempts !== 1 ? 's' : ''}</p>
-                              </div>
-                            </div>
-
-                            {/* Stats Grid */}
-                            <div className="hidden sm:grid grid-cols-3 gap-8">
-                              <div className="text-right">
-                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Score</p>
-                                <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Tiempo</p>
-                                <p className={`text-lg font-bold ${t.text}`}>{player.bestTime.toFixed(1)}s</p>
-                              </div>
-                              <div className="text-right">
-                                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Puzzles</p>
-                                <p className={`text-lg font-bold ${t.text}`}>{player.solved}<span className={`text-xs ${t.text3}`}>/{player.totalPuzzles}</span></p>
-                              </div>
-                            </div>
-
-                            {/* Arrow for mobile */}
-                            <div className="sm:hidden">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                              </svg>
-                            </div>
-                          </div>
-
-                          {/* Barra de tiempo */}
-                          <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Tiempo de mejor intento</span>
-                              <span className={`text-sm font-semibold ${t.text}`}>{player.bestTime.toFixed(1)}s</span>
-                            </div>
-                            <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
-                              <div 
-                                className="h-full transition-all rounded-full" 
-                                style={{ width: `${Math.min((player.bestTime / 300) * 100, 100)}%`, backgroundColor: accentColor }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
+                    <div className={`font-mono text-xs ${t.text2} mt-1`}>⏱ {top3[2].bestTime.toFixed(1)}s | ❌ {top3[2].errors}</div>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Separador */}
+            {rest.length > 0 && <div className={`h-px ${t.track} my-16`} />}
+
+            {/* Resto del ranking optimizado (Lista de jugadores sin texto de intentos) */}
+            {rest.length > 0 && (
+              <div className="mb-20">
+                <div className="mb-8">
+                  <h3 className={`text-2xl font-bold ${t.text} tracking-tight mb-2`}>
+                    Resto del ranking
+                  </h3>
+                  <p className={`text-sm ${t.text2}`}>{rest.length} jugador{rest.length !== 1 ? 'es' : ''} más competido</p>
+                </div>
+
+                <div className="space-y-3">
+                  {rest.map((player) => {
+                    const isCurrentUser = player.nickname === user?.nickname
+                    return (
+                      <div
+                        key={player.userId}
+                        className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-md relative`}
+                        style={isCurrentUser ? { borderLeft: `4px solid ${accentColor}` } : {}}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-lg ${t.bg3} flex items-center justify-center font-mono font-bold text-sm ${t.text}`}>
+                              {player.rank}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className={`font-bold ${t.text} text-base`}>{player.nickname}</h4>
+                                {isCurrentUser && (
+                                  <span className="text-[10px] bg-opacity-20 px-2 py-0.5 rounded font-bold uppercase tracking-wider" style={{ backgroundColor: `${accentColor}30`, color: accentColor }}>
+                                    Tú
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-6 sm:text-right font-mono text-sm border-t sm:border-t-0 border-opacity-10 pt-3 sm:pt-0" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
+                            <div>
+                              <p className={`text-[10px] uppercase tracking-widest ${t.text3} font-sans font-semibold mb-0.5`}>Score</p>
+                              <p className="font-bold" style={{ color: accentColor }}>{Math.round(player.bestScore)}</p>
+                            </div>
+                            <div>
+                              <p className={`text-[10px] uppercase tracking-widest ${t.text3} font-sans font-semibold mb-0.5`}>Tiempo</p>
+                              <p className={`font-semibold ${t.text}`}>{player.bestTime.toFixed(1)}s</p>
+                            </div>
+                            <div>
+                              <p className={`text-[10px] uppercase tracking-widest ${t.text3} font-sans font-semibold mb-0.5`}>Puzzles</p>
+                              <p className={t.text3}>{player.solved}<span className="text-xs opacity-50">/{player.totalPuzzles}</span></p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         ) : selectedBlockId && selectedBlock && ranking.length === 0 ? (
           <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border animate-slide-up`}>
