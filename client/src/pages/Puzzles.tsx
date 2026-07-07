@@ -457,7 +457,7 @@ export default function Puzzles() {
             </div>
 
             {/* Derecha - Controles movimiento y Lichess */}
-            <div className="hidden lg:flex flex-col items-center gap-1 w-auto flex-shrink-0 justify-center h-[520px] mt-8 -ml-12">
+            <div className="hidden lg:flex flex-col items-center gap-1 w-auto flex-shrink-0 justify-center h-[520px] mt-8 -ml-20">
               {/* Fila horizontal: Retroceder | Contador | Siguiente */}
               <div className="flex items-center gap-2">
                 {/* Botón Retroceder */}
