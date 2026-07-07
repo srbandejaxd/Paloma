@@ -457,7 +457,7 @@ export default function Puzzles() {
             </div>
 
             {/* Derecha - Controles movimiento y Lichess */}
-            <div className="hidden lg:flex flex-col items-center gap-4 w-auto flex-shrink-0 justify-start pt-8">
+            <div className="hidden lg:flex flex-col items-center gap-1 w-auto flex-shrink-0 pt-8">
               {/* Fila horizontal: Retroceder | Contador | Siguiente */}
               <div className="flex items-center gap-2">
                 {/* Botón Retroceder */}
@@ -487,8 +487,6 @@ export default function Puzzles() {
                 </button>
               </div>
 
-              {/* Espacio flexible */}
-              <div className="flex-1"></div>
 
               {/* Botón Lichess - Full width con texto */}
               <button
