@@ -305,7 +305,7 @@ export default function BlindChess() {
   }
 
   // ── INTRO SCREEN ────────────────────────────────────────────────────────────
-  if (phase === 'intro' || (loading && phase === 'intro')) {
+  if ((phase as string) === 'intro' || (loading && (phase as string)=== 'intro')) {
     return (
       <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
         <Nav />
