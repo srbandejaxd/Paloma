@@ -457,46 +457,47 @@ export default function Puzzles() {
             </div>
 
             {/* Derecha - Controles movimiento y Lichess */}
-            <div className="hidden lg:flex flex-col items-center gap-3 w-16 flex-shrink-0 justify-start pt-8">
-              {/* Botón Retroceder */}
-              <button
-                onClick={() => stepPly(-1)}
-                disabled={clampedPly === 0}
-                className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all ${t.bg2} ${t.border} border font-bold text-2xl hover:${t.bg3} disabled:opacity-30 disabled:cursor-not-allowed`}
-                title="Retroceder jugada"
-              >
-                ←
-              </button>
+            <div className="hidden lg:flex flex-col items-center gap-4 w-auto flex-shrink-0 justify-start pt-8">
+              {/* Fila horizontal: Retroceder | Contador | Siguiente */}
+              <div className="flex items-center gap-2">
+                {/* Botón Retroceder */}
+                <button
+                  onClick={() => stepPly(-1)}
+                  disabled={clampedPly === 0}
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${t.bg2} ${t.border} border font-bold text-xl hover:${t.bg3} disabled:opacity-30 disabled:cursor-not-allowed`}
+                  title="Retroceder jugada"
+                >
+                  ←
+                </button>
 
-              {/* Contador de jugadas */}
-              <div className={`font-mono text-xs ${t.text3} text-center font-semibold leading-tight`}>
-                <div>{clampedPly}</div>
-                <div className="text-[10px]">/</div>
-                <div>{maxPly}</div>
+                {/* Contador de jugadas en línea */}
+                <div className={`font-mono text-sm ${t.text3} font-semibold px-3`}>
+                  {clampedPly}/{maxPly}
+                </div>
+
+                {/* Botón Siguiente */}
+                <button
+                  onClick={() => stepPly(1)}
+                  disabled={clampedPly === maxPly}
+                  className={`w-10 h-10 rounded-lg text-white font-bold text-xl transition-all flex items-center justify-center hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed`}
+                  style={{ backgroundColor: clampedPly === maxPly ? accentColor + '80' : accentColor }}
+                  title="Siguiente jugada"
+                >
+                  →
+                </button>
               </div>
-
-              {/* Botón Siguiente */}
-              <button
-                onClick={() => stepPly(1)}
-                disabled={clampedPly === maxPly}
-                className={`w-12 h-12 rounded-lg text-white font-bold text-2xl transition-all flex items-center justify-center hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed`}
-                style={{ backgroundColor: clampedPly === maxPly ? accentColor + '80' : accentColor }}
-                title="Siguiente jugada"
-              >
-                →
-              </button>
 
               {/* Espacio flexible */}
               <div className="flex-1"></div>
 
-              {/* Botón Lichess */}
+              {/* Botón Lichess - Full width con texto */}
               <button
                 onClick={openInLichess}
-                className="w-12 h-12 rounded-lg text-white font-bold text-lg transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center"
+                className="px-4 py-3 rounded-lg text-white font-bold text-sm tracking-widest uppercase transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
                 style={{ backgroundColor: lichessGreen }}
                 title="Abrir en Lichess"
               >
-                ♞
+                ♞ Abrir en Lichess
               </button>
             </div>
           </div>
