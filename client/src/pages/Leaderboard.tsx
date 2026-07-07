@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { fetchBlocks, fetchLeaderboard, LeaderboardEntry } from '../lib/api'
+import { fetchBlocks, fetchLeaderboard, LeaderboardEntry, fetchVisionLeaderboard, VisionLeaderboardEntry } from '../lib/api'
 import { Block } from '../types'
 
 interface RankingEntry extends LeaderboardEntry {
   rank: number
 }
+
+interface VisionRankingEntry extends VisionLeaderboardEntry {
+  rank: number
+}
+
+type Tab = 'puzzles' | 'vision'
 
 function SunIcon() {
   return (
@@ -58,9 +64,12 @@ export default function Leaderboard() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const [selectedBlockId, setSelectedBlockId] = useState<number | null>(null)
   const [ranking, setRanking] = useState<RankingEntry[]>([])
+  const [visionLeaderboard, setVisionLeaderboard] = useState<VisionRankingEntry[]>([])
   const [dark, setDark] = useState(true)
   const [loading, setLoading] = useState(true)
   const [rankingLoading, setRankingLoading] = useState(false)
+  const [visionLoading, setVisionLoading] = useState(false)
+  const [tab, setTab] = useState<Tab>('puzzles')
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -127,6 +136,26 @@ export default function Leaderboard() {
         setRankingLoading(false)
       })
   }, [selectedBlockId])
+
+  // Cargar leaderboard de Vision cuando el tab cambia
+  useEffect(() => {
+    if (tab !== 'vision') return
+    if (visionLeaderboard.length > 0) return
+    setVisionLoading(true)
+    fetchVisionLeaderboard('coordinates')
+      .then((entries) => {
+        const rankingData: VisionRankingEntry[] = entries.map((entry, idx) => ({
+          ...entry,
+          rank: idx + 1,
+        }))
+        setVisionLeaderboard(rankingData)
+        setVisionLoading(false)
+      })
+      .catch((err: Error) => {
+        console.error('Error loading vision leaderboard:', err)
+        setVisionLoading(false)
+      })
+  }, [tab, visionLeaderboard.length])
 
   // ── THEME TOKENS ────────────────────────────────────────────────────────────
   const t = dark ? {
@@ -227,15 +256,43 @@ export default function Leaderboard() {
         <div className="mb-12 animate-slide-up">
           <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Clasificaciones</p>
           <h2 className={`text-5xl font-bold ${t.text} mb-4 leading-none`} style={{ letterSpacing: '-0.02em' }}>
-            Ranking por bloque
+            {tab === 'puzzles' ? 'Ranking por bloque' : 'Ranking de Visión'}
           </h2>
           <p className={`text-lg max-w-2xl ${t.text2} leading-relaxed`}>
-            Selecciona una categoría, subcategoría y bloque para ver el ranking global de ese bloque.
+            {tab === 'puzzles' 
+              ? 'Selecciona una categoría, subcategoría y bloque para ver el ranking global de ese bloque.'
+              : 'Ranking global de los jugadores en modo Visión - Coordinadas'}
           </p>
         </div>
 
-        {/* Selectors Section */}
-        <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-16 animate-slide-up`}>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8 animate-slide-up">
+          <button
+            onClick={() => setTab('puzzles')}
+            className={`px-6 py-3 rounded-lg font-semibold text-sm uppercase tracking-widest transition-all ${
+              tab === 'puzzles'
+                ? 'text-white'
+                : `${t.bg2} ${t.border} border ${t.text2} hover:${t.text}`
+            }`}
+            style={tab === 'puzzles' ? { backgroundColor: accentColor } : {}}
+          >
+            ⚡ Puzzles
+          </button>
+          <button
+            onClick={() => setTab('vision')}
+            className={`px-6 py-3 rounded-lg font-semibold text-sm uppercase tracking-widest transition-all ${
+              tab === 'vision'
+                ? 'text-white'
+                : `${t.bg2} ${t.border} border ${t.text2} hover:${t.text}`
+            }`}
+            style={tab === 'vision' ? { backgroundColor: accentColor } : {}}
+          >
+            👁 Visión
+          </button>
+        </div>
+
+        {/* Selectors Section - Solo para Puzzles */}
+        {tab === 'puzzles' && (
           <div className="grid md:grid-cols-3 gap-6">
             <div>
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
@@ -304,9 +361,10 @@ export default function Leaderboard() {
               </select>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Ranking Section - Solo aparece si hay bloque seleccionado */}
+        {/* Ranking Section - Solo aparece si hay bloque seleccionado (Puzzles tab) */}
+        {tab === 'puzzles' && (
         {rankingLoading ? (
           <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border animate-slide-up`}>
             <p className={`text-lg ${t.text2}`}>Cargando ranking...</p>
@@ -445,6 +503,71 @@ export default function Leaderboard() {
             <p className={`text-sm ${t.text3} mt-2`}>Completa algunos cycles para ver el ranking</p>
           </div>
         ) : null}
+        )}
+
+        {/* Vision Section */}
+        {tab === 'vision' && (
+          visionLoading ? (
+            <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border animate-slide-up`}>
+              <p className={`text-lg ${t.text2}`}>Cargando ranking de visión...</p>
+            </div>
+          ) : visionLeaderboard.length > 0 ? (
+            <div className={`rounded-2xl ${t.bg2} ${t.border} border overflow-hidden animate-slide-up`}>
+              <div className={`hidden md:grid grid-cols-[60px_1fr_120px_100px] gap-4 px-6 py-4 ${t.bg3} border-b ${t.border} text-xs font-semibold ${t.text3} uppercase tracking-wider`}>
+                <div className="text-center">Rank</div>
+                <div>Jugador</div>
+                <div className="text-right">Mejor Score</div>
+                <div className="text-right">Sesiones</div>
+              </div>
+
+              <div className={`divide-y ${t.border}`}>
+                {visionLeaderboard.map(player => {
+                  const isCurrentUser = player.nickname === user?.nickname
+                  return (
+                    <div
+                      key={`${player.nickname}-${player.rank}`}
+                      className={`grid grid-cols-[60px_1fr_auto] md:grid-cols-[60px_1fr_120px_100px] gap-4 px-6 py-4 items-center transition-colors relative ${
+                        isCurrentUser ? 'border-l-4' : `hover:${t.bg3}`
+                      }`}
+                      style={isCurrentUser ? { backgroundColor: 'rgba(212,160,23,0.05)', borderLeftColor: accentColor } : {}}
+                    >
+                      <div className={`font-mono text-sm font-bold text-center ${isCurrentUser ? '' : t.text3}`} style={isCurrentUser ? { color: accentColor } : {}}>
+                        {player.rank}
+                      </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0"
+                          style={isCurrentUser ? { backgroundColor: 'rgba(212,160,23,0.2)', color: accentColor } : { backgroundColor: dark ? '#1F1F2E' : '#E5DFD5', color: dark ? '#7A776E' : '#8A8478' }}
+                        >
+                          {player.nickname.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className={`font-bold text-sm flex items-center gap-2 truncate ${isCurrentUser ? '' : t.text}`} style={isCurrentUser ? { color: accentColor } : {}}>
+                            <span className="truncate">{player.nickname}</span>
+                            {isCurrentUser && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-bold flex-shrink-0" style={{ backgroundColor: 'rgba(212,160,23,0.2)', color: accentColor }}>
+                                Tú
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`font-mono font-bold text-right text-base md:text-sm ${isCurrentUser ? '' : t.text}`} style={isCurrentUser ? { color: accentColor } : {}}>
+                        {Math.round(player.bestScore).toLocaleString('en-US')}
+                      </div>
+                      <div className={`hidden md:block font-mono text-sm ${t.text} text-right`}>{player.totalSessions}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border animate-slide-up`}>
+              <p className={`text-lg ${t.text2}`}>No hay datos de visión aún</p>
+              <p className={`text-sm ${t.text3} mt-2`}>Completa sesiones de visión para ver el ranking</p>
+            </div>
+          )
+        )}
       </div>
 
       {/* Footer */}
