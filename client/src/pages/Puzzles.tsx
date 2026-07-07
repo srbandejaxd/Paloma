@@ -5,7 +5,6 @@ import { Chessboard } from 'react-chessboard'
 import { fetchAllPuzzles, fetchBlocks } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { Puzzle, Block } from '../types'
-import PuzzleBoard from '../components/Board/PuzzleBoard'
 
 function SunIcon() {
   return (
@@ -23,15 +22,6 @@ function MoonIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  )
-}
-
-function CopyIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="9" width="13" height="13" rx="2"/>
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
     </svg>
   )
 }
@@ -70,14 +60,10 @@ function buildPositions(puzzle: Puzzle): Position[] {
 }
 
 function buildLichessUrl(puzzle: Puzzle): string {
-  const g = new Chess()
-  try { g.load(puzzle.fen) } catch { return 'https://lichess.org/analysis' }
-  for (const san of puzzle.solution) {
-    try { if (!g.move(san)) break } catch { break }
-  }
-  const pgn = g.pgn()
-  const color = puzzle.fen.split(' ')[1] === 'w' ? 'white' : 'black'
-  return `https://lichess.org/analysis/pgn/${encodeURIComponent(pgn)}?color=${color}`
+  // Abre Lichess con solo la posición inicial, sin solución
+  const fen = puzzle.fen
+  const color = fen.split(' ')[1] === 'w' ? 'white' : 'black'
+  return `https://lichess.org/analysis/${fen}?color=${color}`
 }
 
 export default function Puzzles() {
@@ -92,11 +78,8 @@ export default function Puzzles() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const [selectedBlockId, setSelectedBlockId] = useState<number | null>(null)
   const [currentIdx, setCurrentIdx] = useState(0)
-  const [solved, setSolved] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [mode, setMode] = useState<'solve' | 'review'>('solve')
   const [reviewPly, setReviewPly] = useState(0)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -152,12 +135,9 @@ export default function Puzzles() {
   const currentPuzzle = filteredPuzzles[currentIdx]
   const selectedBlock = blocks.find(b => b.id === selectedBlockId)
 
-  // Reset solved / review state when puzzle changes
+  // Reset review state when puzzle changes
   useEffect(() => {
-    setSolved(false)
-    setMode('solve')
     setReviewPly(0)
-    setCopied(false)
   }, [currentIdx, selectedBlockId])
 
   const positions = useMemo(() => currentPuzzle ? buildPositions(currentPuzzle) : [], [currentPuzzle])
@@ -182,21 +162,13 @@ export default function Puzzles() {
     setCurrentIdx(0)
   }
 
-  const handleSolved = useCallback(() => { setSolved(true) }, [])
-  const handleError = useCallback(() => {}, [])
+
 
   function stepPly(delta: number) {
     setReviewPly(p => Math.max(0, Math.min(maxPly, p + delta)))
   }
 
-  async function copyFen() {
-    if (!currentPuzzle) return
-    try {
-      await navigator.clipboard.writeText(currentPuzzle.fen)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch { /* silent */ }
-  }
+
 
   function openInLichess() {
     if (!currentPuzzle) return
@@ -382,8 +354,8 @@ export default function Puzzles() {
 
         {/* Main */}
         {selectedBlockId && selectedBlock && currentPuzzle && (
-          <div className="flex flex-col lg:flex-row gap-8 animate-slide-up">
-            {/* Sidebar de puzzles */}
+          <div className="flex flex-col lg:flex-row gap-8 animate-slide-up justify-center">
+            {/* Sidebar de puzzles - Desktop */}
             <div className="hidden lg:block w-44 flex-shrink-0">
               <div className={`sticky top-28 rounded-xl ${t.bg2} ${t.border} border p-3 space-y-1 max-h-[75vh] overflow-y-auto`}>
                 {filteredPuzzles.map((p, i) => (
@@ -403,217 +375,108 @@ export default function Puzzles() {
               </div>
             </div>
 
-            {/* Panel principal */}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-col md:flex-row gap-8">
-                {/* Tablero */}
-                <div className="w-full md:w-auto flex flex-col items-center">
-                  <div className="w-full max-w-[480px] mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <p className={`text-xs uppercase tracking-widest ${t.text3}`}>{selectedBlock.name}</p>
-                        <p className={`text-2xl font-bold ${t.text}`} style={{ letterSpacing: '-0.02em' }}>
-                          Puzzle #{currentPuzzle.orderInBlock}
-                        </p>
-                      </div>
-                      <span className={`font-mono text-xs ${t.text3}`}>{currentIdx + 1} / {filteredPuzzles.length}</span>
-                    </div>
-
-                    {solved && mode === 'solve' && (
-                      <div className={`mb-3 rounded-lg ${t.bg3} border border-green-900/40 px-4 py-2 text-center`}>
-                        <p className="text-xs font-semibold text-green-400">✓ Correcto</p>
-                      </div>
-                    )}
-
-                    {/* Mode toggle */}
-                    <div className={`flex ${t.bg3} rounded-lg p-1 mb-4`}>
-                      <button
-                        onClick={() => setMode('solve')}
-                        className={`flex-1 py-2 text-xs uppercase tracking-widest rounded-md transition-all font-semibold ${
-                          mode === 'solve' ? 'text-black' : `${t.text3} hover:${t.text}`
-                        }`}
-                        style={mode === 'solve' ? { backgroundColor: accentColor } : {}}
-                      >
-                        Resolver
-                      </button>
-                      <button
-                        onClick={() => setMode('review')}
-                        className={`flex-1 py-2 text-xs uppercase tracking-widest rounded-md transition-all font-semibold ${
-                          mode === 'review' ? 'text-black' : `${t.text3} hover:${t.text}`
-                        }`}
-                        style={mode === 'review' ? { backgroundColor: accentColor } : {}}
-                      >
-                        Revisar solución
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="w-full max-w-[480px]">
-                    {mode === 'solve' ? (
-                      <PuzzleBoard
-                        key={`${currentPuzzle.id}-${currentIdx}-solve`}
-                        puzzle={currentPuzzle}
-                        onSolved={handleSolved}
-                        onError={handleError}
-                        autoSkipAfterErrors={0}
-                      />
-                    ) : (
-                      <div>
-                        <div className={`font-mono text-xs uppercase tracking-widest mb-3 flex items-center gap-2 ${t.text3}`}>
-                          <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: accentColor }} />
-                          {clampedPly === 0 ? 'Posición inicial' : `Jugada ${clampedPly} de ${maxPly}`}
-                        </div>
-                        <div style={{ width: '100%', maxWidth: 480 }}>
-                          <div className="board-shadow rounded-sm overflow-hidden">
-                            <Chessboard
-                              position={reviewPos?.fen ?? currentPuzzle.fen}
-                              boardOrientation={playerColor}
-                              customSquareStyles={reviewHighlights}
-                              arePiecesDraggable={false}
-                              onPieceDrop={() => false}
-                              customBoardStyle={{ borderRadius: '2px' }}
-                              customDarkSquareStyle={{ backgroundColor: '#b58863' }}
-                              customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
-                              animationDuration={200}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Prev/Next controles de jugada */}
-                        <div className="flex items-center justify-center gap-3 mt-4">
-                          <button
-                            onClick={() => stepPly(-1)}
-                            disabled={clampedPly === 0}
-                            className={`px-5 py-2.5 rounded-lg ${t.bg3} ${t.border} border text-sm font-semibold transition-all ${t.text2} hover:${t.text} disabled:opacity-30 disabled:cursor-not-allowed`}
-                          >
-                            ← Retroceder
-                          </button>
-                          <span className={`font-mono text-xs ${t.text3} min-w-[60px] text-center`}>{clampedPly}/{maxPly}</span>
-                          <button
-                            onClick={() => stepPly(1)}
-                            disabled={clampedPly === maxPly}
-                            className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all text-black disabled:opacity-30 disabled:cursor-not-allowed`}
-                            style={{ backgroundColor: accentColor }}
-                          >
-                            Siguiente →
-                          </button>
-                        </div>
-
-                        {currentPuzzle.solution[clampedPly - 1] && (
-                          <p className={`text-center text-sm mt-3 font-mono font-bold`} style={{ color: accentColor }}>
-                            {clampedPly % 2 === 1 ? `${Math.ceil(clampedPly / 2)}.` : `${clampedPly / 2}...`} {currentPuzzle.solution[clampedPly - 1]}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Navegación entre puzzles */}
-                  <div className="flex items-center gap-4 mt-6">
-                    <button
-                      onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
-                      disabled={currentIdx === 0}
-                      className={`px-5 py-2.5 text-sm rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
-                    >
-                      ← Puzzle anterior
-                    </button>
-                    <button
-                      onClick={() => setCurrentIdx(i => Math.min(filteredPuzzles.length - 1, i + 1))}
-                      disabled={currentIdx === filteredPuzzles.length - 1}
-                      className={`px-5 py-2.5 text-sm rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
-                    >
-                      Siguiente puzzle →
-                    </button>
-                  </div>
-
-                  {/* Selector móvil */}
-                  <div className="lg:hidden mt-5 flex gap-1.5 flex-wrap justify-center max-w-[480px]">
-                    {filteredPuzzles.map((p, i) => (
-                      <button
-                        key={p.id}
-                        onClick={() => setCurrentIdx(i)}
-                        className={`w-9 h-9 text-xs font-semibold rounded-lg border transition-all ${
-                          i === currentIdx ? 'border-transparent' : `${t.border} ${t.text3}`
-                        }`}
-                        style={i === currentIdx ? { backgroundColor: 'rgba(212,160,23,0.12)', color: accentColor } : {}}
-                      >
-                        {p.orderInBlock}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Panel de detalles */}
-                <div className="flex-1 min-w-0 space-y-4">
-                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-6`}>
-                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Detalles del puzzle</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className={`text-xs ${t.text3} mb-1`}>Categoría</p>
-                        <p className={`text-sm font-semibold ${t.text}`}>{CATEGORIES.find(c => c.id === selectedBlock.category)?.label ?? selectedBlock.category}</p>
-                      </div>
-                      {selectedBlock.subcategory && (
-                        <div>
-                          <p className={`text-xs ${t.text3} mb-1`}>Subcategoría</p>
-                          <p className={`text-sm font-semibold ${t.text}`}>{selectedBlock.subcategory}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className={`text-xs ${t.text3} mb-1`}>Turno</p>
-                        <p className={`text-sm font-semibold ${t.text}`}>{playerColor === 'white' ? '♔ Blancas' : '♚ Negras'} juegan y ganan</p>
-                      </div>
-                      <div>
-                        <p className={`text-xs ${t.text3} mb-1`}>Jugadas en la solución</p>
-                        <p className={`text-sm font-semibold ${t.text}`}>{moveCount} jugada{moveCount !== 1 ? 's' : ''} ({plyCount} medias jugadas)</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
-                      <p className={`text-xs ${t.text3} mb-2`}>FEN</p>
-                      <div className={`flex items-center gap-2 rounded-lg ${t.bg3} px-3 py-2`}>
-                        <code className={`text-xs font-mono flex-1 truncate ${t.text2}`}>{currentPuzzle.fen}</code>
-                        <button
-                          onClick={copyFen}
-                          className={`flex-shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-md ${t.border} border ${t.text3} hover:${t.text} transition-colors`}
-                        >
-                          <CopyIcon /> {copied ? '¡Copiado!' : 'Copiar'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-6`}>
-                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Solución completa</p>
-                    <div className="flex flex-wrap gap-2">
-                      {currentPuzzle.solution.map((san, i) => {
-                        const isCurrent = mode === 'review' && i === clampedPly - 1
-                        const moveLabel = i % 2 === 0 ? `${Math.floor(i / 2) + 1}.` : ''
-                        return (
-                          <span
-                            key={i}
-                            className={`font-mono text-xs px-2 py-1 rounded-md border transition-colors ${
-                              isCurrent ? 'border-transparent font-bold' : `${t.border} ${t.text2}`
-                            }`}
-                            style={isCurrent ? { backgroundColor: 'rgba(212,160,23,0.15)', color: accentColor } : {}}
-                          >
-                            {moveLabel}{san}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={openInLichess}
-                    className="w-full py-4 rounded-xl text-white font-bold text-sm tracking-widest uppercase transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center gap-2"
-                    style={{ backgroundColor: lichessGreen }}
-                  >
-                    ♞ Abrir en Lichess
-                  </button>
-                  <p className={`text-xs text-center ${t.text3}`}>
-                    Se abrirá el tablero de análisis de Lichess con esta posición y la solución completa cargada.
+            {/* Panel central - Tablero y controles */}
+            <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
+              {/* Header */}
+              <div className="w-full flex items-center justify-between mb-2">
+                <div>
+                  <p className={`text-xs uppercase tracking-widest ${t.text3}`}>{selectedBlock.name}</p>
+                  <p className={`text-2xl font-bold ${t.text}`} style={{ letterSpacing: '-0.02em' }}>
+                    Puzzle #{currentPuzzle.orderInBlock}
                   </p>
                 </div>
+                <span className={`font-mono text-xs ${t.text3}`}>{currentIdx + 1} / {filteredPuzzles.length}</span>
+              </div>
+
+              {/* Tablero */}
+              <div style={{ width: '100%', maxWidth: 480 }}>
+                <div className={`font-mono text-xs uppercase tracking-widest mb-3 flex items-center gap-2 ${t.text3}`}>
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: accentColor }} />
+                  {clampedPly === 0 ? 'Posición inicial' : `Jugada ${clampedPly} de ${maxPly}`}
+                </div>
+                <div className="board-shadow rounded-sm overflow-hidden">
+                  <Chessboard
+                    position={reviewPos?.fen ?? currentPuzzle.fen}
+                    boardOrientation={playerColor}
+                    customSquareStyles={reviewHighlights}
+                    arePiecesDraggable={false}
+                    onPieceDrop={() => false}
+                    customBoardStyle={{ borderRadius: '2px' }}
+                    customDarkSquareStyle={{ backgroundColor: '#b58863' }}
+                    customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
+                    animationDuration={200}
+                  />
+                </div>
+
+                {/* Jugada actual */}
+                {currentPuzzle.solution[clampedPly - 1] && (
+                  <p className={`text-center text-sm mt-3 font-mono font-bold`} style={{ color: accentColor }}>
+                    {clampedPly % 2 === 1 ? `${Math.ceil(clampedPly / 2)}.` : `${clampedPly / 2}...`} {currentPuzzle.solution[clampedPly - 1]}
+                  </p>
+                )}
+              </div>
+
+              {/* Controles de movimiento - Lado a lado sin interrumpir */}
+              <div className="w-full flex items-center gap-3 justify-center">
+                <button
+                  onClick={() => stepPly(-1)}
+                  disabled={clampedPly === 0}
+                  className={`px-5 py-2.5 rounded-lg ${t.bg3} ${t.border} border text-sm font-semibold transition-all ${t.text2} hover:${t.text} disabled:opacity-30 disabled:cursor-not-allowed`}
+                >
+                  ← Retroceder
+                </button>
+                <span className={`font-mono text-xs ${t.text3} min-w-[50px] text-center`}>{clampedPly}/{maxPly}</span>
+                <button
+                  onClick={() => stepPly(1)}
+                  disabled={clampedPly === maxPly}
+                  className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all text-black disabled:opacity-30 disabled:cursor-not-allowed`}
+                  style={{ backgroundColor: accentColor }}
+                >
+                  Siguiente →
+                </button>
+              </div>
+
+              {/* Botón Lichess */}
+              <button
+                onClick={openInLichess}
+                className="w-full max-w-xs py-3 rounded-lg text-white font-bold text-xs tracking-widest uppercase transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center gap-2"
+                style={{ backgroundColor: lichessGreen }}
+              >
+                ♞ Abrir en Lichess
+              </button>
+
+              {/* Navegación entre puzzles */}
+              <div className="flex items-center gap-3 justify-center flex-wrap">
+                <button
+                  onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
+                  disabled={currentIdx === 0}
+                  className={`px-5 py-2.5 text-xs rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
+                >
+                  ← Anterior
+                </button>
+                <button
+                  onClick={() => setCurrentIdx(i => Math.min(filteredPuzzles.length - 1, i + 1))}
+                  disabled={currentIdx === filteredPuzzles.length - 1}
+                  className={`px-5 py-2.5 text-xs rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
+                >
+                  Siguiente →
+                </button>
+              </div>
+
+              {/* Selector móvil */}
+              <div className="lg:hidden w-full flex gap-1.5 flex-wrap justify-center">
+                {filteredPuzzles.map((p, i) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setCurrentIdx(i)}
+                    className={`w-9 h-9 text-xs font-semibold rounded-lg border transition-all ${
+                      i === currentIdx ? 'border-transparent' : `${t.border} ${t.text3}`
+                    }`}
+                    style={i === currentIdx ? { backgroundColor: 'rgba(212,160,23,0.12)', color: accentColor } : {}}
+                  >
+                    {p.orderInBlock}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
