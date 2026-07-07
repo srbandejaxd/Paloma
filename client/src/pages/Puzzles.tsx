@@ -1,30 +1,113 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Chess } from 'chess.js'
+import { Chessboard } from 'react-chessboard'
 import { fetchAllPuzzles, fetchBlocks } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { Puzzle, Block } from '../types'
 import PuzzleBoard from '../components/Board/PuzzleBoard'
 
+function SunIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  )
+}
+
+function CopyIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2"/>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+  )
+}
+
 const CATEGORIES = [
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual" },
   { id: "palomita", label: "Woodpecker Method" },
-  { id: "woodpecker_method2", label: "Woodpecker Method 2", description: "Puzzles Posicionales" },
+  { id: "woodpecker_method2", label: "Woodpecker Method 2" },
 ]
 
+const NAV_ITEMS = [
+  { path: '/solo', label: 'Solo', icon: '🪃' },
+  { path: '/vision', label: 'Visión', icon: '👁' },
+  { path: '/history', label: 'Historial', icon: '📋' },
+  { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
+  { path: '/blind', label: 'Ciego', icon: '🎲' },
+]
+
+interface Position {
+  fen: string
+  from?: string
+  to?: string
+}
+
+function buildPositions(puzzle: Puzzle): Position[] {
+  const g = new Chess()
+  try { g.load(puzzle.fen) } catch { return [{ fen: puzzle.fen }] }
+  const list: Position[] = [{ fen: g.fen() }]
+  for (const san of puzzle.solution) {
+    let mv
+    try { mv = g.move(san) } catch { break }
+    if (!mv) break
+    list.push({ fen: g.fen(), from: mv.from, to: mv.to })
+  }
+  return list
+}
+
+function buildLichessUrl(puzzle: Puzzle): string {
+  const g = new Chess()
+  try { g.load(puzzle.fen) } catch { return 'https://lichess.org/analysis' }
+  for (const san of puzzle.solution) {
+    try { if (!g.move(san)) break } catch { break }
+  }
+  const pgn = g.pgn()
+  const color = puzzle.fen.split(' ')[1] === 'w' ? 'white' : 'black'
+  return `https://lichess.org/analysis/pgn/${encodeURIComponent(pgn)}?color=${color}`
+}
+
 export default function Puzzles() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
+  const [dark, setDark] = useState(true)
   const [blocks, setBlocks] = useState<Block[]>([])
   const [allPuzzles, setAllPuzzles] = useState<Puzzle[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
+  const [selectedBlockId, setSelectedBlockId] = useState<number | null>(null)
   const [currentIdx, setCurrentIdx] = useState(0)
   const [solved, setSolved] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [blockDropdownOpen, setBlockDropdownOpen] = useState(false)
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
+  const [mode, setMode] = useState<'solve' | 'review'>('solve')
+  const [reviewPly, setReviewPly] = useState(0)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('wp_theme')
+    if (saved) setDark(saved === 'dark')
+  }, [])
+
+  function toggleTheme() {
+    const next = !dark
+    setDark(next)
+    localStorage.setItem('wp_theme', next ? 'dark' : 'light')
+  }
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
@@ -33,14 +116,16 @@ export default function Puzzles() {
         setBlocks(b)
         setAllPuzzles(p)
 
-        // Si venimos desde el resumen con un puzzle específico
         const blockId = searchParams.get('blockId')
         const puzzleId = searchParams.get('puzzleId')
         if (blockId) {
           const bid = parseInt(blockId)
           const block = b.find(x => x.id === bid)
-          if (block) setSelectedCategory(block.category)
-          setSelectedBlock(bid)
+          if (block) {
+            setSelectedCategory(block.category)
+            setSelectedSubcategory(block.subcategory || null)
+          }
+          setSelectedBlockId(bid)
           if (puzzleId) {
             const idx = p.filter(x => x.blockId === bid).findIndex(x => x.id === parseInt(puzzleId))
             if (idx >= 0) setCurrentIdx(idx)
@@ -54,225 +139,499 @@ export default function Puzzles() {
   const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
   const subcategoriesForCategory = [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]
   const hasSubcategories = subcategoriesForCategory.length > 0
-  const blocksForSelection = hasSubcategories && selectedSubcategory
-    ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory)
-    : hasSubcategories ? [] : blocksForCategory
+  const blocksToShow = selectedCategory
+    ? hasSubcategories
+      ? (selectedSubcategory ? blocksForCategory.filter(b => b.subcategory === selectedSubcategory) : [])
+      : blocksForCategory
+    : []
 
-  const filteredPuzzles = selectedBlock
-    ? allPuzzles.filter(p => p.blockId === selectedBlock)
+  const filteredPuzzles = selectedBlockId
+    ? allPuzzles.filter(p => p.blockId === selectedBlockId)
     : []
 
   const currentPuzzle = filteredPuzzles[currentIdx]
+  const selectedBlock = blocks.find(b => b.id === selectedBlockId)
 
-  // Reset solved state when puzzle changes
-  useEffect(() => { setSolved(false) }, [currentIdx, selectedBlock])
+  // Reset solved / review state when puzzle changes
+  useEffect(() => {
+    setSolved(false)
+    setMode('solve')
+    setReviewPly(0)
+    setCopied(false)
+  }, [currentIdx, selectedBlockId])
+
+  const positions = useMemo(() => currentPuzzle ? buildPositions(currentPuzzle) : [], [currentPuzzle])
+  const maxPly = Math.max(0, positions.length - 1)
+  const clampedPly = Math.min(reviewPly, maxPly)
 
   function selectCategory(catId: string) {
     setSelectedCategory(catId)
-    setSelectedBlock(null)
     setSelectedSubcategory(null)
-    setBlockDropdownOpen(false)
+    setSelectedBlockId(null)
+    setCurrentIdx(0)
+  }
+
+  function selectSubcategory(sub: string) {
+    setSelectedSubcategory(sub)
+    setSelectedBlockId(null)
     setCurrentIdx(0)
   }
 
   function selectBlock(id: number) {
-    setSelectedBlock(id)
+    setSelectedBlockId(id)
     setCurrentIdx(0)
-    setBlockDropdownOpen(false)
   }
 
   const handleSolved = useCallback(() => { setSolved(true) }, [])
   const handleError = useCallback(() => {}, [])
 
+  function stepPly(delta: number) {
+    setReviewPly(p => Math.max(0, Math.min(maxPly, p + delta)))
+  }
+
+  async function copyFen() {
+    if (!currentPuzzle) return
+    try {
+      await navigator.clipboard.writeText(currentPuzzle.fen)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch { /* silent */ }
+  }
+
+  function openInLichess() {
+    if (!currentPuzzle) return
+    window.open(buildLichessUrl(currentPuzzle), '_blank', 'noopener,noreferrer')
+  }
+
+  // ── THEME TOKENS ────────────────────────────────────────────────────────────
+  const t = dark ? {
+    bg: 'bg-[#0A0A0F]',
+    bg2: 'bg-[#12121A]',
+    bg3: 'bg-[#1C1C28]',
+    border: 'border-[#1F1F2E]',
+    borderLight: 'border-[#2A2A3A]',
+    text: 'text-[#E8E6E0]',
+    text2: 'text-[#B8B5AC]',
+    text3: 'text-[#7A776E]',
+    accent: 'text-[#D4A017]',
+    accentBg: 'bg-[#D4A017]',
+    inputBg: 'bg-[#12121A] border-[#1F1F2E] focus:border-[#D4A017] text-[#E8E6E0]',
+    track: 'bg-[#1F1F2E]',
+  } : {
+    bg: 'bg-[#FAFAF7]',
+    bg2: 'bg-[#F3EFE7]',
+    bg3: 'bg-[#EDE8DF]',
+    border: 'border-[#E5DFD5]',
+    borderLight: 'border-[#D9D2C8]',
+    text: 'text-[#1A1814]',
+    text2: 'text-[#4A4640]',
+    text3: 'text-[#8A8478]',
+    accent: 'text-[#A07810]',
+    accentBg: 'bg-[#A07810]',
+    inputBg: 'bg-[#F3EFE7] border-[#E5DFD5] focus:border-[#A07810] text-[#1A1814]',
+    track: 'bg-[#E5DFD5]',
+  }
+
+  const accentColor = dark ? '#D4A017' : '#A07810'
+  const lichessGreen = '#5b8c3e'
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
-        <p className="text-bone-3 font-mono animate-pulse-amber">Cargando puzzles...</p>
+      <div className={`min-h-screen ${t.bg} flex items-center justify-center`}>
+        <p className={t.text3}>Cargando puzzles...</p>
       </div>
     )
   }
 
+  const playerColor = currentPuzzle ? (currentPuzzle.fen.split(' ')[1] === 'w' ? 'white' : 'black') : 'white'
+  const rivalColor = playerColor === 'white' ? 'Negras' : 'Blancas'
+  const plyCount = currentPuzzle?.solution.length ?? 0
+  const moveCount = Math.ceil(plyCount / 2)
+
+  const reviewHighlights: Record<string, { background: string }> = {}
+  const reviewPos = positions[clampedPly]
+  if (reviewPos?.from && reviewPos?.to) {
+    reviewHighlights[reviewPos.from] = { background: 'rgba(212,160,23,0.25)' }
+    reviewHighlights[reviewPos.to] = { background: 'rgba(212,160,23,0.4)' }
+  }
+
   return (
-    <div className="min-h-screen bg-void flex flex-col">
-      {/* Header */}
-      <div className="border-b border-void-4 bg-void-2">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/solo')} className="text-bone-3 font-mono text-xs hover:text-bone transition-colors">← Inicio</button>
-            <h2 className="font-mono text-sm font-bold text-bone">Puzzles</h2>
-          </div>
-          <p className="text-bone-3 font-mono text-xs">Sin cronómetro — solo revisión</p>
-        </div>
-
-        {/* Category tabs */}
-        <div className="max-w-4xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto">
-          {CATEGORIES.map(cat => (
+    <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
+      {/* Navbar */}
+      <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95 transition-colors duration-300`}>
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <p className={`text-xs uppercase tracking-[0.15em] ${t.text3} mb-1`}>Bienvenido de vuelta</p>
+              <h1 className={`text-3xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>
+                {user?.nickname}
+              </h1>
+            </div>
             <button
-              key={cat.id}
-              onClick={() => selectCategory(cat.id)}
-              className={`px-3 py-1.5 font-mono text-xs border rounded-sm whitespace-nowrap transition-all ${
-                selectedCategory === cat.id ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'
-              }`}
+              onClick={toggleTheme}
+              className={`flex items-center justify-center w-10 h-10 rounded-lg ${t.bg3} ${t.border} border transition-all hover:scale-105 ${t.text3} hover:${t.text}`}
+              title={dark ? 'Tema claro' : 'Tema oscuro'}
             >
-              {cat.label}
+              {dark ? <SunIcon /> : <MoonIcon />}
             </button>
-          ))}
+          </div>
+
+          <div className="flex items-center gap-0 overflow-x-auto pb-2">
+            <div className="flex items-center">
+              <div className="px-4 py-2 flex items-center gap-2 text-sm font-medium relative">
+                <span className="text-lg">⚡</span>
+                <span className={`whitespace-nowrap ${t.text}`}>Puzzles</span>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: accentColor }} />
+              </div>
+              <div className={`w-px h-4 ${t.borderLight}`} />
+            </div>
+            {NAV_ITEMS.map((item, idx) => (
+              <div key={item.path} className="flex items-center">
+                <button
+                  onClick={() => navigate(item.path)}
+                  className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all ${t.text2} hover:${t.text} relative group`}
+                >
+                  <span className="text-lg">{item.icon}</span>
+                  <span className="whitespace-nowrap">{item.label}</span>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 transition-all scale-x-0 group-hover:scale-x-100" style={{ backgroundColor: accentColor }} />
+                </button>
+                {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
+              </div>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        {/* Header */}
+        <div className="mb-12 animate-slide-up">
+          <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Sin cronómetro</p>
+          <h2 className={`text-5xl font-bold ${t.text} mb-4 leading-none`} style={{ letterSpacing: '-0.02em' }}>
+            Explora y revisa puzzles
+          </h2>
+          <p className={`text-lg max-w-2xl ${t.text2} leading-relaxed`}>
+            Elige una categoría, subcategoría y bloque. Resuelve a tu ritmo, revisa la solución jugada a jugada o ábrela en Lichess para analizarla con motor.
+          </p>
         </div>
 
-        {/* Subcategory selector */}
-        {selectedCategory && hasSubcategories && (
-          <div className="max-w-4xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto">
-            {subcategoriesForCategory.map(sub => (
-              <button
-                key={sub}
-                onClick={() => { setSelectedSubcategory(sub); setSelectedBlock(null); setBlockDropdownOpen(false); setCurrentIdx(0) }}
-                className={`px-3 py-1.5 font-mono text-xs border rounded-sm whitespace-nowrap transition-all ${selectedSubcategory === sub ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3 hover:border-bone-3'}`}
+        {/* Selectors */}
+        <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-12 animate-slide-up`}>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                Categoría
+              </label>
+              <select
+                value={selectedCategory || ''}
+                onChange={(e) => e.target.value ? selectCategory(e.target.value) : selectCategory('')}
+                className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold`}
               >
-                {sub}
-              </button>
-            ))}
+                <option value="">Elige una categoría...</option>
+                {CATEGORIES.filter(cat => blocks.some(b => b.category === cat.id)).map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                Subcategoría
+              </label>
+              <select
+                value={selectedSubcategory || ''}
+                onChange={(e) => selectSubcategory(e.target.value)}
+                disabled={!selectedCategory || !hasSubcategories}
+                className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <option value="">
+                  {!hasSubcategories ? 'Sin subcategorías' : 'Elige una subcategoría...'}
+                </option>
+                {subcategoriesForCategory.map(sub => (
+                  <option key={sub} value={sub}>{sub}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                Bloque
+              </label>
+              <select
+                value={selectedBlockId || ''}
+                onChange={(e) => e.target.value && selectBlock(Number(e.target.value))}
+                disabled={!selectedCategory || blocksToShow.length === 0}
+                className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <option value="">
+                  {blocksToShow.length === 0 ? 'Sin bloques' : 'Elige un bloque...'}
+                </option>
+                {blocksToShow.map(block => (
+                  <option key={block.id} value={block.id}>{block.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Sin selección */}
+        {!selectedBlockId && (
+          <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border animate-slide-up`}>
+            <p className={`text-lg ${t.text2}`}>Elige categoría, subcategoría y bloque para empezar</p>
           </div>
         )}
 
-        {/* Block dropdown */}
-        {selectedCategory && (!hasSubcategories || selectedSubcategory) && (
-          <div className="max-w-4xl mx-auto px-4 pb-3">
-            <div className="relative" style={{ maxWidth: 320 }}>
-              <button
-                onClick={() => setBlockDropdownOpen(o => !o)}
-                className="w-full flex items-center justify-between px-4 py-2 font-mono text-xs border border-void-4 hover:border-bone-3 rounded-sm transition-colors bg-void text-bone"
-              >
-                <span>{blocksForSelection.find(b => b.id === selectedBlock)?.name ?? 'Selecciona un bloque'}</span>
-                <span className={`text-bone-3 transition-transform ${blockDropdownOpen ? 'rotate-180' : ''}`}>▾</span>
-              </button>
-              {blockDropdownOpen && (
-                <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-void-2 border border-void-4 rounded-sm overflow-hidden max-h-64 overflow-y-auto">
-                  {blocksForSelection.map(b => (
+        {/* Main */}
+        {selectedBlockId && selectedBlock && currentPuzzle && (
+          <div className="flex flex-col lg:flex-row gap-8 animate-slide-up">
+            {/* Sidebar de puzzles */}
+            <div className="hidden lg:block w-44 flex-shrink-0">
+              <div className={`sticky top-28 rounded-xl ${t.bg2} ${t.border} border p-3 space-y-1 max-h-[75vh] overflow-y-auto`}>
+                {filteredPuzzles.map((p, i) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setCurrentIdx(i)}
+                    className={`w-full text-left px-3 py-2 text-xs rounded-lg border transition-all font-semibold ${
+                      i === currentIdx
+                        ? 'border-transparent'
+                        : `border-transparent ${t.text3} hover:${t.bg3}`
+                    }`}
+                    style={i === currentIdx ? { backgroundColor: 'rgba(212,160,23,0.12)', color: accentColor } : {}}
+                  >
+                    #{p.orderInBlock}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Panel principal */}
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* Tablero */}
+                <div className="w-full md:w-auto flex flex-col items-center">
+                  <div className="w-full max-w-[480px] mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className={`text-xs uppercase tracking-widest ${t.text3}`}>{selectedBlock.name}</p>
+                        <p className={`text-2xl font-bold ${t.text}`} style={{ letterSpacing: '-0.02em' }}>
+                          Puzzle #{currentPuzzle.orderInBlock}
+                        </p>
+                      </div>
+                      <span className={`font-mono text-xs ${t.text3}`}>{currentIdx + 1} / {filteredPuzzles.length}</span>
+                    </div>
+
+                    {solved && mode === 'solve' && (
+                      <div className={`mb-3 rounded-lg ${t.bg3} border border-green-900/40 px-4 py-2 text-center`}>
+                        <p className="text-xs font-semibold text-green-400">✓ Correcto</p>
+                      </div>
+                    )}
+
+                    {/* Mode toggle */}
+                    <div className={`flex ${t.bg3} rounded-lg p-1 mb-4`}>
+                      <button
+                        onClick={() => setMode('solve')}
+                        className={`flex-1 py-2 text-xs uppercase tracking-widest rounded-md transition-all font-semibold ${
+                          mode === 'solve' ? 'text-black' : `${t.text3} hover:${t.text}`
+                        }`}
+                        style={mode === 'solve' ? { backgroundColor: accentColor } : {}}
+                      >
+                        Resolver
+                      </button>
+                      <button
+                        onClick={() => setMode('review')}
+                        className={`flex-1 py-2 text-xs uppercase tracking-widest rounded-md transition-all font-semibold ${
+                          mode === 'review' ? 'text-black' : `${t.text3} hover:${t.text}`
+                        }`}
+                        style={mode === 'review' ? { backgroundColor: accentColor } : {}}
+                      >
+                        Revisar solución
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="w-full max-w-[480px]">
+                    {mode === 'solve' ? (
+                      <PuzzleBoard
+                        key={`${currentPuzzle.id}-${currentIdx}-solve`}
+                        puzzle={currentPuzzle}
+                        onSolved={handleSolved}
+                        onError={handleError}
+                        autoSkipAfterErrors={0}
+                      />
+                    ) : (
+                      <div>
+                        <div className={`font-mono text-xs uppercase tracking-widest mb-3 flex items-center gap-2 ${t.text3}`}>
+                          <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: accentColor }} />
+                          {clampedPly === 0 ? 'Posición inicial' : `Jugada ${clampedPly} de ${maxPly}`}
+                        </div>
+                        <div style={{ width: '100%', maxWidth: 480 }}>
+                          <div className="board-shadow rounded-sm overflow-hidden">
+                            <Chessboard
+                              position={reviewPos?.fen ?? currentPuzzle.fen}
+                              boardOrientation={playerColor}
+                              customSquareStyles={reviewHighlights}
+                              arePiecesDraggable={false}
+                              onPieceDrop={() => false}
+                              customBoardStyle={{ borderRadius: '2px' }}
+                              customDarkSquareStyle={{ backgroundColor: '#b58863' }}
+                              customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
+                              animationDuration={200}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Prev/Next controles de jugada */}
+                        <div className="flex items-center justify-center gap-3 mt-4">
+                          <button
+                            onClick={() => stepPly(-1)}
+                            disabled={clampedPly === 0}
+                            className={`px-5 py-2.5 rounded-lg ${t.bg3} ${t.border} border text-sm font-semibold transition-all ${t.text2} hover:${t.text} disabled:opacity-30 disabled:cursor-not-allowed`}
+                          >
+                            ← Retroceder
+                          </button>
+                          <span className={`font-mono text-xs ${t.text3} min-w-[60px] text-center`}>{clampedPly}/{maxPly}</span>
+                          <button
+                            onClick={() => stepPly(1)}
+                            disabled={clampedPly === maxPly}
+                            className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all text-black disabled:opacity-30 disabled:cursor-not-allowed`}
+                            style={{ backgroundColor: accentColor }}
+                          >
+                            Siguiente →
+                          </button>
+                        </div>
+
+                        {currentPuzzle.solution[clampedPly - 1] && (
+                          <p className={`text-center text-sm mt-3 font-mono font-bold`} style={{ color: accentColor }}>
+                            {clampedPly % 2 === 1 ? `${Math.ceil(clampedPly / 2)}.` : `${clampedPly / 2}...`} {currentPuzzle.solution[clampedPly - 1]}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Navegación entre puzzles */}
+                  <div className="flex items-center gap-4 mt-6">
                     <button
-                      key={b.id}
-                      onClick={() => selectBlock(b.id)}
-                      className={`w-full text-left px-4 py-2.5 font-mono text-xs transition-colors border-t border-void-4 first:border-t-0 ${selectedBlock === b.id ? 'bg-amber/10 text-amber' : 'text-bone-3 hover:bg-void-3 hover:text-bone'}`}
+                      onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
+                      disabled={currentIdx === 0}
+                      className={`px-5 py-2.5 text-sm rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
                     >
-                      {b.name}
+                      ← Puzzle anterior
                     </button>
-                  ))}
+                    <button
+                      onClick={() => setCurrentIdx(i => Math.min(filteredPuzzles.length - 1, i + 1))}
+                      disabled={currentIdx === filteredPuzzles.length - 1}
+                      className={`px-5 py-2.5 text-sm rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
+                    >
+                      Siguiente puzzle →
+                    </button>
+                  </div>
+
+                  {/* Selector móvil */}
+                  <div className="lg:hidden mt-5 flex gap-1.5 flex-wrap justify-center max-w-[480px]">
+                    {filteredPuzzles.map((p, i) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setCurrentIdx(i)}
+                        className={`w-9 h-9 text-xs font-semibold rounded-lg border transition-all ${
+                          i === currentIdx ? 'border-transparent' : `${t.border} ${t.text3}`
+                        }`}
+                        style={i === currentIdx ? { backgroundColor: 'rgba(212,160,23,0.12)', color: accentColor } : {}}
+                      >
+                        {p.orderInBlock}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
+
+                {/* Panel de detalles */}
+                <div className="flex-1 min-w-0 space-y-4">
+                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-6`}>
+                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Detalles del puzzle</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className={`text-xs ${t.text3} mb-1`}>Categoría</p>
+                        <p className={`text-sm font-semibold ${t.text}`}>{CATEGORIES.find(c => c.id === selectedBlock.category)?.label ?? selectedBlock.category}</p>
+                      </div>
+                      {selectedBlock.subcategory && (
+                        <div>
+                          <p className={`text-xs ${t.text3} mb-1`}>Subcategoría</p>
+                          <p className={`text-sm font-semibold ${t.text}`}>{selectedBlock.subcategory}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className={`text-xs ${t.text3} mb-1`}>Turno</p>
+                        <p className={`text-sm font-semibold ${t.text}`}>{playerColor === 'white' ? '♔ Blancas' : '♚ Negras'} juegan y ganan</p>
+                      </div>
+                      <div>
+                        <p className={`text-xs ${t.text3} mb-1`}>Jugadas en la solución</p>
+                        <p className={`text-sm font-semibold ${t.text}`}>{moveCount} jugada{moveCount !== 1 ? 's' : ''} ({plyCount} medias jugadas)</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
+                      <p className={`text-xs ${t.text3} mb-2`}>FEN</p>
+                      <div className={`flex items-center gap-2 rounded-lg ${t.bg3} px-3 py-2`}>
+                        <code className={`text-xs font-mono flex-1 truncate ${t.text2}`}>{currentPuzzle.fen}</code>
+                        <button
+                          onClick={copyFen}
+                          className={`flex-shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-md ${t.border} border ${t.text3} hover:${t.text} transition-colors`}
+                        >
+                          <CopyIcon /> {copied ? '¡Copiado!' : 'Copiar'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-6`}>
+                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Solución completa</p>
+                    <div className="flex flex-wrap gap-2">
+                      {currentPuzzle.solution.map((san, i) => {
+                        const isCurrent = mode === 'review' && i === clampedPly - 1
+                        const moveLabel = i % 2 === 0 ? `${Math.floor(i / 2) + 1}.` : ''
+                        return (
+                          <span
+                            key={i}
+                            className={`font-mono text-xs px-2 py-1 rounded-md border transition-colors ${
+                              isCurrent ? 'border-transparent font-bold' : `${t.border} ${t.text2}`
+                            }`}
+                            style={isCurrent ? { backgroundColor: 'rgba(212,160,23,0.15)', color: accentColor } : {}}
+                          >
+                            {moveLabel}{san}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={openInLichess}
+                    className="w-full py-4 rounded-xl text-white font-bold text-sm tracking-widest uppercase transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center gap-2"
+                    style={{ backgroundColor: lichessGreen }}
+                  >
+                    ♞ Abrir en Lichess
+                  </button>
+                  <p className={`text-xs text-center ${t.text3}`}>
+                    Se abrirá el tablero de análisis de Lichess con esta posición y la solución completa cargada.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Sin categoría seleccionada */}
-      {!selectedCategory && (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-bone-3 font-mono text-sm">Elige una categoría para empezar</p>
+      {/* Footer */}
+      <div className={`${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
+        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+          <p className={`text-sm ${t.text3}`}>Sin cronómetro — solo revisión</p>
+          <button
+            onClick={logout}
+            className={`px-5 py-2 rounded-lg ${t.bg3} ${t.border} border text-sm font-medium transition-all ${t.text3} hover:${t.text}`}
+          >
+            Cerrar sesión
+          </button>
         </div>
-      )}
-
-      {selectedCategory && hasSubcategories && !selectedSubcategory && (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-bone-3 font-mono text-sm">Elige una subcategoría</p>
-        </div>
-      )}
-
-      {selectedCategory && (!hasSubcategories || selectedSubcategory) && !selectedBlock && (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-bone-3 font-mono text-sm">Elige un bloque de la lista</p>
-        </div>
-      )}
-
-      {/* Main */}
-      {selectedBlock && (
-        <div className="flex-1 flex gap-0 max-w-4xl mx-auto w-full px-0 sm:px-4 py-4 sm:py-6">
-          {/* Puzzle list sidebar */}
-          <div className="hidden sm:block w-48 flex-shrink-0 mr-6">
-            <div className="sticky top-6 space-y-1 max-h-[80vh] overflow-y-auto pr-1">
-              {filteredPuzzles.map((p, i) => (
-                <button
-                  key={p.id}
-                  onClick={() => setCurrentIdx(i)}
-                  className={`w-full text-left px-3 py-2 font-mono text-xs rounded-sm border transition-all ${
-                    i === currentIdx
-                      ? 'border-amber bg-amber/10 text-amber'
-                      : 'border-transparent text-bone-3 hover:text-bone hover:border-void-4'
-                  }`}
-                >
-                  #{p.orderInBlock}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Board */}
-          <div className="flex-1 flex flex-col items-center">
-            {currentPuzzle && (
-              <>
-                <div className="w-full max-w-[480px]">
-                  <div className="flex items-center justify-between mb-4 px-4 sm:px-0">
-                    <span className="font-mono text-bone-3 text-xs uppercase tracking-widest">
-                      Puzzle #{currentPuzzle.orderInBlock}
-                    </span>
-                    <span className="font-mono text-bone-3 text-xs">{currentPuzzle.blockName}</span>
-                  </div>
-
-                  {solved && (
-                    <div className="mb-3 px-4 sm:px-0">
-                      <div className="bg-void-2 border border-green-900/40 rounded-sm px-4 py-2 text-center">
-                        <p className="font-mono text-xs text-green-400">✓ Correcto</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <PuzzleBoard
-                    key={`${currentPuzzle.id}-${currentIdx}`}
-                    puzzle={currentPuzzle}
-                    onSolved={handleSolved}
-                    onError={handleError}
-                    autoSkipAfterErrors={0}
-                  />
-                </div>
-
-                {/* Navigation */}
-                <div className="flex items-center gap-4 mt-6">
-                  <button
-                    onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
-                    disabled={currentIdx === 0}
-                    className="px-6 py-2.5 font-mono text-sm border border-void-4 text-bone-3 hover:border-bone-3 hover:text-bone rounded-sm transition-all disabled:opacity-30"
-                  >
-                    ← Anterior
-                  </button>
-                  <span className="font-mono text-xs text-bone-3">
-                    {currentIdx + 1} / {filteredPuzzles.length}
-                  </span>
-                  <button
-                    onClick={() => setCurrentIdx(i => Math.min(filteredPuzzles.length - 1, i + 1))}
-                    disabled={currentIdx === filteredPuzzles.length - 1}
-                    className="px-6 py-2.5 font-mono text-sm border border-void-4 text-bone-3 hover:border-bone-3 hover:text-bone rounded-sm transition-all disabled:opacity-30"
-                  >
-                    Siguiente →
-                  </button>
-                </div>
-
-                {/* Mobile puzzle selector */}
-                <div className="sm:hidden mt-4 flex gap-1 flex-wrap justify-center px-4">
-                  {filteredPuzzles.map((p, i) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setCurrentIdx(i)}
-                      className={`w-8 h-8 font-mono text-xs rounded-sm border transition-all ${
-                        i === currentIdx ? 'border-amber bg-amber/10 text-amber' : 'border-void-4 text-bone-3'
-                      }`}
-                    >
-                      {p.orderInBlock}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
