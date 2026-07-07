@@ -356,11 +356,12 @@ export default function Puzzles() {
           </div>
         )}
 
+
         {/* Main */}
         {selectedBlockId && selectedBlock && currentPuzzle && (
-          <div className="flex flex-col lg:flex-row gap-8 animate-slide-up justify-center">
-            {/* Sidebar de puzzles - Desktop */}
-            <div className="hidden lg:block w-44 flex-shrink-0">
+          <div className="flex gap-6 animate-slide-up w-full">
+            {/* Sidebar izquierda - Puzzles */}
+            <div className="hidden lg:block w-40 flex-shrink-0">
               <div className={`sticky top-28 rounded-xl ${t.bg2} ${t.border} border p-3 space-y-1 max-h-[75vh] overflow-y-auto`}>
                 {filteredPuzzles.map((p, i) => (
                   <button
@@ -379,10 +380,10 @@ export default function Puzzles() {
               </div>
             </div>
 
-            {/* Panel central - Tablero y controles */}
-            <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
+            {/* Centro - Tablero y navegación puzzle */}
+            <div className="flex-1 flex flex-col items-center gap-4">
               {/* Header */}
-              <div className="w-full flex items-center justify-between mb-2">
+              <div className="w-full flex items-center justify-between mb-2 max-w-[480px]">
                 <div>
                   <p className={`text-xs uppercase tracking-widest ${t.text3}`}>{selectedBlock.name}</p>
                   <p className={`text-2xl font-bold ${t.text}`} style={{ letterSpacing: '-0.02em' }}>
@@ -420,55 +421,26 @@ export default function Puzzles() {
                 )}
               </div>
 
-              {/* Controles de movimiento - Lado a lado sin interrumpir */}
-              <div className="w-full flex items-center gap-3 justify-center">
-                <button
-                  onClick={() => stepPly(-1)}
-                  disabled={clampedPly === 0}
-                  className={`px-5 py-2.5 rounded-lg ${t.bg3} ${t.border} border text-sm font-semibold transition-all ${t.text2} hover:${t.text} disabled:opacity-30 disabled:cursor-not-allowed`}
-                >
-                  ← Retroceder
-                </button>
-                <span className={`font-mono text-xs ${t.text3} min-w-[50px] text-center`}>{clampedPly}/{maxPly}</span>
-                <button
-                  onClick={() => stepPly(1)}
-                  disabled={clampedPly === maxPly}
-                  className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all text-black disabled:opacity-30 disabled:cursor-not-allowed`}
-                  style={{ backgroundColor: accentColor }}
-                >
-                  Siguiente →
-                </button>
-              </div>
-
-              {/* Botón Lichess */}
-              <button
-                onClick={openInLichess}
-                className="w-full max-w-xs py-3 rounded-lg text-white font-bold text-xs tracking-widest uppercase transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center gap-2"
-                style={{ backgroundColor: lichessGreen }}
-              >
-                ♞ Abrir en Lichess
-              </button>
-
               {/* Navegación entre puzzles */}
-              <div className="flex items-center gap-3 justify-center flex-wrap">
+              <div className="flex items-center gap-3 justify-center flex-wrap max-w-[480px]">
                 <button
                   onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
                   disabled={currentIdx === 0}
-                  className={`px-5 py-2.5 text-xs rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
+                  className={`px-4 py-2.5 text-xs rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
                 >
                   ← Anterior
                 </button>
                 <button
                   onClick={() => setCurrentIdx(i => Math.min(filteredPuzzles.length - 1, i + 1))}
                   disabled={currentIdx === filteredPuzzles.length - 1}
-                  className={`px-5 py-2.5 text-xs rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
+                  className={`px-4 py-2.5 text-xs rounded-lg border transition-all font-semibold ${t.bg2} ${t.border} ${t.text2} hover:${t.text} disabled:opacity-30`}
                 >
                   Siguiente →
                 </button>
               </div>
 
               {/* Selector móvil */}
-              <div className="lg:hidden w-full flex gap-1.5 flex-wrap justify-center">
+              <div className="lg:hidden w-full flex gap-1.5 flex-wrap justify-center px-4">
                 {filteredPuzzles.map((p, i) => (
                   <button
                     key={p.id}
@@ -483,10 +455,52 @@ export default function Puzzles() {
                 ))}
               </div>
             </div>
+
+            {/* Derecha - Controles movimiento y Lichess */}
+            <div className="hidden lg:flex flex-col items-center gap-3 w-16 flex-shrink-0 justify-start pt-8">
+              {/* Botón Retroceder */}
+              <button
+                onClick={() => stepPly(-1)}
+                disabled={clampedPly === 0}
+                className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all ${t.bg2} ${t.border} border font-bold text-2xl hover:${t.bg3} disabled:opacity-30 disabled:cursor-not-allowed`}
+                title="Retroceder jugada"
+              >
+                ←
+              </button>
+
+              {/* Contador de jugadas */}
+              <div className={`font-mono text-xs ${t.text3} text-center font-semibold leading-tight`}>
+                <div>{clampedPly}</div>
+                <div className="text-[10px]">/</div>
+                <div>{maxPly}</div>
+              </div>
+
+              {/* Botón Siguiente */}
+              <button
+                onClick={() => stepPly(1)}
+                disabled={clampedPly === maxPly}
+                className={`w-12 h-12 rounded-lg text-white font-bold text-2xl transition-all flex items-center justify-center hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed`}
+                style={{ backgroundColor: clampedPly === maxPly ? accentColor + '80' : accentColor }}
+                title="Siguiente jugada"
+              >
+                →
+              </button>
+
+              {/* Espacio flexible */}
+              <div className="flex-1"></div>
+
+              {/* Botón Lichess */}
+              <button
+                onClick={openInLichess}
+                className="w-12 h-12 rounded-lg text-white font-bold text-lg transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center"
+                style={{ backgroundColor: lichessGreen }}
+                title="Abrir en Lichess"
+              >
+                ♞
+              </button>
+            </div>
           </div>
         )}
-      </div>
-
       {/* Footer */}
       <div className={`${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
         <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
