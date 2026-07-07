@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { fetchBlocks, fetchAttempts } from '../lib/api'
@@ -30,6 +30,22 @@ const CATEGORIES = [
   { id: "woodpecker_method2", label: "Woodpecker Method 2" },
 ]
 
+const NAV_ITEMS = [
+  { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
+  { path: '/solo', label: 'Solo', icon: '🪃' },
+  { path: '/vision', label: 'Visión', icon: '👁' },
+  { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
+  { path: '/blind', label: 'Ciego', icon: '🎲' },
+]
+
+// Clave para localStorage
+const STREAK_CACHE_KEY = 'wp_streak_cache'
+
+interface StreakCache {
+  activeDays: string[]   // ISO date strings YYYY-MM-DD
+  lastUpdated: string    // ISO date string
+}
+
 export default function History() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -40,8 +56,11 @@ export default function History() {
   const [attempts, setAttempts] = useState<AttemptRecord[]>([])
   const [dark, setDark] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [allAttempts, setAllAttempts] = useState<AttemptRecord[]>([])
+  const [streakLoading, setStreakLoading] = useState(true)
   const [expandedAttemptId, setExpandedAttemptId] = useState<number | null>(null)
+
+  // Estado de racha y actividad — cargado desde cache o API
+  const [activeDays, setActiveDays] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -62,6 +81,92 @@ export default function History() {
     }).catch(console.error)
   }, [user, navigate])
 
+  // Cargar actividad — primero desde cache, luego refrescar en background
+  useEffect(() => {
+    if (!blocks.length) return
+
+    // 1. Cargar cache inmediatamente
+    const cached = localStorage.getItem(STREAK_CACHE_KEY)
+    if (cached) {
+      try {
+        const parsed: StreakCache = JSON.parse(cached)
+        setActiveDays(new Set(parsed.activeDays))
+        setStreakLoading(false)
+      } catch (_) {}
+    }
+
+    // 2. Refrescar en background (sin bloquear UI)
+    const refresh = async () => {
+      try {
+        const allDays = new Set<string>()
+        for (const block of blocks) {
+          const data: AttemptRecord[] = await fetchAttempts(block.id)
+          for (const a of data) {
+            const d = new Date(a.createdAt)
+            // Usar fecha local, no UTC
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+            allDays.add(key)
+          }
+        }
+        setActiveDays(allDays)
+        setStreakLoading(false)
+        const cache: StreakCache = {
+          activeDays: Array.from(allDays),
+          lastUpdated: new Date().toISOString(),
+        }
+        localStorage.setItem(STREAK_CACHE_KEY, JSON.stringify(cache))
+      } catch (err) {
+        console.error('Error refreshing streak data:', err)
+        setStreakLoading(false)
+      }
+    }
+
+    refresh()
+  }, [blocks])
+
+  // Calcular racha de días consecutivos (días con al menos un cycle)
+  const calculateDayStreak = useCallback(() => {
+    const today = new Date()
+    let streak = 0
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      if (activeDays.has(key)) {
+        streak++
+      } else {
+        break
+      }
+    }
+    return streak
+  }, [activeDays])
+
+  // Obtener días activos del mes actual
+  const getMonthActivity = useCallback(() => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth() + 1
+    const active = new Set<number>()
+    for (const day of activeDays) {
+      const [y, m, d] = day.split('-').map(Number)
+      if (y === year && m === month) active.add(d)
+    }
+    return active
+  }, [activeDays])
+
+  // Calendario: genera celdas con offset correcto para el día de la semana
+  // Semana empieza en Lunes (L=0, M=1, X=2, J=3, V=4, S=5, D=6)
+  const generateCalendar = useCallback(() => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    const firstDay = new Date(year, month, 1)
+    // getDay(): 0=Domingo,1=Lunes,...,6=Sábado → convertir a Lun=0
+    const startOffset = (firstDay.getDay() + 6) % 7
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    return { startOffset, daysInMonth, todayDate: today.getDate() }
+  }, [])
+
   const categories = CATEGORIES.filter(cat => blocks.some(b => b.category === cat.id))
   const blocksForCategory = selectedCategory ? blocks.filter(b => b.category === selectedCategory) : []
   const subcategoriesForCategory = selectedCategory
@@ -74,156 +179,45 @@ export default function History() {
     : []
 
   useEffect(() => {
-    if (!selectedBlockId) {
-      setAttempts([])
-      return
-    }
-    
+    if (!selectedBlockId) { setAttempts([]); return }
     setLoading(true)
     fetchAttempts(selectedBlockId)
       .then((data: AttemptRecord[]) => {
         setAttempts(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
-        setAllAttempts(data)
         setLoading(false)
       })
-      .catch((err: Error) => {
-        console.error('Error loading attempts:', err)
-        setLoading(false)
-      })
+      .catch((err: Error) => { console.error(err); setLoading(false) })
   }, [selectedBlockId])
 
-  // Cargar TODOS los intentos del usuario para calcular racha de días
-  useEffect(() => {
-    if (!blocks.length) return
-    const loadAllAttempts = async () => {
-      try {
-        const allData: AttemptRecord[] = []
-        for (const block of blocks) {
-          const blockData = await fetchAttempts(block.id)
-          allData.push(...blockData)
-        }
-        setAllAttempts(allData)
-      } catch (err) {
-        console.error('Error loading all attempts:', err)
-      }
-    }
-    loadAllAttempts()
-  }, [blocks])
+  const dayStreak = calculateDayStreak()
+  const monthActivity = getMonthActivity()
+  const { startOffset, daysInMonth, todayDate } = generateCalendar()
 
-  // Calcular racha de días (días consecutivos que entró a la página)
-  const calculateDayStreak = () => {
-    const uniqueDays = new Set(allAttempts.map(a => {
-      const date = new Date(a.createdAt)
-      return date.toISOString().split('T')[0]
-    }))
-    
-    const sortedDays = Array.from(uniqueDays).sort().reverse()
-    
-    let streak = 0
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    for (let i = 0; i < sortedDays.length; i++) {
-      const checkDate = new Date(sortedDays[i])
-      checkDate.setHours(0, 0, 0, 0)
-      
-      const expectedDate = new Date(today)
-      expectedDate.setDate(expectedDate.getDate() - i)
-      
-      if (checkDate.getTime() === expectedDate.getTime()) {
-        streak++
-      } else {
-        break
-      }
-    }
-    
-    return streak
-  }
+  const selectedBlock = blocks.find(b => b.id === selectedBlockId)
 
-  // Obtener actividad del mes actual (para el calendario)
-  const getMonthActivity = () => {
-    const daysWithAttempts = new Set(allAttempts.map(a => {
-      const date = new Date(a.createdAt)
-      return date.getDate()
-    }))
-    return daysWithAttempts
-  }
-
-  // Generar días del calendario
-  const generateCalendarDays = () => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = today.getMonth()
-    
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    
-    const days = []
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      days.push(i)
-    }
-    
-    return days
-  }
-
-  // Estadísticas generales
   const stats = {
     totalAttempts: attempts.length,
-    dayStreak: calculateDayStreak(),
     bestScore: attempts.length > 0 ? Math.max(...attempts.map(a => a.score)) : 0,
     avgAccuracy: attempts.length > 0 ? (attempts.reduce((sum, a) => sum + a.accuracy, 0) / attempts.length) : 0,
     bestTime: attempts.length > 0 ? Math.min(...attempts.map(a => a.totalTimeMs)) / 1000 : 0,
   }
 
-  const monthActivity = getMonthActivity()
-  const calendarDays = generateCalendarDays()
-
   const t = dark ? {
-    bg: 'bg-[#0A0A0F]',
-    bg2: 'bg-[#12121A]',
-    bg3: 'bg-[#1C1C28]',
-    border: 'border-[#1F1F2E]',
-    borderLight: 'border-[#2A2A3A]',
-    text: 'text-[#E8E6E0]',
-    text2: 'text-[#B8B5AC]',
-    text3: 'text-[#7A776E]',
-    accent: 'text-[#D4A017]',
-    accentBg: 'bg-[#D4A017]',
+    bg: 'bg-[#0A0A0F]', bg2: 'bg-[#12121A]', bg3: 'bg-[#1C1C28]',
+    border: 'border-[#1F1F2E]', borderLight: 'border-[#2A2A3A]',
+    text: 'text-[#E8E6E0]', text2: 'text-[#B8B5AC]', text3: 'text-[#7A776E]',
+    accent: 'text-[#D4A017]', accentBg: 'bg-[#D4A017]',
     inputBg: 'bg-[#12121A] border-[#1F1F2E] focus:border-[#D4A017] text-[#E8E6E0]',
     track: 'bg-[#1F1F2E]',
   } : {
-    bg: 'bg-[#FAFAF7]',
-    bg2: 'bg-[#F3EFE7]',
-    bg3: 'bg-[#EDE8DF]',
-    border: 'border-[#E5DFD5]',
-    borderLight: 'border-[#D9D2C8]',
-    text: 'text-[#1A1814]',
-    text2: 'text-[#4A4640]',
-    text3: 'text-[#8A8478]',
-    accent: 'text-[#A07810]',
-    accentBg: 'bg-[#A07810]',
+    bg: 'bg-[#FAFAF7]', bg2: 'bg-[#F3EFE7]', bg3: 'bg-[#EDE8DF]',
+    border: 'border-[#E5DFD5]', borderLight: 'border-[#D9D2C8]',
+    text: 'text-[#1A1814]', text2: 'text-[#4A4640]', text3: 'text-[#8A8478]',
+    accent: 'text-[#A07810]', accentBg: 'bg-[#A07810]',
     inputBg: 'bg-[#F3EFE7] border-[#E5DFD5] focus:border-[#A07810] text-[#1A1814]',
     track: 'bg-[#E5DFD5]',
   }
-
   const accentColor = dark ? '#D4A017' : '#A07810'
-  const NAV_ITEMS = [
-    { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
-    { path: '/solo', label: 'Solo', icon: '🪃' },
-    { path: '/vision', label: 'Visión', icon: '👁' },
-    { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
-    { path: '/blind', label: 'Ciego', icon: '🎲' },
-  ]
-
-  const selectedBlock = blocks.find(b => b.id === selectedBlockId)
-
-  if (loading) {
-    return (
-      <div className={`min-h-screen ${t.bg} flex items-center justify-center`}>
-        <p className={t.text3}>Cargando historial...</p>
-      </div>
-    )
-  }
 
   return (
     <div className={`min-h-screen ${t.bg} transition-colors duration-300`}>
@@ -240,12 +234,10 @@ export default function History() {
             <button
               onClick={toggleTheme}
               className={`flex items-center justify-center w-10 h-10 rounded-lg ${t.bg3} ${t.border} border transition-all hover:scale-105 ${t.text3} hover:${t.text}`}
-              title={dark ? 'Tema claro' : 'Tema oscuro'}
             >
               {dark ? <SunIcon /> : <MoonIcon />}
             </button>
           </div>
-
           <div className="flex items-center gap-0 overflow-x-auto pb-2">
             {NAV_ITEMS.map((item, idx) => (
               <div key={item.path} className="flex items-center">
@@ -255,7 +247,7 @@ export default function History() {
                 >
                   <span className="text-lg">{item.icon}</span>
                   <span className="whitespace-nowrap">{item.label}</span>
-                  <div className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all scale-x-0 group-hover:scale-x-100`} style={{ backgroundColor: accentColor }} />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 transition-all scale-x-0 group-hover:scale-x-100" style={{ backgroundColor: accentColor }} />
                 </button>
                 {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
               </div>
@@ -264,55 +256,88 @@ export default function History() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-16">
         {/* Header */}
-        <div className="mb-12 animate-slide-up">
+        <div className="mb-12">
           <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Tu progreso</p>
           <h2 className={`text-5xl font-bold ${t.text} mb-4 leading-none`} style={{ letterSpacing: '-0.02em' }}>
             Historial de entrenamientos
           </h2>
-          <p className={`text-lg max-w-2xl ${t.text2} leading-relaxed`}>
-            Selecciona una categoría, subcategoría y bloque para ver tu historial completo de intentos.
-          </p>
         </div>
 
-        {/* Racha y Calendario */}
-        <div className={`grid md:grid-cols-2 gap-6 mb-16 animate-slide-up`}>
-          {/* Racha de días */}
-          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 text-center`}>
-            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Tu racha actual</p>
-            <div className="flex items-end justify-center gap-3">
+        {/* Racha + Calendario */}
+        <div className="grid md:grid-cols-2 gap-6 mb-16">
+
+          {/* Racha */}
+          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8`}>
+            <div className="flex items-start justify-between mb-6">
               <div>
-                <p className={`text-7xl font-bold`} style={{ color: accentColor }}>
-                  {stats.dayStreak}
-                </p>
-                <p className={`text-sm ${t.text3} mt-2`}>días consecutivos</p>
+                <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-1`}>Racha actual</p>
+                <p className={`text-xs ${t.text3}`}>Días consecutivos haciendo al menos un cycle</p>
               </div>
-              <div className="text-5xl mb-2">🔥</div>
+              <span className="text-3xl">🔥</span>
             </div>
+            <div className="flex items-end gap-3">
+              {streakLoading ? (
+                <p className={`text-5xl font-bold ${t.text3}`}>–</p>
+              ) : (
+                <p className="text-7xl font-bold leading-none" style={{ color: accentColor }}>{dayStreak}</p>
+              )}
+              <p className={`text-lg ${t.text2} mb-2`}>días</p>
+            </div>
+            {streakLoading && (
+              <p className={`text-xs ${t.text3} mt-3`}>Calculando racha...</p>
+            )}
+            {!streakLoading && dayStreak === 0 && (
+              <p className={`text-xs ${t.text3} mt-3`}>Completa un cycle hoy para empezar tu racha 💪</p>
+            )}
           </div>
 
-          {/* Mini Calendario */}
+          {/* Calendario */}
           <div className={`rounded-xl ${t.bg2} ${t.border} border p-8`}>
-            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Actividad de {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</p>
-            <div className="grid grid-cols-7 gap-2">
-              {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(day => (
-                <div key={day} className="text-center">
-                  <p className={`text-xs font-semibold ${t.text3}`}>{day}</p>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-1`}>
+                  {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                </p>
+                <p className={`text-xs ${t.text3}`}>Días que entrenaste este mes</p>
+              </div>
+              {streakLoading && <p className={`text-xs ${t.text3}`}>Cargando...</p>}
+            </div>
+
+            {/* Cabecera días */}
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(d => (
+                <div key={d} className="text-center">
+                  <p className={`text-xs font-semibold ${t.text3}`}>{d}</p>
                 </div>
               ))}
-              {calendarDays.map(day => {
+            </div>
+
+            {/* Celdas del calendario */}
+            <div className="grid grid-cols-7 gap-1">
+              {/* Celdas vacías para el offset */}
+              {Array.from({ length: startOffset }).map((_, i) => (
+                <div key={`empty-${i}`} />
+              ))}
+              {/* Días del mes */}
+              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
                 const hasActivity = monthActivity.has(day)
+                const isToday = day === todayDate
                 return (
                   <div key={day} className="flex justify-center">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all`}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all"
                       style={{
-                        backgroundColor: hasActivity ? '#27ae60' : dark ? '#1F1F2E' : '#E5DFD5',
-                        color: hasActivity ? 'white' : 'currentColor',
+                        backgroundColor: hasActivity
+                          ? '#27ae60'
+                          : isToday
+                            ? (dark ? '#2A2A3A' : '#D9D2C8')
+                            : (dark ? '#1F1F2E' : '#E5DFD5'),
+                        color: hasActivity ? 'white' : isToday ? accentColor : (dark ? '#7A776E' : '#8A8478'),
+                        fontWeight: isToday ? 700 : undefined,
+                        outline: isToday && !hasActivity ? `2px solid ${accentColor}` : undefined,
                       }}
-                      title={hasActivity ? `${day} - Entrenaste` : `${day} - Sin entrenamiento`}
                     >
                       {day}
                     </div>
@@ -324,178 +349,122 @@ export default function History() {
         </div>
 
         {/* Selectors */}
-        <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-16 animate-slide-up`}>
+        <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-16`}>
           <div className="grid md:grid-cols-3 gap-6">
             <div>
-              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
-                Categoría
-              </label>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Categoría</label>
               <select
                 value={selectedCategory || ''}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value || null)
-                  setSelectedSubcategory(null)
-                  setSelectedBlockId(null)
-                }}
+                onChange={(e) => { setSelectedCategory(e.target.value || null); setSelectedSubcategory(null); setSelectedBlockId(null) }}
                 className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold`}
               >
                 <option value="">Elige una categoría...</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.label}
-                  </option>
-                ))}
+                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.label}</option>)}
               </select>
             </div>
-
             <div>
-              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
-                Subcategoría
-              </label>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Subcategoría</label>
               <select
                 value={selectedSubcategory || ''}
-                onChange={(e) => {
-                  setSelectedSubcategory(e.target.value || null)
-                  setSelectedBlockId(null)
-                }}
+                onChange={(e) => { setSelectedSubcategory(e.target.value || null); setSelectedBlockId(null) }}
                 disabled={!selectedCategory || subcategoriesForCategory.length === 0}
                 className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <option value="">
-                  {subcategoriesForCategory.length === 0 ? 'Sin subcategorías' : 'Elige una subcategoría...'}
-                </option>
-                {subcategoriesForCategory.map(sub => (
-                  <option key={sub} value={sub}>
-                    {sub}
-                  </option>
-                ))}
+                <option value="">{subcategoriesForCategory.length === 0 ? 'Sin subcategorías' : 'Elige una subcategoría...'}</option>
+                {subcategoriesForCategory.map(sub => <option key={sub} value={sub}>{sub}</option>)}
               </select>
             </div>
-
             <div>
-              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
-                Bloque
-              </label>
+              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Bloque</label>
               <select
                 value={selectedBlockId || ''}
                 onChange={(e) => setSelectedBlockId(e.target.value ? Number(e.target.value) : null)}
                 disabled={!selectedCategory || blocksToShow.length === 0}
                 className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <option value="">
-                  {blocksToShow.length === 0 ? 'Sin bloques' : 'Elige un bloque...'}
-                </option>
-                {blocksToShow.map(block => (
-                  <option key={block.id} value={block.id}>
-                    {block.name}
-                  </option>
-                ))}
+                <option value="">{blocksToShow.length === 0 ? 'Sin bloques' : 'Elige un bloque...'}</option>
+                {blocksToShow.map(block => <option key={block.id} value={block.id}>{block.name}</option>)}
               </select>
             </div>
           </div>
         </div>
 
-        {/* Historial - Solo aparece si hay bloque seleccionado */}
+        {/* Lista de intentos */}
         {selectedBlockId && selectedBlock && attempts.length > 0 ? (
-          <div className="animate-slide-up">
-            {/* Estadísticas principales */}
-            <div className="mb-16">
-              <div className="grid md:grid-cols-4 gap-4 mb-8">
-                {/* Mejor Score */}
-                <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 transition-all hover:shadow-lg`}>
-                  <div className="mb-4">
-                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>⭐ Mejor score</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-5xl font-bold`} style={{ color: accentColor }}>
-                      {Math.round(stats.bestScore)}
-                    </p>
-                    <p className={`text-xs ${t.text3} mt-2`}>en {attempts.length} intentos</p>
-                  </div>
+          <div>
+            {/* Stats del bloque */}
+            <div className="grid md:grid-cols-4 gap-4 mb-12">
+              {[
+                { label: '⭐ Mejor score', value: Math.round(stats.bestScore), sub: `en ${attempts.length} intentos`, accent: true },
+                { label: '🎯 Precisión', value: `${stats.avgAccuracy.toFixed(0)}%`, sub: 'promedio', accent: true },
+                { label: '⚡ Mejor tiempo', value: `${stats.bestTime.toFixed(1)}s`, sub: 'en un intento', accent: false },
+                { label: '📊 Total', value: stats.totalAttempts, sub: 'entrenamientos', accent: false },
+              ].map(card => (
+                <div key={card.label} className={`rounded-xl ${t.bg2} ${t.border} border p-6 text-center`}>
+                  <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>{card.label}</p>
+                  <p className={`text-4xl font-bold`} style={{ color: card.accent ? accentColor : undefined }}>
+                    <span className={card.accent ? '' : t.text}>{card.value}</span>
+                  </p>
+                  <p className={`text-xs ${t.text3} mt-2`}>{card.sub}</p>
                 </div>
-
-                {/* Precisión promedio */}
-                <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 transition-all hover:shadow-lg`}>
-                  <div className="mb-4">
-                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>🎯 Precisión</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-5xl font-bold`} style={{ color: accentColor }}>
-                      {stats.avgAccuracy.toFixed(0)}%
-                    </p>
-                    <p className={`text-xs ${t.text3} mt-2`}>promedio</p>
-                  </div>
-                </div>
-
-                {/* Mejor tiempo */}
-                <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 transition-all hover:shadow-lg`}>
-                  <div className="mb-4">
-                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>⚡ Mejor tiempo</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-4xl font-bold ${t.text}`}>
-                      {stats.bestTime.toFixed(1)}s
-                    </p>
-                    <p className={`text-xs ${t.text3} mt-2`}>en un intento</p>
-                  </div>
-                </div>
-
-                {/* Total de intentos */}
-                <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 transition-all hover:shadow-lg`}>
-                  <div className="mb-4">
-                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>📊 Total</p>
-                  </div>
-                  <div className="text-center">
-                    <p className={`text-5xl font-bold ${t.text}`}>
-                      {stats.totalAttempts}
-                    </p>
-                    <p className={`text-xs ${t.text3} mt-2`}>entrenamientos</p>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* Lista de intentos */}
-            <div>
-              <div className="mb-8">
-                <h3 className={`text-2xl font-bold ${t.text} leading-none mb-2`} style={{ letterSpacing: '-0.02em' }}>
-                  Últimos entrenamientos
-                </h3>
-                <p className={`text-sm ${t.text2}`}>{attempts.length} intentos registrados</p>
-              </div>
+            <div className="mb-8">
+              <h3 className={`text-2xl font-bold ${t.text} leading-none mb-2`} style={{ letterSpacing: '-0.02em' }}>
+                Últimos entrenamientos
+              </h3>
+              <p className={`text-sm ${t.text2}`}>{attempts.length} intentos registrados</p>
+            </div>
 
-              <div className="space-y-3">
-                {attempts.map((attempt, idx) => {
-                  const date = new Date(attempt.createdAt)
-                  const dateStr = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
-                  const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-                  const N = selectedBlock.puzzleCount
-                  const score = 1000 * N - (attempt.totalTimeMs / 1000)
+            <div className="space-y-3">
+              {attempts.map((attempt, idx) => {
+                const date = new Date(attempt.createdAt)
+                const dateStr = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
+                const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+                const N = selectedBlock.puzzleCount
+                const score = 1000 * N - (attempt.totalTimeMs / 1000)
+                const isExpanded = expandedAttemptId === attempt.id
+                const hasFailed = attempt.failedPuzzles && attempt.failedPuzzles.length > 0
 
-                  return (
-                    <div
-                      key={attempt.id}
-                      className={`rounded-xl ${t.bg2} ${t.border} border p-5 transition-all hover:shadow-lg`}
+                return (
+                  <div
+                    key={attempt.id}
+                    className={`rounded-xl ${t.bg2} ${t.border} border overflow-hidden transition-all`}
+                  >
+                    {/* Fila principal — clickeable */}
+                    <button
+                      className="w-full p-5 text-left"
+                      onClick={() => setExpandedAttemptId(isExpanded ? null : attempt.id)}
                     >
                       <div className="flex items-center justify-between gap-4">
-                        {/* Fecha y número */}
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-lg ${t.bg3} flex-shrink-0`}>
                             <p className={`text-xs uppercase tracking-widest ${t.text3}`}>{dateStr}</p>
                             <p className={`text-sm font-bold ${t.text}`}>{timeStr}</p>
                           </div>
-                          
                           <div className="flex-1 min-w-0">
-                            <h4 className={`font-bold ${t.text}`}>Intento #{stats.totalAttempts - idx}</h4>
-                            <p className={`text-xs ${t.text3}`}>{(attempt.totalTimeMs / 1000).toFixed(1)}s • {attempt.solved}/{attempt.totalPuzzles} correctos</p>
+                            <div className="flex items-center gap-2">
+                              <h4 className={`font-bold ${t.text}`}>Intento #{stats.totalAttempts - idx}</h4>
+                              {hasFailed && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 bg-opacity-20 text-red-400 font-semibold">
+                                  {attempt.failedPuzzles.length} error{attempt.failedPuzzles.length !== 1 ? 'es' : ''}
+                                </span>
+                              )}
+                              {!hasFailed && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500 bg-opacity-20 text-green-400 font-semibold">
+                                  Perfecto
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-xs ${t.text3}`}>{(attempt.totalTimeMs / 1000).toFixed(1)}s • {attempt.solved}/{attempt.totalPuzzles} resueltos</p>
                           </div>
                         </div>
 
-                        {/* Stats */}
                         <div className="hidden sm:grid grid-cols-4 gap-6">
                           <div className="text-right">
                             <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Score</p>
-                            <p className={`text-lg font-bold`} style={{ color: accentColor }}>{Math.round(score)}</p>
+                            <p className="text-lg font-bold" style={{ color: accentColor }}>{Math.round(score)}</p>
                           </div>
                           <div className="text-right">
                             <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Precisión</p>
@@ -511,38 +480,85 @@ export default function History() {
                           </div>
                         </div>
 
-                        {/* Arrow mobile */}
-                        <div className="sm:hidden">
+                        {/* Chevron */}
+                        <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
-                            <polyline points="9 18 15 12 9 6"></polyline>
+                            <polyline points="6 9 12 15 18 9"/>
                           </svg>
                         </div>
                       </div>
 
                       {/* Barra de progreso */}
-                      <div className="mt-4 pt-4 border-t border-opacity-20" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Progreso</span>
-                          <span className={`text-sm font-semibold ${t.text}`}>{attempt.solved}/{attempt.totalPuzzles}</span>
-                        </div>
-                        <div className={`h-2 ${t.track} rounded-full overflow-hidden`}>
-                          <div 
-                            className="h-full transition-all rounded-full" 
-                            style={{ 
-                              width: `${(attempt.solved / attempt.totalPuzzles) * 100}%`, 
-                              backgroundColor: accentColor 
-                            }}
+                      <div className="mt-4 pt-4 border-t" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
+                        <div className={`h-1.5 ${t.track} rounded-full overflow-hidden`}>
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${(attempt.solved / attempt.totalPuzzles) * 100}%`, backgroundColor: accentColor }}
                           />
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    </button>
+
+                    {/* Panel expandido — puzzles fallados */}
+                    {isExpanded && (
+                      <div className="px-5 pb-5 border-t" style={{ borderColor: dark ? '#2A2A3A' : '#D9D2C8' }}>
+                        <div className="pt-4">
+                          {hasFailed ? (
+                            <>
+                              <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>
+                                Puzzles fallados en este cycle
+                              </p>
+                              <div className="space-y-2">
+                                {attempt.failedPuzzles.map((fp) => (
+                                  <button
+                                    key={fp.puzzleId}
+                                    onClick={() => navigate(`/puzzles?id=${fp.puzzleId}`)}
+                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg ${t.bg3} ${t.border} border transition-all hover:shadow-md group`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+                                        style={{ backgroundColor: '#E74C3C' }}
+                                      >
+                                        {fp.orderInBlock}
+                                      </div>
+                                      <div className="text-left">
+                                        <p className={`text-sm font-semibold ${t.text}`}>Puzzle #{fp.puzzleId}</p>
+                                        <p className={`text-xs ${t.text3}`}>Posición {fp.orderInBlock} en el bloque</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xs px-2 py-1 rounded-md bg-red-500 bg-opacity-20 text-red-400 font-semibold">
+                                        {fp.errors} error{fp.errors !== 1 ? 'es' : ''}
+                                      </span>
+                                      <svg
+                                        width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                        className={`${t.text3} group-hover:${t.text} transition-colors`}
+                                      >
+                                        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                                      </svg>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-2xl mb-2">🎯</p>
+                              <p className={`text-sm font-semibold ${t.text}`}>Cycle perfecto</p>
+                              <p className={`text-xs ${t.text3} mt-1`}>No fallaste ningún puzzle en este intento</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
-        ) : selectedBlockId && selectedBlock && attempts.length === 0 ? (
-          <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border animate-slide-up`}>
+        ) : selectedBlockId && selectedBlock && attempts.length === 0 && !loading ? (
+          <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border`}>
             <p className={`text-lg ${t.text2}`}>No hay intentos registrados para este bloque</p>
             <p className={`text-sm ${t.text3} mt-2`}>Comienza un entrenamiento en Solo para ver tu historial aquí</p>
           </div>
@@ -550,7 +566,7 @@ export default function History() {
       </div>
 
       {/* Footer */}
-      <div className={`${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
+      <div className={`${t.bg2} ${t.border} border-t backdrop-blur-xl mt-16`}>
         <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
           <p className={`text-sm ${t.text3}`}>Todos tus entrenamientos están aquí</p>
           <button
