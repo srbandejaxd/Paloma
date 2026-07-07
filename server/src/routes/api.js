@@ -128,7 +128,7 @@ router.post('/attempts', authMiddleware, async (req, res) => {
     const db = getDb()
     const accuracy = solved > 0 ? Math.round((solved / (solved + (errors || 0))) * 100) : 0
     const ppm = totalTimeMs > 0 ? Math.round((solved / (totalTimeMs / 60000)) * 100) / 100 : 0
-    const score = 20000 - ((errors || 0) * 1000) - Math.round(totalTimeMs / 1000)
+    const score = 1000 * attempt.solved - (attempt.totalTimeMs / 1000)
 
     const prevResult = await db.execute({
       sql: 'SELECT MAX(attempt_number) as maxAttempt FROM attempts WHERE user_id = ? AND block_id = ?',

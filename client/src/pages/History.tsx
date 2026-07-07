@@ -534,8 +534,7 @@ export default function History() {
                 const date = new Date(attempt.createdAt)
                 const dateStr = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
                 const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-                const N = selectedBlock.puzzleCount
-                const score = 1000 * N - (attempt.totalTimeMs / 1000)
+                const score = 1000 * attempt.solved - (attempt.totalTimeMs / 1000)
                 const isExpanded = expandedAttemptId === attempt.id
                 const hasFailed = attempt.failedPuzzles && attempt.failedPuzzles.length > 0
 
