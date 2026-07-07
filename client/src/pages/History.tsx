@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { fetchBlocks, fetchAttempts } from '../lib/api'
+import { fetchBlocks, fetchAttempts, fetchVisionHistory, VisionSession } from '../lib/api'
 import { Block, AttemptRecord } from '../types'
+
+type Tab = 'puzzles' | 'vision'
 
 function SunIcon() {
   return (
@@ -58,6 +60,9 @@ export default function History() {
   const [loading, setLoading] = useState(true)
   const [streakLoading, setStreakLoading] = useState(true)
   const [expandedAttemptId, setExpandedAttemptId] = useState<number | null>(null)
+  const [tab, setTab] = useState<Tab>('puzzles')
+  const [visionSessions, setVisionSessions] = useState<VisionSession[]>([])
+  const [visionLoading, setVisionLoading] = useState(false)
 
   // Estado de racha y actividad — cargado desde cache o API
   const [activeDays, setActiveDays] = useState<Set<string>>(new Set())
@@ -179,6 +184,18 @@ export default function History() {
     : []
 
   useEffect(() => {
+    if (tab !== 'vision') return
+    if (visionSessions.length > 0) return
+    setVisionLoading(true)
+    fetchVisionHistory('coordinates')
+      .then((data: VisionSession[]) => {
+        setVisionSessions(data)
+        setVisionLoading(false)
+      })
+      .catch(() => setVisionLoading(false))
+  }, [tab])
+
+  useEffect(() => {
     if (!selectedBlockId) { setAttempts([]); return }
     setLoading(true)
     fetchAttempts(selectedBlockId)
@@ -260,10 +277,105 @@ export default function History() {
         {/* Header */}
         <div className="mb-12">
           <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>Tu progreso</p>
-          <h2 className={`text-5xl font-bold ${t.text} mb-4 leading-none`} style={{ letterSpacing: '-0.02em' }}>
+          <h2 className={`text-5xl font-bold ${t.text} mb-8 leading-none`} style={{ letterSpacing: '-0.02em' }}>
             Historial de entrenamientos
           </h2>
+          {/* Tabs */}
+          <div className={`inline-flex rounded-xl ${t.bg2} ${t.border} border p-1 gap-1`}>
+            <button
+              onClick={() => setTab('puzzles')}
+              className="px-6 py-2.5 rounded-lg text-sm font-bold transition-all"
+              style={tab === 'puzzles' ? { backgroundColor: accentColor, color: 'white' } : {}}
+            >
+              <span className={tab === 'puzzles' ? 'text-white' : t.text2}>🪃 Puzzles</span>
+            </button>
+            <button
+              onClick={() => setTab('vision')}
+              className="px-6 py-2.5 rounded-lg text-sm font-bold transition-all"
+              style={tab === 'vision' ? { backgroundColor: accentColor, color: 'white' } : {}}
+            >
+              <span className={tab === 'vision' ? 'text-white' : t.text2}>👁 Visión</span>
+            </button>
+          </div>
         </div>
+
+        {/* ── TAB VISIÓN ────────────────────────────────────────────────── */}
+        {tab === 'vision' && (
+          <div>
+            {visionLoading ? (
+              <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border`}>
+                <p className={`text-lg ${t.text2}`}>Cargando sesiones...</p>
+              </div>
+            ) : visionSessions.length > 0 ? (
+              <div>
+                {/* Stats rápidas */}
+                <div className="grid md:grid-cols-3 gap-4 mb-12">
+                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 text-center`}>
+                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>🏆 Mejor score</p>
+                    <p className="text-5xl font-bold" style={{ color: accentColor }}>{Math.max(...visionSessions.map(s => s.score))}</p>
+                    <p className={`text-xs ${t.text3} mt-2`}>casillas correctas</p>
+                  </div>
+                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 text-center`}>
+                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>📊 Sesiones</p>
+                    <p className={`text-5xl font-bold ${t.text}`}>{visionSessions.length}</p>
+                    <p className={`text-xs ${t.text3} mt-2`}>partidas jugadas</p>
+                  </div>
+                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 text-center`}>
+                    <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>🎯 Promedio</p>
+                    <p className={`text-5xl font-bold ${t.text}`}>
+                      {(visionSessions.reduce((s, v) => s + v.score, 0) / visionSessions.length).toFixed(1)}
+                    </p>
+                    <p className={`text-xs ${t.text3} mt-2`}>puntos por sesión</p>
+                  </div>
+                </div>
+
+                {/* Lista de sesiones */}
+                <div className="mb-6">
+                  <h3 className={`text-2xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>Últimas sesiones</h3>
+                </div>
+                <div className="space-y-3">
+                  {visionSessions.map((session, idx) => {
+                    const date = new Date(session.createdAt)
+                    const dateStr = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
+                    const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+                    return (
+                      <div key={idx} className={`rounded-xl ${t.bg2} ${t.border} border p-5 flex items-center justify-between gap-4`}>
+                        <div className="flex items-center gap-4">
+                          <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-lg ${t.bg3} flex-shrink-0`}>
+                            <p className={`text-xs uppercase tracking-widest ${t.text3}`}>{dateStr}</p>
+                            <p className={`text-sm font-bold ${t.text}`}>{timeStr}</p>
+                          </div>
+                          <div>
+                            <p className={`font-bold ${t.text}`}>Coordenadas · 30s</p>
+                            <p className={`text-xs ${t.text3}`}>{session.errors} errores</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-8">
+                          <div className="text-right">
+                            <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Score</p>
+                            <p className="text-2xl font-bold" style={{ color: accentColor }}>{session.score}</p>
+                          </div>
+                          <div className="text-right hidden sm:block">
+                            <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Errores</p>
+                            <p className={`text-2xl font-bold ${t.text}`}>{session.errors}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border`}>
+                <p className={`text-lg ${t.text2}`}>No has jugado sesiones de Visión aún</p>
+                <p className={`text-sm ${t.text3} mt-2`}>Ve al modo Visión y completa una partida para ver tu historial aquí</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB PUZZLES ───────────────────────────────────────────────── */}
+        {tab === 'puzzles' && <>
 
         {/* Racha + Calendario */}
         <div className="grid md:grid-cols-2 gap-6 mb-16">
@@ -512,7 +624,7 @@ export default function History() {
                                 {attempt.failedPuzzles.map((fp) => (
                                   <button
                                     key={fp.puzzleId}
-                                    onClick={() => navigate(`/puzzles?blockId=${selectedBlockId}&puzzleId=${fp.puzzleId}`)}
+                                    onClick={() => navigate(`/puzzles?id=${fp.puzzleId}`)}
                                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg ${t.bg3} ${t.border} border transition-all hover:shadow-md group`}
                                   >
                                     <div className="flex items-center gap-3">
@@ -563,6 +675,7 @@ export default function History() {
             <p className={`text-sm ${t.text3} mt-2`}>Comienza un entrenamiento en Solo para ver tu historial aquí</p>
           </div>
         ) : null}
+        </>}
       </div>
 
       {/* Footer */}
