@@ -512,7 +512,7 @@ export default function History() {
                                 {attempt.failedPuzzles.map((fp) => (
                                   <button
                                     key={fp.puzzleId}
-                                    onClick={() => navigate(`/puzzles?id=${fp.puzzleId}`)}
+                                    onClick={() => navigate(`/puzzles?blockId=${selectedBlockId}&puzzleId=${fp.puzzleId}`)}
                                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg ${t.bg3} ${t.border} border transition-all hover:shadow-md group`}
                                   >
                                     <div className="flex items-center gap-3">
