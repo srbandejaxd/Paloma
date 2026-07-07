@@ -359,7 +359,7 @@ export default function Puzzles() {
 
         {/* Main */}
         {selectedBlockId && selectedBlock && currentPuzzle && (
-          <div className="flex gap-1 animate-slide-up w-full">
+          <div className="flex gap-8 animate-slide-up w-full">
             {/* Sidebar izquierda - Puzzles */}
             <div className="hidden lg:block w-40 flex-shrink-0">
               <div className={`sticky top-28 rounded-xl ${t.bg2} ${t.border} border p-3 space-y-1 max-h-[75vh] overflow-y-auto`}>
@@ -381,7 +381,7 @@ export default function Puzzles() {
             </div>
 
             {/* Centro - Tablero y navegación puzzle */}
-            <div className="flex-1 flex flex-col items-center gap-4">
+            <div className="w-full max-w-[480px] flex flex-col items-center gap-4 flex-shrink-0">
               {/* Header */}
               <div className="w-full flex items-center justify-between mb-2 max-w-[480px]">
                 <div>
@@ -457,7 +457,7 @@ export default function Puzzles() {
             </div>
 
             {/* Derecha - Controles movimiento y Lichess */}
-            <div className="hidden lg:flex flex-col items-center gap-4 w-auto flex-shrink-0 justify-center h-[520px] mt-8 -ml-[300px]">
+            <div className="hidden lg:flex flex-col items-center gap-4 w-auto flex-shrink-0 justify-center h-[480px] mt-8">
               {/* Fila horizontal: Retroceder | Contador | Siguiente */}
               <div className="flex items-center gap-2">
                 {/* Botón Retroceder */}
