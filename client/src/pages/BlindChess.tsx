@@ -452,7 +452,12 @@ export default function BlindChess() {
             </div>
           </div>
           <p className={`text-sm font-semibold ${t.text2}`}>Juegas con <span style={{ color: accentColor }}>{playerColor}</span></p>
-          <p className={`text-xs ${t.text3}`}>Puzzle {puzzle.currentNumber} / {puzzle.total}</p>
+          <p className={`text-xs ${t.text3}`}>Puzzle {puzzle.currentNumber} / {puzzle.total}</p><div className={`rounded-xl ${t.bg2} ${t.border} border px-5 py-3 flex items-center justify-between w-full`}>
+            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Puzzle</p>
+            <p className={`text-2xl font-bold ${t.text}`} style={{ letterSpacing: '-0.02em' }}>
+    {puzzle.currentNumber} <span className={`text-lg ${t.text3}`}>/ {puzzle.total}</span>
+            </p>
+          </div>
         </div>
 
         {/* Panel lateral */}
