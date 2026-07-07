@@ -478,12 +478,12 @@ export default function BlindChess() {
             </div>
           )}
 
-         {/* Posiciones — solo visibles durante memorización */}
-         {(phase === 'memorize' || phase === 'input' || phase === 'wrong') && (
-           <div
-            className={`rounded-xl ${t.bg2} ${t.border} border p-6 transition-opacity duration-500`}
-            style={{ opacity: phase === 'memorize' ? 1 : 0, pointerEvents: phase === 'memorize' ? 'auto' : 'none' }}
-           >
+          {/* Posiciones — solo visibles durante memorización */}
+          {(phase === 'memorize' || phase === 'input' || phase === 'wrong') && (
+            <div
+              className={`rounded-xl ${t.bg2} ${t.border} border p-6 transition-opacity duration-500`}
+              style={{ opacity: phase === 'memorize' ? 1 : 0, pointerEvents: phase === 'memorize' ? 'auto' : 'none' }}
+            >
               <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-4`}>Posición de las piezas</p>
               <div className="space-y-4">
                 <div>
