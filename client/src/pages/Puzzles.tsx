@@ -359,7 +359,7 @@ export default function Puzzles() {
 
         {/* Main */}
         {selectedBlockId && selectedBlock && currentPuzzle && (
-          <div className="flex gap-8 animate-slide-up w-full">
+          <div className="flex gap-8 lg:gap-10 animate-slide-up w-full justify-center">
             {/* Sidebar izquierda - Puzzles */}
             <div className="hidden lg:block w-40 flex-shrink-0">
               <div className={`sticky top-28 rounded-xl ${t.bg2} ${t.border} border p-3 space-y-1 max-h-[75vh] overflow-y-auto`}>
