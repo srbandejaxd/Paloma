@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { fetchBlocks, fetchAttempts, fetchVisionHistory, VisionSession } from '../lib/api'
 import { Block, AttemptRecord } from '../types'
@@ -51,6 +51,7 @@ interface StreakCache {
 export default function History() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [blocks, setBlocks] = useState<Block[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
@@ -82,9 +83,26 @@ export default function History() {
     if (!user) { navigate('/'); return }
     fetchBlocks().then(b => {
       setBlocks(b)
+      
+      // Si viene blockId en query params, cargar automáticamente
+      const blockIdParam = searchParams.get('blockId')
+      if (blockIdParam) {
+        const bid = parseInt(blockIdParam)
+        const block = b.find(x => x.id === bid)
+        if (block) {
+          setSelectedCategory(block.category)
+          setSelectedSubcategory(block.subcategory || null)
+          setSelectedBlockId(bid)
+          // Cargar automáticamente los attempts de ese bloque
+          fetchAttempts(bid).then(a => {
+            setAttempts(a)
+          }).catch(console.error)
+        }
+      }
+      
       setLoading(false)
     }).catch(console.error)
-  }, [user, navigate])
+  }, [user, navigate, searchParams])
 
   // Cargar actividad — primero desde cache, luego refrescar en background
   useEffect(() => {
@@ -623,7 +641,7 @@ export default function History() {
                                 {attempt.failedPuzzles.map((fp) => (
                                   <button
                                     key={fp.puzzleId}
-                                    onClick={() => navigate(`/puzzles?id=${fp.puzzleId}`)}
+                                    onClick={() => navigate(`/puzzles?blockId=${attempt.blockId}&puzzleId=${fp.puzzleId}`)}
                                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg ${t.bg3} ${t.border} border transition-all hover:shadow-md group`}
                                   >
                                     <div className="flex items-center gap-3">

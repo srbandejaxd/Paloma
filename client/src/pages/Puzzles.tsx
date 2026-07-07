@@ -99,25 +99,29 @@ export default function Puzzles() {
         setBlocks(b)
         setAllPuzzles(p)
 
-        const blockId = searchParams.get('blockId')
-        const puzzleId = searchParams.get('puzzleId')
-        if (blockId) {
-          const bid = parseInt(blockId)
+        const blockIdParam = searchParams.get('blockId')
+        const puzzleIdParam = searchParams.get('puzzleId')
+        
+        if (blockIdParam) {
+          const bid = parseInt(blockIdParam)
           const block = b.find(x => x.id === bid)
           if (block) {
             setSelectedCategory(block.category)
             setSelectedSubcategory(block.subcategory || null)
-          }
-          setSelectedBlockId(bid)
-          if (puzzleId) {
-            const idx = p.filter(x => x.blockId === bid).findIndex(x => x.id === parseInt(puzzleId))
-            if (idx >= 0) setCurrentIdx(idx)
+            setSelectedBlockId(bid)
+            
+            // Si también viene puzzleId, buscar ese puzzle en el bloque
+            if (puzzleIdParam) {
+              const puzzleId = parseInt(puzzleIdParam)
+              const idx = p.filter(x => x.blockId === bid).findIndex(x => x.id === puzzleId)
+              if (idx >= 0) setCurrentIdx(idx)
+            }
           }
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [user, navigate])
+  }, [user, navigate, searchParams])
 
   const blocksForCategory = blocks.filter(b => b.category === selectedCategory)
   const subcategoriesForCategory = [...new Set(blocksForCategory.map(b => b.subcategory).filter(Boolean))] as string[]

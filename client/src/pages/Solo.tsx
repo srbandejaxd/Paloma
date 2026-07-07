@@ -458,12 +458,20 @@ export default function Solo() {
             >
               Repetir bloque
             </button>
-            <button
-              onClick={() => navigate('/history')}
-              className={`w-full py-3 ${t.bg2} ${t.border} border rounded-xl text-sm font-semibold transition-all hover:shadow-sm ${t.text}`}
-            >
-              Ver historial completo
-            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate(`/history?blockId=${selectedBlock?.id}`)}
+                className={`py-3 ${t.bg2} ${t.border} border rounded-xl text-xs font-semibold transition-all hover:shadow-sm ${t.text}`}
+              >
+                Ver historial
+              </button>
+              <button
+                onClick={() => navigate(`/leaderboard?blockId=${selectedBlock?.id}`)}
+                className={`py-3 ${t.bg2} ${t.border} border rounded-xl text-xs font-semibold transition-all hover:shadow-sm ${t.text}`}
+              >
+                Ver ranking
+              </button>
+            </div>
             <button
               onClick={() => {
                 setPhase('category')
