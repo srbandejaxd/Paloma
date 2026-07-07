@@ -501,6 +501,8 @@ export default function Puzzles() {
             </div>
           </div>
         )}
+      </div>
+
       {/* Footer */}
       <div className={`${t.bg2} ${t.border} border-t backdrop-blur-xl`}>
         <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
