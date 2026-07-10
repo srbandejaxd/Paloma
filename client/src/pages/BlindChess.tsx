@@ -299,7 +299,6 @@ export default function BlindChess() {
               )
             })}
           </div>
-          </div>
         </div>
       </nav>
     )
