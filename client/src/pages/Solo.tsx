@@ -11,8 +11,9 @@ type Phase = 'category' | 'select' | 'racing' | 'done'
 
 const CATEGORIES = [
   { id: "checkmate_patterns", label: "Checkmate Patterns Manual", description: "Domina los 34 patrones de mate esenciales", icon: '♚' },
-  { id: "palomita", label: "Woodpecker Method", description: "Puzzles de todas las dificultades", icon: '🪃' },
+  { id: "palomita", label: "Woodpecker Method", description: "Puzzles de todas las dificultades", icon: '🕊️' },
   { id: "woodpecker_method2", label: "Woodpecker Method 2", description: "Puzzles posicionales avanzados", icon: '♞' },
+  { id: "patterns_must_know", label: "Los 100 patrones que debes saber", description: "Conocer los 100 patrones tácticos esenciales ayuda a reconocer amenazas inmediatas y mejorar notablemente el rendimiento", icon: '🪃' },
 ]
 
 const NAV_ITEMS = [

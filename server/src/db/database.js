@@ -3007,10 +3007,872 @@ const SEED_BLOCKS_WOODPECKER_METHOD2 = [
   { name: "Bloque 1fa", description: "Bloque 1fa", category: "woodpecker_method2", subcategory: "Ejercicios de Dificultad Experta", puzzles: PUZZLES_WOODPECKER_METHOD2_BLOQUE_1FA }
 ]
 
+// ─── LOS 100 PATRONES QUE DEBES SABER ─────────────────────────────────────────────────────────
+const PUZZLES_PATTERNS_MUST_KNOW_AUMENTAR_LA_TENSI_N_DE_PEONES_PARA_UN_ATAQUE_DOBLE_DE_PEONES_DECISIVO = [
+  { fen: "r1bq1rk1/pp1nnppp/2p5/b2pp3/3PP3/PNNQBP2/1PP3PP/R3KB1R b KQ - 0 10", solution: ["c5","Nxa5","exd4","Nb3","dxc3","bxc3","c4"] },
+  { fen: "3rrq2/pb1n1pbk/1pp3pp/3pp3/3PP1P1/2N1B1P1/PPPQ1PB1/3RR1K1 b - - 0 19", solution: ["c5","exd5","cxd4","Nb5","dxe3"] },
+  { fen: "r4rk1/pp1n1ppp/2pb1n2/3ppB2/3PP3/2P2P2/PP1N2PP/R1B1R1K1 w - - 0 1", solution: ["f4","exd4","e5","dxc3","bxc3","Bc5+","Kf1","g6","Bh3"] },
+  { fen: "r2qr1k1/1bp1npp1/p2b1n1p/1p1pp3/3PP2N/1BP4P/PP3PP1/R1BQRNK1 w - - 0 15", solution: ["f4","Nxe4","fxe5","Nc6","Qh5"] },
+  { fen: "r4rk1/pp1n1ppp/2pb1n2/3ppB2/3PP3/2P2P2/PP1N2PP/R1B1R1K1 w - - 0 15", solution: ["f4","exd4","e5","dxc3","Nb3","Rfe8","bxc3","g6","Bh3","Nxe5","fxe5","Bxe5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LIBERAR_LA_TENSI_N_PARA_UN_ATAQUE_DOBLE_DE_PE_N_DECISIVO = [
+  { fen: "r1bq1rk1/ppp1np2/3p3p/4pp2/3PP3/P1PB1N1P/2P2PP1/R2QK2R b KQ - 0 1", solution: ["fxe4","Bxe4","d5","Bd3","e4"] },
+  { fen: "r1bq1rk1/ppp1np2/3p3p/4pp2/3PP3/P1PB1N1P/2P2PP1/R2QK2R b KQ - 0 1", solution: ["d5","Bb5","dxe4","Nxe5","f6","Nc4","a6","Ba4","b5"] },
+  { fen: "6k1/p1qb2pp/1pp1n3/3pb3/3N4/1PNPB2P/1PP2QP1/5K2 b - - 0 26", solution: ["Bxd4","Bxd4","c5","Nxd5","Qd6","Bxg7","Qxd5","Bh6","Qh5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_UNA_CAPTURA_ANTIPOSICIONAL_PARA_REALIZAR_UN_ATAQUE_DOBLE_O_ATRAPAR_UNA_PIEZA = [
+  { fen: "1rbq1rk1/3nppbp/2np2p1/3N4/1p1NP3/4B1PP/1PP2PB1/R2Q1RK1 b - - 0 15", solution: ["Bxd4","Bxd4","e6","Ne3","e5","Ba7","Rb7","Qxd6","Nxa7"] },
+  { fen: "r2q1rk1/1pp1b1pp/4bp2/pP1np3/3n4/P1NP2P1/3NPPBP/1RBQ1RK1 w - - 0 14", solution: ["Bxd5","Bxd5","e3","Be6","exd4"] },
+  { fen: "r1bqk2r/1p1pnpbp/p1n1p1p1/2B5/2B1P3/P1NP1N2/1PP2PPP/R2QK2R b KQkq - 0 8", solution: ["d6","Be3","d5"] },
+  { fen: "5rk1/2q1bpp1/r2ppn1p/2p5/p1P2B1P/3Q1NP1/PPR1PPK1/3R4 b - - 0 20", solution: ["e5","Bxh6","gxh6"] },
+  { fen: "1rbq1rk1/3nppbp/2np2p1/1p1N4/3NP3/4B1PP/1PP2PB1/R2Q1RK1 b - - 0 1", solution: ["Bxd4","Bxd4","e6","Nc3"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_SACRIFICIO_DE_TORRE_PARA_UN_ATAQUE_DOBLE_DE_ALFIL = [
+  { fen: "4r1k1/1R4pp/4pb2/p7/rp1NPP2/8/6P1/3R2K1 b - - 0 37", solution: ["Ra1"] },
+  { fen: "6k1/5qpp/r2p4/P2bpp2/1P6/1B3P2/6PP/2R3K1 w - - 0 32", solution: ["Rc8+","Qe8","Rxe8+","Kf7","Ra8"] },
+  { fen: "6k1/p4p1p/6p1/4P3/1P4b1/P4P2/7P/2rBK2R b K - 0 30", solution: ["Rxd1+","Kxd1","Bxf3+"] },
+  { fen: "8/1B2r1p1/5k1p/8/5P2/PR3K1b/8/8 b - - 0 51", solution: ["Be6","Rb5","Rxb7"] },
+  { fen: "2n5/p4pk1/R4b1p/3B2p1/8/1P2B1P1/4PPKP/r7 w - - 0 27", solution: ["Rxf6"] },
+  { fen: "2n5/p4pk1/R4b1p/3B2p1/8/1P2B1P1/3KPP1P/r7 w - - 0 1", solution: ["Rxf6","Ra2+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_UN_SACRIFICIO_DE_DAMA_EN_LA_ESQUINA_PARA_UN_ATAQUE_DOBLE_DE_CABALLO = [
+  { fen: "6k1/3bbpp1/p3pn2/1p2q1N1/1P5Q/2N3P1/P3PP1P/2B3K1 w - - 0 26", solution: ["Qh8+"] },
+  { fen: "6k1/r4r1p/p2NB3/nppP2q1/2P5/1P2N3/PQ5P/7K w - - 0 29", solution: ["Bxf7+","Rxf7","Qh8+"] },
+  { fen: "5k2/p4r1p/3q4/2p1p1N1/P1P5/8/6QB/7K w - - 0 44", solution: ["Qa8+","Kg7","Bxe5+","Qxe5","Qh8+","Kxh8","Nxf7+"] },
+  { fen: "1R6/3q4/3r2pk/p2N2bp/1p2Pp2/1P2Q1P1/1P4K1/8 w - - 0 56", solution: ["Rh8+","Kg7","Qd4+","Bf6","Qxf6+","Rxf6","Rh7+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_UN_ATAQUE_DE_LA_DAMA_CONTRA_EL_REY_CENTRAL_Y_UNA_PIEZA_DESPROTEGIDA = [
+  { fen: "r1bqk2r/ppp2ppp/2np1n2/3Np3/1bP5/4PN2/PPQP1PPP/R1B1KB1R b KQkq - 0 6", solution: ["Nxd5","cxd5","Ne7","Qa4+"] },
+  { fen: "r1bqkb1r/pp3ppp/4pn2/1B1p4/3pP3/2NP4/PPP2PPP/R1BQK2R b KQkq - 0 8", solution: ["Ke7","e5"] },
+  { fen: "r1bqkbnr/pp3ppp/2n1p3/1Bpp4/4P3/3P1N2/PPP2PPP/RNBQK2R b KQkq - 0 5", solution: ["Qa5+","Nc3","d4"] },
+  { fen: "rnbqk2r/p4ppp/1p2pn2/b1pp4/2PP4/P1N1P1N1/1P3PPP/R1BQKB1R w KQkq - 0 8", solution: ["b4","cxb4","axb4","Bxb4","Qa4+","Nc6"] },
+  { fen: "r2qkb1r/pp1npppp/2p2n2/3p2B1/2PP2b1/3BP3/PP2NPPP/RN1QK2R b KQkq - 0 6", solution: ["dxc4","Bxc4","Qa5+"] },
+  { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["e4","e5","Nf3","Nc6","Bb5","Nf6","d3","Ne7","Nxe5","c6"] },
+  { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["e4","c5","Nf3","d6","c3","Nf6","Be2","Nc6","d4","Nxe4","d5"] },
+  { fen: "rnb1kb1r/p2p1ppp/8/qBpP4/4n3/5N2/PP3PPP/RNBQK2R w KQkq - 0 8", solution: ["Nbd2","Qxb5","Nxe4"] },
+  { fen: "rnb1kb1r/p2p1ppp/8/qBpP4/4n3/5N2/PP3PPP/RNBQK2R w KQkq - 0 1", solution: ["Nbd2","Nxd2","Qe2+","Ne4+","Bd2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_ATAQUE_A_LA_DESCUBIERTA_DE_ALFIL_CONTRA_PEON_Y_ALFIL = [
+  { fen: "2bk3r/p3ppbp/2B2np1/4p3/8/2N1B1P1/PrP2P1P/R3K2R w KQ - 0 13", solution: ["O-O-O+"] },
+  { fen: "6k1/p1r2pp1/b3pn2/2p1N2p/2P5/5BPP/Pr2PP2/R3K2R b KQ - 0 24", solution: ["Nd7","O-O-O"] },
+  { fen: "2bqkb1r/2p1n1pp/p1pp1p2/4p3/3PP3/2NQBN2/PrP2PPP/R3K2R w KQk - 0 10", solution: ["dxe5","fxe5","Nxe5","dxe5","Qxd8+","Kxd8","O-O-O+"] },
+  { fen: "r3k2r/pR3p1p/6p1/4b1B1/8/4P3/P4PPP/3K3R b kq - 0 16", solution: ["f6"] },
+  { fen: "2kr4/PR6/1pp5/8/8/R7/4r3/3K4 w - - 0 5", solution: ["Rd7","Kxd7","Rd3+","Kc7","Rxd8","Ra2","a8=Q","Rxa8","Rxa8"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_ALFIL_Y_PEON_VS_EL_ALFIL_A_LA_DESCUBIERTA = [
+  { fen: "r2qkb1r/1b1n1ppp/pp1ppn2/8/3NP3/6P1/PPP1QPBP/RNBR2K1 w kq - 0 10", solution: ["e5","Bxg2","exf6","Bh3","Qh5","Qxf6","Qxh3"] },
+  { fen: "r2q1rk1/pb1nbpp1/4pn1p/1pp5/4P3/6PN/PPPN1PBP/R1BQR1K1 w - - 0 12", solution: ["e5","Bxg2","exf6","Bxh3","fxe7","Qxe7","Qh5"] },
+  { fen: "rn1q1rk1/1b2bppp/pp1ppn2/8/2PNP3/2N3P1/PP3PBP/R1BQR1K1 w - - 0 11", solution: ["e5","dxe5","Bxb7","Ra7","Nc6","Qxd1","Nxe7+","Kh8","Rxd1","Rxb7","b3","b5","f4","b4","fxe5","Ng4","h3","Nxe5","Bf4","f6","Bxe5","fxe5","Rf1","Re8","Ne4","g6","Nxg6+","hxg6","Nd6"] },
+  { fen: "2rq1rk1/1b1nppbp/pp1p1np1/8/P2BP1P1/2N3NP/1PP2PB1/R2Q1RK1 w - - 0 14", solution: ["e5","dxe5","Bxb7","exd4","Bxc8","dxc3","Bxd7","cxb2","Ra3","Nxd7","f4","Qc7","Kh2","Nc5","c3","e5","f5","Rd8","Qc2","e4","Kg2","e3","Rd1","Rxd1","Qxd1","Qf4"] },
+  { fen: "r1bq1rk1/1pp2pb1/p1np2pp/4p3/1PP5/2NP2P1/P2NPPBP/1R1Q1RK1 b - - 0 12", solution: ["e4","d4","e3","Nf3","Bf5","Rb3","Re8","fxe3","Rxe3"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_DESCUBRIMIENTO_DE_LA_INDIA_DE_DAMA = [
+  { fen: "rn1q1rk1/pbp1bppp/1p1pp3/8/2PP4/2n2NP1/PPQ1PPBP/R1B1R1K1 w - - 0 10", solution: ["Ng5","Bxg5","Bxb7"] },
+  { fen: "rn1q1rk1/pbpp1ppp/1p2p3/8/2PP4/2nQ1NP1/PP2PPBP/R3K2R w KQ - 0 10", solution: ["Ng5","Ne4"] },
+  { fen: "rn1q1rk1/pbppbppp/1p2p3/8/2PP4/2n2NP1/PPQ1PPBP/R1B2RK1 w - - 0 9", solution: ["Ng5","Nxe2+","Qxe2","Bxg2","Kxg2","Bxg5"] },
+  { fen: "rn1q1rk1/pbp1bppp/1p2pn2/6B1/2pP4/5NP1/PPQ1PPBP/RN3RK1 w - - 0 9", solution: ["Bxf6","Bxf6","Ng5","Bxg5","Bxb7","Nd7","Bxa8","Qxa8","Qxc4"] },
+  { fen: "rn1q1rk1/pbpp1ppp/1p2p3/8/2PP4/2n2NP1/PPQ1PPBP/R3K2R w KQ - 0 1", solution: ["Ng5","Qxg5","Bxb7","Nxe2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_CARRUSEL = [
+  { fen: "3r1bk1/5Npp/8/6n1/2B1Pp2/5q2/7P/6K1 w - - 0 1", solution: ["Nxg5+","Kh8","Nf7+","Kg8","Nxd8+","Kh8","Nf7+","Kg8","Ng5+","Kh8","Nxf3"] },
+  { fen: "r3r1k1/pp3pbp/1qp3p1/2B5/2BP2b1/Q1n2N2/P4PPP/3R1K1R b - - 0 17", solution: ["Be6","Bxb6","Bxc4+","Kg1","Ne2+","Kf1","Nxd4+","Kg1","Ne2+","Kf1","Nc3+","Kg1","axb6","Qb4","Ra4","Qxb6","Nxd1"] },
+  { fen: "1r1qr1k1/pp3ppp/3p4/3bN1b1/4PQ2/1B6/PPP3PP/1K1R1R2 w - - 0 21", solution: ["Qxf7+","Bxf7","Nxf7","Qc7","Nxg5+","Kh8","Nf7+","Kg8","Nxd6+","Kh8","Nf7+","Kg8","Rd8","Qe7","Rxe8+","Rxe8","Nd6+","Kh8","Nxe8","Qxe8","e5","h5","e6"] },
+  { fen: "rnb1k2r/2qnbppp/p2pp3/8/1p1NP1P1/1B2BQ2/PPP1NP1P/R3K2R w KQkq - 0 12", solution: ["Qxf7+","Kxf7","Nxe6","Qa5","Nc7+","Kf8","Ne6+","Kf7","Nc7+","Kf8","Ne6+","Kf7","Nc7+"] },
+  { fen: "r2qk2r/pppb1ppp/2np4/3P4/Qb2P3/5N2/PP3PPP/RNB2K1R b kq - 0 10", solution: ["Nd4","Qxb4","Bb5+","Kg1","Ne2+","Kf1","Nd4+"] },
+  { fen: "r1bq1rk1/bppp2pp/p1n5/3Np3/2Q5/5NP1/PPP2nBP/R1B2RK1 w - - 0 12", solution: ["Bg5","b5","Ne7+","Kh8","Ng6+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_COLABORACION_DE_ALFIL_Y_CABALLO = [
+  { fen: "r3k2r/1p1bbppp/1nn1p3/pB1pP3/3P4/P4N2/1P1N1PPP/R1B2RK1 b kq - 0 15", solution: ["Nxe5","Bxd7+","Nexd7"] },
+  { fen: "r2q1rk1/pppb1ppp/2n5/1B1pP3/3P4/P4N2/1P1b1PPP/R2Q1RK1 w - - 0 13", solution: ["Bxc6","Bxc6","Qxd2"] },
+  { fen: "3r3r/kp1n1p2/pnpq3p/2Np2pb/1Q1P4/2NBP3/PP3PPP/1KR4R w - - 0 21", solution: ["Nxa6","Qxb4","Nxb4"] },
+  { fen: "2rr2k1/p3q1p1/2p4p/2Q1pn2/8/1P4N1/P1P2PPP/R2R2K1 w - - 0 24", solution: ["Qc4+"] },
+  { fen: "r2q1rk1/1bp1bppp/3p1n2/p1nPpNB1/1pP1P3/6P1/PPN2PBP/R2QR1K1 b - - 0 14", solution: ["Nxd5","Bh6","gxh6","Qg4+","Bg5","cxd5","Kh8","h4","Bf6","Nce3"] },
+  { fen: "r2q1rk1/pppb1ppp/1bn5/1B1pP3/3P4/2P1BN1P/P4PP1/R2QK2R b KQ - 0 12", solution: ["Nxe5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_DESESPERADO_SECUENCIA_DE_CAPTURA = [
+  { fen: "r2q1rk1/pppb1ppp/1bn5/1B1pP3/3P4/2P1BN1P/P4PP1/R2QK2R b KQ - 0 12", solution: ["Nxd4","Bxd7","Nxf3+"] },
+  { fen: "r3qrk1/1ppb1pbp/p1np1np1/4p3/B3P3/2PP1N2/PP3PPP/R1BQRNK1 w - - 0 11", solution: ["d4","Nxd4","Bxd7","Nxf3+","Qxf3","Qxd7"] },
+  { fen: "r2q1rk1/pbpnbpp1/1p2pn1p/8/2BPP2B/2N2N2/PP2QPPP/3RK2R b K - 0 11", solution: ["Nxe4","Bxe7","Nxc3","Bxd8","Nxe2","Bxc7","Rfc8","Kxe2","Rxc7"] },
+  { fen: "r2q1rk1/pbpnbppp/1p2pn2/6B1/2BPP3/2N2N2/PP2QPPP/3RK2R b K - 0 10", solution: ["Nxe4","Bxe7","Nxc3","Bxd8","Nxe2","Bg5"] },
+  { fen: "r2qk1nr/pp2bppp/n2p4/2pPp3/2P1P1b1/5N2/PP2BPPP/RNBQK2R w KQkq - 0 7", solution: ["Nxe5","Bxe2","Qa4+","Kf8","Nd7+","Qxd7","Qxd7","Bxc4"] },
+  { fen: "r4rk1/1bpqbppp/p2p1n2/1p2p1B1/4P3/P2P1Q2/BPP1NPPP/R4RK1 b - - 0 13", solution: ["Nxe4","Bxe7","Nc5","Bd5","Bxd5","Qxd5","Qxe7"] },
+  { fen: "r1b1r1k1/pp2bp1p/2p1n1p1/q2p4/P2P2nB/2NBPP2/1PQ1N1PP/3R1RK1 w - - 0 15", solution: ["b4","Qb6","a5","Qc7","Bg3","Nxe3","Qc1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_DAMA_Y_EL_CABALLO_VS_LA_DAMA_A_LA_DESCUBIERTA = [
+  { fen: "r1b1rbk1/1p3p1p/n1pp1np1/q7/2P1P3/1PN1B1PP/2NQ1PB1/1R2R1K1 w - - 0 21", solution: ["Nd5"] },
+  { fen: "r2r2k1/p4p2/2p1bbpp/q2p4/2pP1P2/1PN1P1P1/P5BP/R3QRK1 w - - 0 17", solution: ["f5","gxf5","Ne4"] },
+  { fen: "r1r3k1/p3ppbp/3pbnp1/qp6/3BP3/1BN2P2/PPPQ2PP/1K1R3R w - - 0 14", solution: ["Bxf6","Bxf6","Nd5","Qxd2","Nxf6+","Kg7","Nh5+","gxh5","Rxd2","Rc5"] },
+  { fen: "2r2rk1/ppnbppbp/2np2p1/q7/2PNP3/2N1BP2/PP1QB1PP/1R1R2K1 w - - 0 14", solution: ["Nxc6","bxc6","Nd5","Qxd2","Nxe7+","Kh8","Rxd2","Rce8","Bf4","Rxe7","Bxd6"] },
+  { fen: "r1b2rk1/3nppbp/p4np1/qppN4/2P1P3/4BP2/PP1QN1PP/1K1R1B1R b - - 0 12", solution: ["Nxd5","Qxa5","Nxe3","Rc1","Nxc4","Rxc4","bxc4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_DOBLE_AMENAZA_DE_LA_DAMA_Y_EL_CABALLO = [
+  { fen: "r1bq1rk1/pp3p1p/3p2p1/4p3/2P1Pn2/2N2P2/PP1QB1PP/R4RK1 b - - 0 14", solution: ["Qg5"] },
+  { fen: "r3r1k1/1n1qbppn/3p3p/3PpN2/1p2P3/5N1P/3B1PP1/R2QR1K1 w - - 0 23", solution: ["Rxa8","Rxa8","Nxe5","dxe5","Qg4","Kf8","Qxg7+","Ke8","Qxh7"] },
+  { fen: "r6r/pppqbppk/3p4/5N2/4P3/8/PPP2PPP/R2Q1RK1 w - - 0 18", solution: ["Qh5+","Kg8","Qg4"] },
+  { fen: "r4rk1/3q1bpp/p4p2/1pbpnN2/3N4/1P5P/P1P1RPP1/2BQ1RK1 w - - 0 22", solution: ["Rxe5","fxe5","Qg4","Be8","Ne6","Rxf5","Qxf5","Bg6","Qxe5","Bd6","Qxg7+","Qxg7","Nxg7","Kxg7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_GAMBITO_MILNER_BARRY = [
+  { fen: "r3k2r/4bpp1/p3p2p/n2bP3/Pp1q1B1P/3B4/1P3PP1/2RQR1K1 w kq - 0 20", solution: ["Bb5+","axb5","Qxd4","bxa4","Rc7","Bd8","Ra7","Rxa7","Qxa7"] },
+  { fen: "r1bq1bk1/pp3pp1/2p2n1p/2n1r3/3N3B/2NB3P/PPP3P1/R2Q1R1K w - - 0 1", solution: ["Nxc6","Bg4","Nxd8","Bxd1","Raxd1","Re8","Nxf7"] },
+  { fen: "r1b1rk2/p4ppQ/4pb2/1ppq4/1B6/3B1N2/P1K2P1P/3R3R w - - 0 1", solution: ["Qh8+","Ke7","Qxe8+","Kxe8","Bxb5+","Kd8","Bc6"] },
+  { fen: "1rbqr1k1/p1p2pp1/5n1p/2bp4/7B/2NB4/PPP2PPP/R2Q1R1K w - - 0 13", solution: ["Nxd5","Qxd5","Bxf6","Bb7","Qg4","Qxg2+","Qxg2","Bxg2+","Kxg2","gxf6"] },
+  { fen: "rn1qkb1r/pp4p1/4p1p1/2P1n3/3p2P1/2NBB3/PPP4P/R2QK2R w KQkq - 0 14", solution: ["Bxd4","Qxd4","Bxg6+","Ke7","Qxd4","Nf3+"] },
+  { fen: "2q1r1k1/7p/p2p2p1/2pPbb1n/1r4P1/R1N4P/1P2QPB1/2B2RK1 b - - 0 1", solution: ["Bh2+","Kxh2","Rxe2","Nxe2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_MOLINO_INVERTIDO = [
+  { fen: "r1b1k2r/p5pp/1qpbpn2/3p4/3P4/P1NB4/1P3PPP/R1BQ1RK1 b kq - 0 12", solution: ["Qxd4","Bg6+","hxg6","Qxd4","Bxh2+","Kh1","Be5+","Kg1","Bxd4"] },
+  { fen: "r1b2r1k/ppp1nppB/3b4/3Pp1P1/5q2/2P2N2/PP2QPP1/R3K2R w KQ - 0 15", solution: ["g3","Qg4","Bf5+","Kg8","Bxg4"] },
+  { fen: "8/2p1n3/3b1n2/3pp3/3PP3/2P5/1P3P2/8 w - - 0 1", solution: ["d4xe5","Ne7-c6","e1-g1","Nc6xe5"] },
+  { fen: "r1bq1r1k/p4ppB/1pn1p3/2ppP1b1/3P4/2P3P1/PP1N1PP1/R2QK2R w KQ - 0 14", solution: ["Bb1+","Bh6","Qc2","g6","Rxh6+","Kg7","Rxg6+","fxg6","Qxg6+","Kh8","Qh7#"] },
+  { fen: "r1bq1r1k/p4ppB/1pn1p3/2ppP1b1/3P4/2P3P1/PP1N1PP1/R2QK2R w KQ - 0 14", solution: ["Qc2","cxd4","Bg8+","Bh6","Qh7#"] },
+  { fen: "r2qk2r/ppp2p1p/3p1p2/2b1p3/2B1P2B/3P1P1b/PPP2P1P/R2Q1RK1 b kq - 0 11", solution: ["f5","Bxd8","Rg8+","Kh1","Bg2+","Kg1","Bxf3+","Bg5","Rxg5#"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DOBLE_JAQUE_DE_ALFIL_Y_TORRE = [
+  { fen: "rnb1kb1r/pp3ppp/2p5/4q3/4n3/3Q4/PPPB1PPP/2KR1BNR w kq - 0 9", solution: ["Qd8+","Kxd8","Bg5+","Kc7","Bd8#"] },
+  { fen: "rnb2rk1/ppp1bppp/8/1N1q4/5B2/8/PPPQ1PPP/R3KB1R b - - 0 1", solution: ["Rf8-e8","Bf1-e2","Be7-b4","Qd2xb4","Nb8-c6","Qb4-d2","Qd5xb5","c2-c3","Bc8-g4","Bf4-e3","Qb5-f5"] },
+  { fen: "3rr1k1/ppp2ppp/q4n2/5b2/1b3N2/1B3Q1P/PP3PP1/R1B2RK1 w - - 0 1", solution: ["Bxf7+","Kxf7","Qb3+","Be6","Qxb4","Qxf1+","Kxf1","Rd1+","Ke2","Bg4#"] },
+  { fen: "2r1kr2/3n2pp/4p3/1Nbbn3/5B2/6Q1/PPP3PP/2K1R3 b - - 0 1", solution: ["Rxf4","Qxf4","Nd3+","cxd3","Be3+"] },
+  { fen: "3rr1k1/ppp2ppp/q4n2/5b2/1b3N2/1B3Q1P/PP3PP1/R1B2RK1 w - - 0 19", solution: ["Bxf7+","Kxf7","Qb3+","Be6","Nxe6","Rxe6","Be3","Be7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_MOLINO = [
+  { fen: "r3rnk1/pb3pp1/3pp2p/1q4BQ/1P1P4/4N1R1/P4PPP/4R1K1 w - - 0 25", solution: ["Bf6","Qxh5","Rxg7+","Kh8","Rxf7+","Kg8","Rg7+","Kh8","Rxb7+","Kg8","Rg7+","Kh8","Rg5+","Kh7","Rxh5","Kg6","Rh3","Kxf6","Rxh6+"] },
+  { fen: "r4rk1/pb2npp1/3pp2p/1q4BQ/1P1P4/4N1R1/P4PPP/4R1K1 w - - 0 25", solution: ["Bf6","Qxh5","Rxg7+","Kh8","Rxf7+","Kg8","Rg7+","Kh8","Rf7+","Kg8","Rg7+","Kh8","Rf7+"] },
+  { fen: "r4rk1/pnpb2p1/3p3q/1pbP1p1Q/7P/2B2N2/PpB2PP1/4RRK1 w - - 0 21", solution: ["Re7","Qxh5","Rxg7+","Kh8","Rxd7+","Rf6","Bxf6+","Kg8","Rg7+","Kf8","Ng5","Bxf2+","Rxf2","Nc5","Bxb2","Qe8","Nh7#"] },
+  { fen: "2nrr1k1/1b2qpb1/pp4p1/n1p2PB1/P6Q/N1P5/1PB3PP/1R3RK1 b - - 0 1", solution: ["Rd2","Bxe7","Rxg2+","Kh1","Rg4+","Be4","Bxe4+","Rf3","Bxf3#"] },
+  { fen: "2kr4/ppp1bp1p/2b1p3/5p2/1nPN4/PB6/1P1NQPrP/R4R1K b - - 0 1", solution: ["Rg2-g1"] },
+  { fen: "8/3R4/7k/7p/5b2/6rB/7K/8 b - - 0 51", solution: ["Bb8"] },
+  { fen: "4r1k1/1p5p/2bR4/Q1n1Pp2/2P5/PP6/1B4rP/5R1K b - - 0 34", solution: ["Be4","Rf4","Rxb2+","Rxe4","Nxe4","Rd8"] },
+  { fen: "2nrr1k1/1b2qpb1/pp4p1/n1p2PB1/P6Q/N1P5/1PB3PP/1R3RK1 b - - 0 22", solution: ["Rd2","Rf3","Rxg2+","Kxg2","Qe2+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_CONTRA_DESCUBIERTA = [
+  { fen: "r1bQnk1r/pp4pp/n1pNqp2/8/5B2/8/PPP1BKPP/R4R2 b - - 0 17", solution: ["Qxe2+","Kxe2","Bg4+","Kf2","Rxd8","Nxb7","Rd5"] },
+  { fen: "r1bq1b1r/pp2k2p/4pp2/3p2BQ/3n4/3B4/PP3PPP/RN2K2R w KQ - 0 13", solution: ["Bxf6+","Kxf6","Qh4+","Kf7","Qxd8","Bb4+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_DESPEJE_DE_LA_LTIMA_FILA = [
+  { fen: "6k1/5pp1/3q4/4N3/7Q/8/8/8 w - - 0 1", solution: ["Ne5-f3","Qd6-d5"] },
+  { fen: "N4b1r/1p3ppp/2k5/1p6/4n1b1/P2P1P2/1PP3qP/R1BQKR2 b Q - 0 1", solution: ["Ng3","hxg3","Bb4+","axb4","Re8+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DESPEJANDO_CON_LA_DAMA_Y_EL_ALFIL = [
+  { fen: "Qb2r1k1/5ppp/p3p3/1p2q3/1Pp5/P3P3/5PPP/R2R2K1 b - - 0 21", solution: ["Qxa1","Rxa1","Bxh2+","Kxh2","Rxa8"] },
+  { fen: "r4rk1/pbq2p1p/2pb1n2/1p4p1/4PPnN/8/PPQ1B1PP/R1BN1RK1 w - - 0 1", solution: ["f4xg5","Bd6-c5"] },
+  { fen: "R7/5ppk/4pb2/3p3p/7P/1q1b1BP1/1P2QP2/6K1 w - - 0 46", solution: ["Be4+","g6","Qxh5+","Kg7","Qh8#"] },
+  { fen: "Qb2r3/4kppp/p3p3/1p2q3/1Pp5/P3P3/5PPP/R2R2K1 b - - 0 1", solution: ["Qxa1","Qb7+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_ALFIL_ENFILADO_EN_LA_DIAGONAL_A3_F8_F1_A6 = [
+  { fen: "r1q2rk1/pb2ppbp/1n1p1np1/2pP4/4PP2/2NQBN2/PPB3PP/R4RK1 b - - 0 13", solution: ["Ba6","Nb5","c4","Qe2","Bxb5"] },
+  { fen: "r1b2rk1/ppp2ppp/2nq1n2/1B1p4/1b6/4PN2/PBPP1PPP/RN1QK2R w KQ - 0 8", solution: ["c3","Bc5","d4","Bb6","Ba3"] },
+  { fen: "r4rk1/6bp/bpp5/p2p1B1q/3P3N/3QP1P1/PP3R1P/5RK1 w - - 0 25", solution: ["Be6+","Kh8","Rxf8+","Bxf8","Qf5"] },
+  { fen: "r2qkb1r/pp1npppp/2p2n2/3p2B1/2PP2b1/3BP3/PP2NPPP/RN1QK2R b KQkq - 0 6", solution: ["g6","O-O","c5","dxc5","Qa5","b4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_SACRIFICAR_LA_TORRE_PARA_UNA_ENFILADA = [
+  { fen: "8/2q1k3/4pp2/3p4/3P3Q/2P5/1R1K1PrP/8 w - - 0 28", solution: ["Rb7"] },
+  { fen: "7Q/p2q1k2/1p2p1p1/5p2/3r4/P7/1P3PP1/2R3K1 w - - 0 32", solution: ["Rc7","Rd1+","Kh2","Qxc7+"] },
+  { fen: "5k2/p4p2/3r1qp1/2Q5/5P2/8/bP3BP1/2K4R w - - 0 30", solution: ["Qc8+"] },
+  { fen: "3r4/ppq1krQ1/2n5/4p3/6P1/2P4R/PP3P1P/4R1K1 w - - 0 31", solution: ["Qxf7+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_ATRACCI_N_PARA_UNA_CLAVADA_ABSOLUTA_EN_LA_DIAGONAL_A2_G8_G1_A7 = [
+  { fen: "4rrk1/1bqp2pp/p2b2n1/1p3p2/5P2/2PBB1QP/PP4P1/R3NRK1 b - - 0 26", solution: ["Rxe3","Qxe3","Bc5"] },
+  { fen: "r1br2k1/1pq1bppp/p7/n2p4/P4P2/3BB3/1PPN1QPP/R4RK1 b - - 0 1", solution: ["d4","Bxd4","Rxd4","Rae1","Be6","f5","Bc5"] },
+  { fen: "r7/pp4bk/2pq2pp/P3np2/2P1n3/1P2Q2P/R2N2P1/4RB1K b - - 0 25", solution: ["Ng4","hxg4","Ng3+","Kg1","Bd4"] },
+  { fen: "r6k/pp4b1/2pq2pp/P3np2/2P1n3/1P2Q2P/R2N2P1/2B1R2K b - - 0 1", solution: ["Ne5-g4","h3xg4","Ne4-g3","Kh1-g1","Bg7-d4","Bc1-b2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EXPLOTACI_N_DE_LA_CLAVADA_DEL_CABALLO_A_LO_LARGO_DE_LA_DIAGONAL_A4_E8_E1_A5 = [
+  { fen: "rn1qk2r/pbpp1pp1/1p2pn1p/8/1bPP3B/4PN2/PP1N1PPP/R2QKB1R b KQkq - 0 7", solution: ["g5","Bg3","g4","a3","gxf3","axb4","fxg2","Bxg2","Bxg2","Rg1","Bb7","Bh4"] },
+  { fen: "r2qk2r/pp1nbppp/4pn2/1B2Nb2/3P4/1Q6/PP1N1PPP/R1B1K2R w KQkq - 0 12", solution: ["g4","Bg6","g5"] },
+  { fen: "r1b1k2r/pp1p1ppp/1qn1p3/8/1b1PnB2/1Q2PN2/PP1N1PPP/R3KB1R b KQkq - 0 9", solution: ["g5","Bxg5","Bxd2+","Nxd2","Qa5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_CLAVADA_EN_LA_LTIMA_FILA = [
+  { fen: "3r2k1/pqR2pp1/4p2p/8/1n3B2/Q5P1/PP2PPbP/5BK1 b - - 0 1", solution: ["Rd8-d1","Rc7xb7","Bg2-h3","Rb7-b8","Kg8-h7","Qa3-d3","Nb4xd3"] },
+  { fen: "6k1/3qppbp/4b1p1/3n4/3P3P/1B3Q2/P2B1PP1/2R3K1 w - - 0 27", solution: ["Bxd5","Bxd5","Qxd5","Qxd5","Rc8+","Bf8","Bh6"] },
+  { fen: "k7/1p4pp/p1p2p2/8/PP3Q2/4BPPb/4P2P/3r1BK1 w - - 0 29", solution: ["Kh1","Rxf1+","Bg1"] },
+  { fen: "r3r1k1/1pq4p/p1p2bp1/3pRb2/8/2Q3P1/PPP2PBP/R1B3K1 w - - 0 20", solution: ["Rxe8+","Rxe8","Qxf6","Re1+","Bf1","Bh3","Bh6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_ATACAR_EL_PE_N_DE_G2_G7_CLAVADO = [
+  { fen: "rn1q1rk1/pbp1bppp/1p2pn2/6B1/2pP4/5NP1/PPQ1PPBP/RN3RK1 w - - 0 9", solution: ["e4","e5","Be3","c3","Nxe5"] },
+  { fen: "r2q1rk1/pb1nbppp/1p2p3/3nN3/3P2Q1/2NB4/PP3PPP/R1B2RK1 w - - 0 12", solution: ["Bh6","Bf6","Qe4","Re8","Qxh7+"] },
+  { fen: "r4rk1/1p3pp1/2n3qp/p2p4/4n3/PP2PN1b/1BR1BPPP/3Q1RK1 w - - 0 16", solution: ["Ne1"] },
+  { fen: "r1b2Q2/pp3ppk/2p5/4p3/2P5/1R1P4/4qPPP/5RK1 b - - 0 21", solution: ["Bh3","Qxa8","Qg4","g3","Qf3"] },
+  { fen: "r4rk1/ppp2ppp/2n3q1/2bnp3/2B1N3/2PP1N1b/PP3PP1/R1BQR1K1 w - - 0 12", solution: ["Ng3","Qxg3","Kf1","Qxf2#"] },
+  { fen: "r2q1rk1/pp2pp1p/4b1pB/4Q3/8/2n3P1/PPP2PBP/R5K1 b - - 0 1", solution: ["Qd8-d4"] },
+  { fen: "r4rk1/1p3pp1/2n3qp/p2p4/4nP2/PP2PN1b/1BR1B1PP/3Q1RK1 w - - 0 1", solution: ["Nh4"] },
+  { fen: "r4rk1/1p3pp1/2n3qp/p2p4/4n3/PP2PN1b/1BR1BPPP/4QRK1 w - - 0 1", solution: ["Nh4","Qg5","f4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_PEON_CLAVADO_F2_F7_ES_UN_POBRE_DEFENSOR = [
+  { fen: "r1b1qrk1/pp3pp1/1bp4p/5PNQ/1n1Pp3/1B2B3/P5PP/2R2R1K w - - 0 20", solution: ["Qg6","hxg5","f6"] },
+  { fen: "1N2r2k/1bp2p2/1b3npB/1p6/7q/7P/BPQ2PP1/R4RK1 b - - 0 26", solution: ["Re2","Qc3","Rxf2","Nc6","Rxf1+"] },
+  { fen: "r2r2k1/ppp2pp1/1bn2n1p/4qb2/4P3/1NN3PP/PP2QPB1/R1B2RK1 b - - 0 15", solution: ["Bxh3"] },
+  { fen: "r1q2rk1/1ppb1pp1/p1nb1n1p/8/2BP4/P1N2N1P/1PQ2PP1/R1B1R1K1 w - - 0 13", solution: ["Bxh6","Bxh3","Qg6","Qg4","Qxg7+","Qxg7","Bxg7","Kxg7","gxh3","Rh8"] },
+  { fen: "4r1k1/pR3pp1/1n3P1p/q2p4/5N1P/P1rQpP2/8/2B2RK1 w - - 0 20", solution: ["Qg6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_CLAVADO_ETERNO = [
+  { fen: "8/1p3pk1/5npp/8/6P1/1PB5/6P1/6K1 w - - 0 1", solution: ["g4-g5","h6xg5","g2-g4","b7-b6","b3-b4","b6-b5","Kg1-g2"] },
+  { fen: "8/5pkp/3p1np1/Rpr5/8/6P1/PB3PKP/8 w - - 0 34", solution: ["a4","bxa4","Rxc5","dxc5","f4","a3","Ba1"] },
+  { fen: "4r1k1/2pp2pp/8/p1bP4/P1p5/2PbRPP1/1P3K1P/2RN4 b - - 0 24", solution: ["g5","h3","h5","f4","g4","hxg4","hxg4","Ra1","Bc2","Ke1","Bxe3","Nxe3","Rxe3+","Kd2","Rxg3","Kxc2","Rg2+","Kb1","Rg1+","Ka2","Rxa1+","Kxa1","g3"] },
+  { fen: "8/8/4pk2/3rbpp1/8/8/1B4P1/4R1K1 w - - 0 1", solution: ["Rxe5","Rxe5","g3","Kg6","Bxe5","Kh5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CRUZ_DE_SAN_ANDR_S = [
+  { fen: "7k/pp5b/6n1/2q1b1p1/1NBpp1P1/1P2P2P/PB6/4Q1K1 w - - 0 33", solution: ["exd4","Bxd4+","Qe3"] },
+  { fen: "3q3k/2r4p/p3Pb2/1pp3Q1/4p3/1P6/PBPP2PP/6K1 b - - 0 25", solution: ["Bd4+","Bxd4+","Qxd4+"] },
+  { fen: "r1b1k1nr/pp3ppp/1qn5/1Bbp4/3N4/N3B3/PPP2PPP/R2QK2R w KQkq - 0 9", solution: ["Nxc6","bxc6","Qxd5","Bxe3","Qxc6+","Ke7","Qe8+","Kf6","Qxe3"] },
+  { fen: "1nr3k1/r1p1q1p1/1p2p2p/3BpQ2/3P4/pPR1P3/P4PPP/2R3K1 b - - 0 1", solution: ["Rc8-e8","Bd5-c4","b6-b5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_CRUZ_DE_MALTA = [
+  { fen: "4Q3/p4pk1/6p1/8/3b3P/6P1/P1r1R2K/2r5 b - - 0 45", solution: ["Re1","Qxf7+","Kxf7","Rxc2","Re3"] },
+  { fen: "2r1n1k1/6pp/8/pQR2r2/8/5PB1/qP4PP/2KR4 w - - 0 28", solution: ["Bf2","Qe6","Rd2"] },
+  { fen: "2r1n1k1/6pp/8/pQR2r2/8/5PB1/qP4PP/2KR4 w - - 0 28", solution: ["Bd6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_CRUZ_OBLICUA = [
+  { fen: "rn1r2k1/p5pp/3q4/2pp4/4p3/BQP3P1/P3PP1P/3R1RK1 w - - 0 1", solution: ["Rd1xd5","Qd6xd5","Rf1-d1"] },
+  { fen: "1B1r2k1/pp5p/6p1/3q1p2/5n1N/1P2P1PP/P3Q3/3R2K1 w - - 0 37", solution: ["Qc4","Qxc4","Rxd8+","Kf7","bxc4"] },
+  { fen: "r2r2k1/5pp1/pq2p3/2Q2n1p/PP6/1R3PbP/4BBP1/2R1K3 b - - 0 29", solution: ["Rac8","Qxb6","Rxc1+","Bd1","Rcxd1+","Ke2","R8d2#"] },
+  { fen: "3r2k1/pp6/r5p1/3q1pP1/8/1Q6/PR4P1/K2R4 b - - 0 34", solution: ["Rxa2+","Rxa2","Qxb3","Rxd8+","Kf7"] },
+  { fen: "4r1k1/pp6/r3q1p1/5pP1/8/1Q6/PR4P1/1K2R3 b - - 0 34", solution: ["Qxb3","Rxe8+","Kf7","Rxb3","Kxe8","Rxb7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_MANIOBRA_DE_DAMA_Y_TORRE_EN_LA_APERTURA = [
+  { fen: "r3k2r/4bpp1/p3p2p/n2bP3/Pp1q1B1P/3B4/1P3PP1/2RQR1K1 w kq - 0 20", solution: ["Bb5+"] },
+  { fen: "r1bq1bk1/pp3pp1/2p2n1p/2n1r3/3N3B/2NB3P/PPP3P1/R2Q1R1K w - - 0 1", solution: ["Nxc6","a6","a4","Nd5","Nxd5","Be6","Re1","Be7","Nf4"] },
+  { fen: "r1bqkb1r/1p3ppp/p4n2/2pp4/2Bn4/2NP1N2/PPP2PPP/R1BQ1RK1 w kq - 0 9", solution: ["Nxd5","Nxd5","Nxd4","cxd4","Qh5","Be6","Re1","Be7","Rxe6","Nf6","Rxf6","gxf6","Qxf7+","Kd7","Bf4","Qa5","Qe6+","Kd8","Re1","Re8","Re4","Qc5","b4","Qa7","Qd5+","Kc8","Qa5"] },
+  { fen: "1rbqr1k1/p1p2pp1/5n1p/2bp4/7B/2NB4/PPP2PPP/R2Q1R1K w - - 0 13", solution: ["h3","Be3","Ne4","Nxe4","g4","Bf5","Bxe4"] },
+  { fen: "rn1qkb1r/pp4p1/4p1p1/2P1n3/3p2P1/2NBB3/PPP4P/R2QK2R w KQkq - 0 14", solution: ["Bc4","Bd6","O-O","Qh4","Qe2","Qh5","Qd3"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_CON_JAQUE = [
+  { fen: "r1b1k2r/p5pp/1qpbpn2/3p4/3P4/P1NB4/1P3PPP/R1BQ1RK1 b kq - 0 12", solution: ["e5","Qe2","O-O","Bg5","Ng4"] },
+  { fen: "r2qk1nr/ppp2ppp/2np4/b3P3/2B1P1b1/2P2N2/P4PPP/RNBQK2R w KQkq - 0 8", solution: ["Bxf7+","Kxf7","Ng5+","Qxg5","Qb3+","Be6"] },
+  { fen: "r2qk2r/ppp1bppp/2np4/4p2n/2B1PPb1/2PP1N2/PP4PP/RNBQ1RK1 w - - 0 1", solution: ["Bc4xf7","Ke8xf7","Nf3-g5","Be7xg5","f4xg5","Nh5-f6","Qd1xg4","Rh8-g8","g5xf6","g7xf6","Qg4-h5"] },
+  { fen: "rn1qk2r/ppp2ppp/5n2/2b1p3/2B1P1b1/2N2N2/PPPP2PP/R1BQK2R w KQkq - 0 7", solution: ["Bxf7+","Kxf7","Nxe5+","Ke8","Nxg4","Rf8","Nxf6+","Qxf6","Qh5+"] },
+  { fen: "rn1qkb1r/ppp3p1/3p1n1p/4p3/2B1P1b1/5N2/PPP2PPP/RNBQK2R w KQkq - 0 8", solution: ["Bf7+","Kxf7","Nxe5+","dxe5","Qxd8","Bb4+","c3","Rxd8","cxb4","Rd1#"] },
+  { fen: "rn1qkbnr/pp4pp/2pp4/4p3/2B1P1b1/4BN2/PPP2PPP/RN1QK2R w KQkq - 0 7", solution: ["Bf7+","Kd7","Nxe5+","Kc7","Nxg4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_CON_ATAQUE_EN_F2_F7 = [
+  { fen: "r2qkb1r/ppp1pppp/5n2/8/2B3b1/5N2/PPPP1PPP/R1BQK2R w KQkq - 0 7", solution: ["Bxf7+","Kxf7","Ne5+","Ke8","Nxg4"] },
+  { fen: "rnb2rk1/ppp1bppp/8/1N1q4/5B2/8/PPPQ1PPP/R3KB1R b - - 0 1", solution: ["Bc8-g4","Bf1-c4","Nb8-c6","h2-h3","Bg4-h5"] },
+  { fen: "rn1qkb1r/pp3ppp/5n2/2p1p3/2BpP1b1/5NN1/PPPP1PPP/R1BQK2R w KQkq - 0 7", solution: ["Nxe5","Bxd1","Bxf7+","Ke7","Nf5#"] },
+  { fen: "r2qk2r/ppp2ppp/8/2p1n2n/2B1P1b1/3PBN2/PPP3PP/R2QK2R w KQkq - 0 11", solution: ["Nxe5","Bxd1","Bxf7+","Ke7","Bxc5+","Kf6","O-O+","Kxe5","Rf5#"] },
+  { fen: "r1bqk2r/1pp2pp1/pbnp1n1p/3N4/P3P2B/1N6/1PP2PPP/R2QKB1R b KQkq - 0 10", solution: ["Nxe4","Bxd8","Bxf2+","Ke2","Bg4+","Kd3","Ne5+","Kxe4","f5+","Kf4","Ng6#"] },
+  { fen: "r2qkb1r/1p3ppp/2pp4/2n1N3/p3P1b1/P2P4/BPP2PPP/R1BQK2R b - - 0 1", solution: ["Qd8-a5","Bc1-d2","Bg4xd1","Ba2xf7","Ke8-e7","Bd2xa5","Ra8xa5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_PARA_EXPLOTAR_LA_DIAGONAL_A4_E8_E1_A5 = [
+  { fen: "r4rk1/pb2npp1/3pp2p/1q4BQ/1P1P4/4N1R1/P4PPP/4R1K1 w - - 0 25", solution: ["d5","exd5","Nxd5","Nxd5","Bd8"] },
+  { fen: "r2qkbnr/pp2pppp/8/2Ppn3/6b1/4BN2/PPP2PPP/RN1QKB1R w KQkq - 0 7", solution: ["Nxe5","Qa5+","Qd2"] },
+  { fen: "r2qkbnr/ppp1pppp/3p4/3Pn3/4P1b1/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 5", solution: ["Nxe5","Bxd1","Bb5+","c6","dxc6","Qa5+","Nc3","O-O-O","Nc4","Qb4","a3","Qc5","Be3","Qh5","Rxd1","bxc6","Bxc6","e6","Nb5","d5","Nxa7+","Kb8","Nb5","Qxd1+","Kxd1","dxc4+","Ke2","e5","Bb6"] },
+  { fen: "rn1qkb1r/pp2pp1p/6pn/3p4/5PbP/2N2N2/PPPP2P1/R1BQKB1R w KQkq - 0 7", solution: ["Ne5","Bxd1","Bb5+","Nc6","Nxc6","Qb6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_A_LA_FILA_ABIERTA_E = [
+  { fen: "r2qk2r/ppp2ppp/2n5/2bnp3/2B3b1/3P1N2/PPP2PPP/RNBQR1K1 w kq - 0 8", solution: ["h3","Bh5","Nxe5","Bxf2+","Kxf2","Qh4+","g3"] },
+  { fen: "r1bqr1k1/ppp2ppp/5n2/2b3B1/3nN3/3P1N2/PPP1BPPP/R2QK2R b KQ - 0 10", solution: ["Nxe4","Bxd8","Nxf3+","Bxf3","Nc3+","Kd2","Nxd1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_CON_ATAQUE = [
+  { fen: "r1bq1b1r/pp2k2p/4pp2/3p2BQ/3n4/3B4/PP3PPP/RN2K2R w KQ - 0 13", solution: ["Nc3","Nb3","axb3","h6","Bh4"] },
+  { fen: "r2q1rk1/1b3ppp/p2p1n2/1p2n1B1/2p1P3/2P1Q3/PPBN1PPP/R4RK1 b - - 0 14", solution: ["Nfg4","Bxd8","Nxe3","fxe3","Rfxd8"] },
+  { fen: "rnbq1rk1/ppp2pb1/3p1npp/4p3/3PPP1B/2N5/PPPQ2PP/2KR1BNR b - - 0 1", solution: ["Nf6xe4","Qd2-e1","g6-g5","Qe1xe4","g5xh4","d4xe5"] },
+  { fen: "r2q1k1r/pppnn1bp/3p4/6p1/2BPPpb1/2N2N2/PPP3PP/R1BQ1RK1 w - - 0 10", solution: ["Nxg5","Bxd1","Ne6+","Kf7","Nxd8+","Kg6","Bf7+","Kg5"] },
+  { fen: "r2qk1nr/ppp2ppp/8/2b1p3/2BnP1b1/2NP1N2/PPP3PP/R1BQK2R w - - 0 1", solution: ["Bc4xf7","Ke8-f8","Nf3xd4","Qd8-h4","g2-g3","Qh4-h3"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_LA_PROTECCI_N_DE_LA_DAMA_DEL_REY_CON_EL_ALFIL = [
+  { fen: "rnbqk2r/ppp2ppp/5n2/2b1p1B1/4P3/3P4/PPP1N1PP/RN1QKB1R b - - 0 1", solution: ["Nf6xe4","d3xe4","Bc5-f2"] },
+  { fen: "r1bqk2r/ppp2ppp/2p2n2/2b3B1/4P3/3P4/PPP2PPP/RN1QKB1R b KQkq - 0 6", solution: ["Nxe4","Bxd8","Bxf2+","Ke2","Bg4#"] },
+  { fen: "5r2/4q3/8/8/8/8/8/1NB5 b - - 0 1", solution: ["Qe7-d8"] },
+  { fen: "r1q2rk1/pb2ppbp/1n1p1np1/2pP4/4PP2/2NQBN2/PPB3PP/R4RK1 b - - 0 13", solution: ["c4"] },
+  { fen: "r1b2rk1/ppp2ppp/2nq1n2/1B1p4/1b6/4PN2/PBPP1PPP/RN1QK2R w KQ - 0 8", solution: ["e4","d4","c3","dxc3","Bc4","cxb2","Bd5","Qd8"] },
+  { fen: "rn1qkb1r/p3nppp/1pp5/3N4/2B5/5PP1/PP3P1P/R1BQK2R w KQkq - 0 10", solution: ["Nf6+","gxf6","Bxf7+","Kxf7","Qxd8","Nd5","O-O","Bg7","Qd6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_LA_PROTECCION_DE_LA_TORRE_DEL_REY_CON_EL_ALFIL = [
+  { fen: "5rk1/3q1pp1/7p/2Qp4/P1nP1N1P/4PbP1/2B2P1K/R7 w - - 0 1", solution: ["Bc2-h7","Kg8xh7","Qc5xf8"] },
+  { fen: "r5kr/p1R2pp1/q3p3/3b3p/B2b4/BP6/P1Q2PPP/5RK1 b - - 0 20", solution: ["Be5","Rd7","Bxh2+","Kxh2","Qxf1"] },
+  { fen: "r1b2rk1/pp3ppp/2p5/4p1q1/2P1B3/QR1P1P2/6PP/5R1K w - - 0 22", solution: ["Bxh7+","Kxh7","Qxf8","Bh3"] },
+  { fen: "r1b2rk1/pp3ppp/2p5/4p3/2P1B3/QR1P4/4qPPP/5RK1 w - - 0 20", solution: ["Bxh7+","Kxh7","Rb2","Qh5","Qxf8","Bh3","Qxa8","Qg4","f3"] },
+  { fen: "5rk1/3q1pp1/7p/2Qp4/P1nP1N1P/4PbP1/2B2P1K/R7 w - - 0 37", solution: ["Rb1","g5","Bh7+","Kg7","Nh3","Rc8"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_THE_HOOK_AND_LADDER_TRICK = [
+  { fen: "2rr2k1/5ppp/p2q4/1p1p4/3P4/Q1P4P/P4PP1/1R2R1K1 w - - 0 28", solution: ["Re8+"] },
+  { fen: "2r3k1/6pp/p3R3/2q5/2np1P2/1Q6/P5PP/2R4K w - - 0 1", solution: ["Rc1xc4","Qc5xc4","Re6-e8","Kg8-f7","Re8xc8"] },
+  { fen: "r3r1k1/pR3Npp/2p1q3/8/3P4/BQb1n3/P5PP/5RK1 w - - 0 19", solution: ["Nh6+","Kh8","Rf8+","Rxf8","Bxf8","Rxf8","Nf7+"] },
+  { fen: "r1r3k1/5ppp/4p3/ppqpP3/3RbP2/2P1Q3/PP2B1PP/3R2K1 w - - 0 21", solution: ["Rxe4","dxe4","Rd8+","Rxd8","Qxc5"] },
+  { fen: "2rr2k1/5pp1/p2q3p/1p1p4/3P4/Q1P4P/P4PP1/1R2R1K1 w - - 0 1", solution: ["Re8+","Kh7","Qxd6","Rxd6","Rxc8"] },
+  { fen: "2r3k1/6pp/p7/2q5/2np1P2/1Q6/P5PP/2R1R2K w - - 0 29", solution: ["Rxc4","Qxc4","Rc1"] },
+  { fen: "3r2k1/2r2pp1/p2q3p/1p1p4/3P4/Q1P4P/P4PP1/1R2R1K1 w - - 0 1", solution: ["Re8+","Kh7"] },
+  { fen: "2r3k1/5ppp/p3R3/2q5/2np1P2/1Q6/P5PP/2R4K w - - 0 1", solution: ["Rxc4","Qxc4","Qxc4","Rxc4","Re8#"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_THE_EXTENDED_HOOK_AND_LADDER_TRICK = [
+  { fen: "3r2k1/1p3pp1/2p3bp/p1Q1nN2/1q2P3/1B3P2/PP4PP/2R3K1 b - - 0 1", solution: ["Rd8-d1"] },
+  { fen: "k2r4/p3bpp1/4r3/N1Nb4/8/6P1/Pq1Q3P/2RR2K1 b - - 0 28", solution: ["Re1+"] },
+  { fen: "1r4k1/p3pp1p/3p2p1/q2P2PB/5P2/p7/P1PQ4/K2R3R b - - 0 24", solution: ["Rb1+"] },
+  { fen: "1r4k1/p3ppnp/3p2p1/q2P2PP/5P2/p7/P1PQB3/K2R3R b - - 0 23", solution: ["Rb1+","Rxb1","Qxd2","Rb8+","Ne8","Rxe8+","Kg7","h6#"] },
+  { fen: "1r4k1/p3ppnp/3p4/q2P2PB/5P2/p7/P1PQ4/K2R3R b - - 0 1", solution: ["Rb8-b1","Rd1xb1","Qa5xd2","Rb1-b8","Ng7-e8","Rb8xe8","Kg8-g7","Re8-b8","Qd2xc2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_DOBLE_SACRIFICIO_DE_TORRE_EN_LA_ULTIMA_FILA = [
+  { fen: "4r1k1/pp3pbp/q2p2p1/2pP4/5P2/2P2BP1/PP1n1B1P/R2Q2K1 b - - 0 1", solution: ["Re8-e1"] },
+  { fen: "r3r1k1/pb3pbp/1p4p1/8/3N4/BPN3Pq/P4Q1P/R2R2K1 b - - 0 23", solution: ["Re1+","Rxe1","Bxd4"] },
+  { fen: "r3r1k1/p1p3Pp/2p5/3p4/1P1P1Pq1/5RBb/P6P/RN1Q3K b - - 0 24", solution: ["Re1+","Qxe1","Qxf3+","Kg1","Qg2#"] },
+  { fen: "2rq1bk1/pp3p2/2n2n1Q/3p1N2/3p4/2P5/PPB2PPP/4R1K1 w - - 0 19", solution: ["Re8","Qxe8","Qg5+","Kh8","Qxf6+","Kg8","Qg5+","Kh8","Qh5+","Kg8","Ne7+","Bxe7","Qh7+","Kf8","Qh8#"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_LA_PROTECCION_DE_LA_DAMA_DEL_REY_CON_LA_TORRE = [
+  { fen: "R7/6k1/2n1pq1p/3p3P/2rP1QP1/5N2/5PK1/8 w - - 0 38", solution: ["Rg8+"] },
+  { fen: "3R4/6pk/2p3q1/2Pp4/4rP1p/4P3/2Q2P2/5K2 w - - 0 45", solution: ["f3","Rxe3","Rh8+","Kxh8","Qxg6"] },
+  { fen: "r1b3k1/1p3pp1/p3pPq1/6Q1/1n3PP1/KN6/P6P/3R4 w - - 0 1", solution: ["Rd1-d8","Kg8-h7","Qg5-h4","Qg6-h6","f6xg7","Kh7xg7","Rd8-g8","Kg7xg8","Qh4xh6"] },
+  { fen: "r3r1k1/1b3pb1/pp3qQ1/2p1p3/2B1P3/2P1B3/PP1N1PP1/2K4R w - - 0 20", solution: ["Bxf7+","Qxf7","Rh8+","Kxh8","Qxf7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_EL_ALFIL_DE_LA_DAMA = [
+  { fen: "2br1r1R/5kp1/3q4/pp1p1p1Q/8/8/PP3PPP/4R1K1 b - - 0 30", solution: ["Qg6"] },
+  { fen: "5r2/1p4Q1/3p4/2bP2q1/PPP3k1/1R6/5p2/7K w - - 0 39", solution: ["Rg3+","Kxg3","Qxg5+","Kf3","Qh5+","Ke3","Qh3+","Ke2","Qg4+","Kd2"] },
+  { fen: "4r1k1/pR3pp1/1n3P1p/q2p4/5N1P/P1rQpP2/8/2B2RK1 w - - 0 20", solution: ["Nxd5","g6"] },
+  { fen: "r2q1rk1/pb2bppp/Bpn1pn2/4N3/3P3Q/2N5/PP3PPP/R1B2RK1 b - - 0 1", solution: ["Nc6xe5","Ba6xb7","Ne5-g6","Qh4-g3","Ra8-b8","Bb7-a6","Qd8xd4"] },
+  { fen: "r3k2r/pppq1pbp/3pbnp1/3N4/2PpP3/3P2P1/PP3PBP/R1BQ1RK1 w kq - 0 11", solution: ["Bh6","O-O","Nxf6+","Bxf6","Bxf8","Rxf8"] },
+  { fen: "r3k2r/pppq1pbp/3pbnp1/3Np3/2PnP3/3P2P1/PP2NPBP/R1BQ1RK1 w kq - 0 10", solution: ["Bh6","Nxd5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_EL_ALFIL_DEL_REY = [
+  { fen: "1rbq1rk1/4ppbp/p1np1np1/2p5/2P1P3/2N1B1PP/PP1QNPB1/R4RK1 b - - 0 1", solution: ["Nc6-e5","b2-b3","Bc8xh3","f2-f4","Bh3xg2","f4xe5","Nf6xe4","Nc3xe4","Bg2xe4"] },
+  { fen: "1r1q1rk1/4ppbp/p2p2p1/2p1n3/2P1P3/1PN1B2b/P2QNPP1/R4RK1 w - - 0 14", solution: ["f4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EXPLOTANDO_LA_CASILLA_F3_F6 = [
+  { fen: "3r1rk1/p1pq2pp/1p3p2/3np3/1P1n4/P2P1NPb/3BPPBP/2RQ1RK1 w - - 0 18", solution: ["Bxh3","Nxf3+","Kg2","Nf4+","Bxf4"] },
+  { fen: "1nr3k1/r1p1q1p1/1p2p2p/3BpQ2/3P4/pPR1P3/P4PPP/2R3K1 b - - 0 1", solution: ["e5-e4"] },
+  { fen: "r1bqk1nr/pppp1pbp/2n3p1/3N2B1/2Pp4/5N2/PP2PPPP/R2QKB1R b KQkq - 0 6", solution: ["Nce7","Nxd4","c6","Nc3","h6","Bf4","d5"] },
+  { fen: "r1b2rk1/pp2ppbp/6p1/3Pn3/1BB1P3/q7/P3NPPP/1R1QK2R b K - 0 14", solution: ["Qf3","O-O","Qxe4"] },
+  { fen: "rn1r2k1/p5pp/3q4/2pp4/4p3/BQP3P1/P3PP1P/3R1RK1 w - - 0 1", solution: ["e1xg1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_TRUCO_DEL_GAMBITO_SMITH_MORRA = [
+  { fen: "2r2rk1/1p2qpp1/p1nbbn1p/3p2N1/1P6/P1N1P2P/1BQ1BPP1/3R1RK1 w - - 0 17", solution: ["Nxd5","Bxd5","Bxf6","Bh2+","Kh1","Be4","Qxe4","Qxe4","Nxe4"] },
+  { fen: "1q1r1rk1/pb2Bp1p/1pn1p1p1/8/3P2n1/P1N2N2/1P2QPPP/1B1R1RK1 b - - 0 17", solution: ["Nxd4","Rxd4","Bxf3","Rxg4","Bxe2","Nxe2"] },
+  { fen: "3rkb1r/1bq2ppp/p3B3/1p6/3n2n1/P1N2N2/1P1BQPPP/2R2RK1 w k - 0 15", solution: ["Bxf7+","Kd7","Qd3","Bc5","Nxb5","axb5","Rxc5","Qxc5","Nxd4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CAMBIANDO_DAMAS_POR_UNA_DOBLE_AMENAZA = [
+  { fen: "r3qrk1/p2nbppp/bp2pn2/4N3/5B2/2N4Q/PPB2PPP/R1R3K1 w - - 0 25", solution: ["Nd5","exd5","Nxd7","Qxd7","Bxh7+","Nxh7","Qxd7"] },
+  { fen: "r3k2r/4bpp1/p3p2p/n2bP3/Pp1q1B1P/3B4/1P3PP1/2RQR1K1 w kq - 0 20", solution: ["Be3","Bc5","Bc4","O-O","Qxd4"] },
+  { fen: "r1bq1bk1/pp3pp1/2p2n1p/2n1r3/3N3B/2NB3P/PPP3P1/R2Q1R1K w - - 0 1", solution: ["Nf3","Qb6"] },
+  { fen: "r1b1kb1r/pp2nppp/4p3/1Nqpn3/8/2P5/PP2BPPP/RNBQK2R w KQkq - 0 10", solution: ["Qd4","N7g6","Qxc5","Bxc5","Nc7+"] },
+  { fen: "r2qkb1r/pbp2ppp/1p2pn2/8/1nQ1P3/5NP1/PPPN1PBP/R1B1K2R b KQkq - 0 9", solution: ["Nxe4","Nxe4","Qd5","Qxd5","exd5","Nc3","Nxc2+","Kd1","Nxa1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_TRAMPA_AL_PASO = [
+  { fen: "3r1rk1/pbp1p2p/1p1p1n1b/3P1p1q/2PQ2p1/2NNPPP1/PP2B1P1/2RR2K1 b - - 0 1", solution: ["c7-c5","d5-c6","e7-e5","Nd3xe5","d6xe5","Qd4xe5","Rd8-e8"] },
+  { fen: "rnb2rk1/p1p2pn1/4p2p/1p1qP1p1/1bpP2Q1/2N2NB1/PP2BPPP/R3K2R b KQ - 0 13", solution: ["f5","Qh3","g4","Qxh6","gxf3","Bxf3","Qxd4","O-O","c6","Rad1","Qb6","Ne4","fxe4","Bxe4","Rf5","Bxf5","exf5","e6","Bf8","Be5","c5","Bxg7","Bxg7","e7","Bd7","Qh5","Qc6","Rfe1","Be8","Rd8","Na6","Re6","Qd7","Rxa8","Nc7","Rd8","Nxe6","Rxe8+","Nf8","Rxf8+"] },
+  { fen: "rnb2rk1/p1p2pn1/4p2p/1p1qP1p1/1bpP2QP/2N2NB1/PP3PP1/R3KB1R b - - 0 1", solution: ["f7-f5","e5-f6","e6-e5"] },
+  { fen: "1r4k1/1pbnqpp1/2p1b2p/2P1p3/NR2P3/4B2P/PQ3PP1/5BK1 b - - 0 29", solution: ["b5","cxb6","Bd6"] },
+  { fen: "3r1rk1/pbp1p2p/1p1p1n1b/3P1p1q/2PQ2p1/2NNPPP1/PP2B1P1/2RR2K1 b - - 0 20", solution: ["e5","dxe6","c5"] },
+  { fen: "rnb2r2/p1p2pnk/4p2p/1p1qP1p1/1bpP2QP/2N2NB1/PP3PP1/R3KB1R b KQ - 0 13", solution: ["f5","exf6","e5","fxg7","Bxg4","gxf8=Q","Bxf8","Nxd5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_INGENIOSO_AVANCE_DE_PE_N = [
+  { fen: "2b1rrk1/2q3b1/2p2n1p/1pPp1pp1/p2Pp3/P1P1P1PN/R2QNPBP/5RK1 b - - 0 1", solution: ["f5-f4","f2-f3","e4xf3","Rf1xf3","g5-g4"] },
+  { fen: "r1b1n1k1/ppq1r1b1/2p2n1p/6p1/NPP1pp2/P3P1PN/1BQ2PBP/R2R2K1 w - - 0 22", solution: ["exf4","g4","Be5"] },
+  { fen: "r7/1p4p1/2p1bk2/p3r3/PP1RP1p1/4K1P1/1R3PB1/8 b - - 0 1", solution: ["a5xb4","Rd4xb4","b7-b5","a4xb5","Ra8-a3","Ke3-d2","c6-c5"] },
+  { fen: "r4r2/1p1nppkp/1qbp2p1/p7/1PP1P3/P1NQ4/4BPPP/R4RK1 w - - 0 16", solution: ["c5","Qc7","cxd6","exd6","Qd4+","Nf6","b5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_TRAMPA_DEL_ARCA_DE_NOE = [
+  { fen: "r1b1qrk1/1pp2pbn/n2p2pp/p2Pp3/2P1P1BB/2N5/PP1N1PPP/R2Q1RK1 b - - 0 12", solution: ["Bxg4","Qxg4","f5","exf5","g5","Bg3","h5","Qd1","h4"] },
+  { fen: "r2qkb1r/1p3ppp/2pp4/2n1N3/p3P1b1/P2P4/BPP2PPP/R1BQK2R b - - 0 1", solution: ["d6xe5","d3-d4","b7-b5","Ba2-b3","e5xd4","Qd1xd4","Qd8-d5","Qd4xd5"] },
+  { fen: "3qkb2/4pp2/3p4/4n3/6b1/5N2/8/3Q1B2 w - - 0 1", solution: ["Bf1-b5","Ke8-g8","Qd1-d4","Bg4-e6","Nf3-g5"] },
+  { fen: "r1bq1rk1/ppp1bppp/2np1n2/8/2BNP3/2N2P2/PPP3PP/R1BQ1RK1 b - - 0 8", solution: ["Ne5","Bb3","c5","Nde2","c4","Ba4","a6"] },
+  { fen: "r2qkbnr/pp2pppp/8/2Ppn3/6b1/4BN2/PPP2PPP/RN1QKB1R w KQkq - 0 7", solution: ["Bg5","h6","Bh4","g5","Bg3"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CIERRE_DE_LA_DIAGONAL_DEL_ALFIL = [
+  { fen: "rnbqk2r/pppp1ppp/4p3/3nP3/1bPP4/8/PP3PPP/RNBQKBNR w KQkq - 0 5", solution: ["Ke2","Nb6","c5","Nd5","a3","Ba5","b4"] },
+  { fen: "r3qrk1/pppn2bp/3p2p1/3PppB1/1PP1b3/5NP1/P2QPPBP/2RR2K1 b - - 0 1", solution: ["f5-f4","g3xf4","h7-h6","f4xe5","Be4xf3","e2xf3","h6xg5","e5-e6","Nd7-e5"] },
+  { fen: "rn1q1rk1/p1pp1ppp/1p2p3/8/1bPPb3/5NP1/PP2PPBP/R1BQ1RK1 w - - 0 9", solution: ["c5","bxc5","a3","Ba5","dxc5","c6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CIERRE_DE_LA_DIAGONAL_DEL_ALFIL_DE_BOBBY_FISCHER = [
+  { fen: "5k2/pp4pp/4pp2/1P6/8/P2KP3/5PPb/2B5 w - - 0 30", solution: ["g3","h5","Ke2","h4","Kf3","Ke7","Kg2","hxg3","fxg3","Bxg3","Kxg3"] },
+  { fen: "r2q1rk1/pp2bppp/3p1n2/2p3N1/8/1PPBB3/b1PQ1PPP/2KRR3 b - - 0 1", solution: ["a7-a5","Kc1-b2","a5-a4","b3-b4","Ba2-e6"] },
+  { fen: "8/1p1k1ppp/4p3/1P1p4/1B1P4/1pP1P1P1/r4P1b/1R3K2 b - - 0 24", solution: ["b2","Kg2","Bg1","Bf8","g5","Bg7","Ke7","Be5","f6","Bc7","h5","Bb6","h4","gxh4","gxh4","e4","h3+","Kxh3","Bxf2","exd5","exd5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_EL_CABALLO_EN_EL_BORDE = [
+  { fen: "r1bq1rk1/ppp2ppp/2np1n2/3N4/1bP1p2N/6P1/PP1PPPBP/R1BQ1RK1 b - - 0 1", solution: ["g7-g5","a2-a3","Bb4-a5","d2-d3","Nf6xd5","c4xd5","Nc6-b8"] },
+  { fen: "r2q1k1r/pppnn1bp/3p4/6p1/2BPPpb1/2N2N2/PPP3PP/R1BQ1RK1 w - - 0 10", solution: ["e5","Nf6","g3"] },
+  { fen: "rn3rk1/pp2p1bp/2p2pp1/q2pBb1n/2PP4/P1N1PN2/1P1Q1PPP/R3KB1R w - - 0 1", solution: ["Be5xb8","Ra8xb8","h2-h3","g6-g5","g2-g4"] },
+  { fen: "rn2kbnr/p1qb1ppp/1pp1p3/3pP3/N2P1PP1/2P1B3/PP5P/R2QKBNR b KQkq - 0 9", solution: ["c5","dxc5","b5"] },
+  { fen: "rnbqk2r/pp2bppp/4pn2/2p3B1/N2pP3/3P2P1/PPP2PBP/R2QK1NR b - - 0 1", solution: ["b7-b5","e4-e5","Nf6-d5","Bg5xe7","Qd8xe7","c2-c4","d4-c3","Na4xc3","Nd5xc3","b2xc3","Bc8-b7"] },
+  { fen: "r2q1rk1/pp1nppbp/3p2p1/2p1P2n/3P1PP1/2N1BN2/PPP4P/R2QK2R b - - 0 1", solution: ["Nh5xf4","Be3xf4","c5xd4","Nc3-e4","d6xe5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_RETIRO_DEL_CABALLO = [
+  { fen: "rnb1kb1r/pp3ppp/1qp1p3/3pP3/3Pn3/5N2/PPP1NPPP/R1BQKB1R w KQkq - 0 7", solution: ["Nfg1","h6","h4","Nd7","c3","Nxe5","f3"] },
+  { fen: "3rr3/1ppbqpbk/p2p2pp/3Pp3/2Pn2PP/4NP2/PP1QPBB1/2RR2K1 w - - 0 1", solution: ["Ne3-f1"] },
+  { fen: "3rr3/1ppbqpbk/p2p2pp/3Pp3/2Pn2PP/5P2/PP1QPBBN/2RR2K1 b - - 0 21", solution: ["f5","e3","e4"] },
+  { fen: "r2q1rk1/ppp2ppp/2n5/2Pp4/1b1Pn1b1/2N2N2/PP2BPPP/R1BQ1RK1 w - - 0 10", solution: ["Nb1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_LA_TORRE_EN_LA_ESQUINA = [
+  { fen: "rnbqkbnr/p4ppp/2p5/1p6/2BpP3/2N2N2/PP3PPP/R1BQK2R w - - 0 1", solution: ["Nc3xb5","Bc8-a6","Qd1-b3","Qd8-e7","O-O","Ba6xb5","Bc4xb5","Ng8-f6","Bb5-c4"] },
+  { fen: "rnbqk1nr/p3ppbp/2pp2p1/1p6/2BPPP2/2N5/PPP3PP/R1BQK1NR w - - 0 1", solution: ["Nc3xb5","d6-d5","Bc4-b3","d5xe4","Qd1-e2","c6xb5","Qe2xe4","Bc8-d7","Qe4xa8","Bd7-c6","Qa8xa7","Bc6xg2"] },
+  { fen: "r3k1nr/pp1b1ppp/1qn1p3/3pP3/1P6/2PB1N2/P3KbPP/RNBQ3R b kq - 0 9", solution: ["Nxb4","cxb4","Bd4","Nxd4","Qxd4","Qb3","Qxe5+","Kd1","Rc8","Bb2","Qg5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_LA_DAMA_EN_LA_ESQUINA = [
+  { fen: "r1b2rk1/pp3ppp/2p5/4p1q1/2P1B3/QR1P1P2/6PP/5R1K w - - 0 22", solution: ["d4","b5","cxb5","Bb7","Qxa7"] },
+  { fen: "r3kbnr/ppp1pppp/2n5/7q/3P2b1/2N2N1P/PPP2PP1/R1BQKB1R w KQkq - 0 7", solution: ["hxg4","Qxh1","Ne4","h5","Ng3","hxg4","Nxh1"] },
+  { fen: "rnb1nrk1/pp2qpp1/2p4p/3p4/3P4/2NBP3/PPQ2PPP/R3K1NR w - - 0 1", solution: ["Nc3xd5","c6xd5","Qc2xc8","Nb8-c6","Qc8xa8","Qe7-b4","Ke1-f1","Ne8-f6","Qa8xf8","Kg8xf8","Ra1-b1","Qb4-d2"] },
+  { fen: "Qn3rk1/p2q1ppp/3pb3/2p5/4P3/P1N2P2/1P4PP/R1B1K2R w KQ - 0 15", solution: ["Nd5","Re8","O-O","Nc6","Nb6","axb6","Qa4"] },
+  { fen: "rn2r1k1/pp3p1p/3p1qp1/2pP3n/2P3P1/2N2P2/PP1Q3P/1R1K1B1R w - - 0 15", solution: ["gxh5","Qxf3+","Kc2","Qxh1","Qf2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_LA_DAMA_EN_B2_B7 = [
+  { fen: "2r3k1/6pp/p3R3/2q5/2np1P2/1Q6/P5PP/2R4K w - - 0 1", solution: ["Qb3-b6"] },
+  { fen: "2r3k1/6pp/p7/2q5/2np1P2/1Q6/P5PP/2R1R2K w - - 0 29", solution: ["Qb6"] },
+  { fen: "2kr1b1r/ppp2ppp/2p3b1/4P3/1q1B4/2N2P2/PPP1Q1PP/R2R2K1 w - - 0 16", solution: ["a3","Qxb2","Ra2","Bxa3","Rxb2","Bxb2","Nb5","cxb5","Bxb2"] },
+  { fen: "rnb1kbnr/pppp1ppp/8/8/1q1PPB2/2N3p1/PPP4P/R2QKBNR w KQkq - 0 7", solution: ["a3","Qxb2","Na4","g2","Nxb2","gxh1=Q","Nf3","d6","Kf2","Nc6","d5","Bg4","dxc6","Qxf3+","Qxf3","Bxf3","cxb7","Rb8","Kxf3","Rxb7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_OBSTRUYENDO_LA_DAMA = [
+  { fen: "r1b1r1k1/bpp2p2/p1np1qpp/4p3/3PPn2/1BP1BNNP/PP3PP1/R2QR1K1 w - - 0 1", solution: ["Be3xf4","Qf6xf4","Ng3-f5","Bc8xf5","g2-g3","Qf4xe4","Re1xe4","Bf5xe4","Nf3-d2","d6-d5","Nd2xe4","d5xe4","Qd1-g4","Kg8-g7","d4-d5","f7-f5","Qg4-e2"] },
+  { fen: "r1b1r1k1/bpp2p2/p1np2pp/4p3/3PPq2/2P2NNP/PPB2PP1/R2QR1K1 w - - 0 1", solution: ["Ng3-f5","Bc8xf5","g2-g3"] },
+  { fen: "r1b1r1k1/bpp2p1n/p2p2pp/4pN2/3PPq2/2P2N1P/PPB2PP1/R2QR1K1 b - - 0 16", solution: ["Ng5"] },
+  { fen: "r4rk1/2p2p2/1bppbqpp/p3p3/P2PPn2/2P1BNNP/1P3PP1/R2QR1K1 w - - 0 17", solution: ["Bxf4","Qxf4","Nf5","gxf5","g3","Bb3","gxf4","Bxd1","Raxd1","fxe4","Rxe4","exd4"] },
+  { fen: "r1b2rk1/1pq1bppp/p2ppn2/P7/2n1PP2/1NN1B3/1PP1B1PP/R3QRK1 w - - 0 14", solution: ["Bxc4","Qxc4","Nc5","dxc5","Ra4","Qxf1+","Kxf1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_ATRAPAR_A_LA_DAMA_CON_UN_GIRO_INESPERADO = [
+  { fen: "rn3rk1/pbp2ppp/1p1bpq2/8/2PP4/P2B1N2/1P3PPP/R1BQK2R w - - 0 1", solution: ["Bc1-g5","Bb7xf3","Qd1-d2","Bd6-f4","Bg5xf4","Bf3xg2","Rh1-g1","Nb8-c6","Rg1xg2"] },
+  { fen: "rn2k2r/pbp2ppp/1p1bpq2/8/2PP4/2PB1N2/P4PPP/R1BQK2R w - - 0 1", solution: ["Bc1-g5","Bb7xf3","Qd1-d2","Bd6-f4","Bg5xf4","Bf3xg2","Rh1-g1","Bg2-b7","Bf4-e5","Qf6-f3","Be5xg7","Rh8-g8","Bd3xh7","Rg8xg7","Rg1xg7","Qf3-h1","Ke1-e2","Qh1-f3","Ke2-f1"] },
+  { fen: "r4rk1/pppn1ppp/3b1q2/3p4/3P2b1/2PB1N2/P1P2PPP/1RBQR1K1 w - - 0 12", solution: ["Bg5","Bxf3","Qd2","Bf4","Bxf4","Be4","Bxe4","dxe4","Rxe4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_LA_DAMA_EN_EL_BORDE = [
+  { fen: "r2qr1k1/ppp2ppp/1n1b1n2/4p2b/4P2N/1B2B2P/PPPN1PP1/R3QRK1 b - - 0 14", solution: ["Nxe4","Nxe4","Qxh4","Bg5"] },
+  { fen: "r1b1r1k1/ppq1bppp/2pp2n1/4p2n/P2PP3/1BN2NB1/1PP2PPP/R2QR1K1 w - - 0 1", solution: ["Nf3xe5","Ng6xe5","Qd1xh5","Bc8-g4","Bb3xf7","Kg8-h8","Bf7xe8","Bg4xh5","Be8xh5"] },
+  { fen: "r4rk1/1pp3bp/n2p4/p1nPpbB1/2P1N2q/2N4P/PP3PB1/R2QK2R b KQ - 0 15", solution: ["Nd3+","Ke2","Qh5+","Bf3","Qxf3+","Kxf3","Bxe4+","Ke3","Nxf2","Qg1","Bxh1","Bh6","Rf3+","Kd2","Rf7","Bxg7","Rxg7"] },
+  { fen: "4r3/pp1b2bk/n5pp/2pP4/4N1Pq/4Br1P/PP1Q1P2/1B1R2KR w - - 0 24", solution: ["Ng5+","hxg5","Bxg5","Rg3+","Kf1","Bb5+","Bd3","Bxd3+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_TRAMPA_DE_RUBINSTEIN = [
+  { fen: "r1bqr1k1/1p1nb1pp/p1p5/3p1p2/3PnB2/2NBPN2/PPQ2PPP/2R2RK1 w - - 0 13", solution: ["Nxd5"] },
+  { fen: "r1bqk2r/pp1nb1pp/2p5/3p1p2/3PnB2/2NBPN2/PPQ2PPP/R3K2R w KQkq - 0 10", solution: ["Nxd5","cxd5","Bc7","Bb4+","Ke2","Qe7"] },
+  { fen: "r1bqr1k1/pp1nbpp1/2p2n1p/3p4/3P4/2NBPNB1/PPQ2PPP/R4RK1 w - - 0 13", solution: ["Nb5","Rf8","Bc7","Qe8","Nd6","Bxd6","Bxd6"] },
+  { fen: "r4rk1/ppq1ppbp/2n2np1/3p1b2/3P4/2P2N1P/PP1NBPP1/R1BQR1K1 b - - 0 1", solution: ["Nc6-b4","Re1-f1","Bf5-c2","Qd1-e1","Nb4-d3","Be2xd3","Bc2xd3","Qe1-e5","Qc7xe5","d4xe5","Nf6-d7","Rf1-e1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_SACRIFICANDO_LA_DAMA_PARA_UNA_AMENAZA_DE_DOBLE_PROMOCION = [
+  { fen: "rnb2rk1/1p3ppp/4pn2/q1P5/1pPp4/3N2P1/PPQ1PPBP/RN2K2R b - - 0 1", solution: ["b4-b3","Qc2-d2","Qa5xa2","Ra1xa2","b3xa2","Nb1-a3","a2-a1Q","Nd3-c1","Ra8xa3","b2xa3","Qa1xa3","O-O","Qa3xc5"] },
+  { fen: "rn2k2r/Qp2qppp/1Ppbpn2/3pNb2/3P1B2/N1P3P1/P3PPBP/R3K2R b - - 0 1", solution: ["Ra8xa7","b6xa7","O-O","a7-a8Q","Bd6xa3","O-O"] },
+  { fen: "rnb2rk1/4bp1p/p2p1np1/2pP4/4PB2/1p3N1P/qP1QBPP1/RN2K2R w KQ - 0 15", solution: ["O-O","Qxa1","Na3","Nxe4","Qe3","Qxb2"] },
+  { fen: "r3k1r1/p1q1np1Q/bpn1p2P/4P3/3p1P2/P1p5/2P1N1P1/R1B1KB1R w KQq - 0 15", solution: ["Qxg8+","Nxg8","h7","O-O-O","h8=Q"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_TACTICA_LASKER_LOMAN = [
+  { fen: "6k1/5pp1/2pp2P1/1b2p3/1P2rPB1/6PR/2PK4/8 w - - 0 37", solution: ["Rh8+","Kxh8","gxf7"] },
+  { fen: "2r3k1/5pp1/4p1P1/p2n4/q2P4/Pp1B1P2/1PrQ2P1/1K1R3R w - - 0 29", solution: ["Rh8+","Kxh8","gxf7"] },
+  { fen: "7r/pp6/3R2p1/1P1P2k1/6r1/1P1R2p1/5PP1/6K1 b - - 0 1", solution: ["Rh8-h1","Kg1xh1","g3xf2","Rd6-f6","Rg4-h4","Rd3-h3","Kg5xf6"] },
+  { fen: "6k1/1p4pp/p5P1/1p1p4/5R2/8/2r3PP/6K1 w - - 0 1", solution: ["Rf4-f8","Kg8xf8","g6xh7","Rc2-c1","Kg1-f2","Rc1-c2","Kf2-g3","Rc2-c3","Kg3-g4","Rc3-c4","Kg4-g5","Rc4-h4","Kg5xh4","g7-g5","Kh4xg5","Kf8-g7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_ATRAYENDO_A_LA_TORRE_DE_LA_LTIMA_FILA_PARA_UN_ATAQUE_DE_PEONES = [
+  { fen: "2r5/7k/P4R2/5P1p/4P2p/2p2P2/1p1p4/6RK b - - 0 59", solution: ["Rc7","Rfg6","d1=Q"] },
+  { fen: "1r4k1/1p4bp/pNqP4/P1B2Q2/4R1p1/5n2/1P5P/7K w - - 0 32", solution: ["Nc8","Rxc8","d7","Rf8","Qxf8+","Bxf8","d8=Q","Qxc5","Rxg4+","Kf7","Rf4+","Kg8","Rxf3"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_PROMOCION_DE_IGNORAR_LA_CAPTURA = [
+  { fen: "1n2r1k1/4Ppbp/2pR2p1/q7/5P2/6P1/1P2Q1BK/8 w - - 0 1", solution: ["Rd6-d8","Re8xd8","e7-e8Q","Rd8xe8","Qe2xe8","Bg7-f8","Qe8xb8"] },
+  { fen: "4r3/R3P1kp/1p4p1/4q3/4p3/P6P/6P1/5Q1K w - - 0 1", solution: ["Qf1-f8","Re8xf8","e7-e8Q"] },
+  { fen: "4r3/R3P1kp/1p4p1/4q3/4p3/P7/6PP/5Q1K w - - 0 47", solution: ["Qf8+","Rxf8","e8=Q+","Kg8"] },
+  { fen: "4B1k1/p5p1/1b3p1p/8/2R2P2/4p1P1/P2r3P/5RK1 b - - 0 36", solution: ["e2+","Kg2","e1=Q+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_UN_JAQUE_INTERMEDIO_EN_LA_ULTIMA_FILA = [
+  { fen: "8/7p/3k4/4pp2/P1R5/P2p1PP1/1r5P/5K2 b - - 0 46", solution: ["Rb1+"] },
+  { fen: "4k3/R7/5pP1/5P2/5K2/p7/8/r7 w - - 0 1", solution: ["Ra7-a8","Ke8-e7","g6-g7","Ra1-f1","Kf4-e3","Rf1-g1","g7-g8Q"] },
+  { fen: "4k3/R7/5pP1/5P2/4K3/8/p7/r7 w - - 0 71", solution: ["Ra8+","Ke7","g7","Rg1","Rxa2","Kf7"] },
+  { fen: "3B2k1/3R2p1/p1r1P3/1p6/1P1p4/3P4/PKP1n3/8 w - - 0 41", solution: ["Bf6","gxf6","Rd8+","Kg7","e7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_ESTABLECER_UN_PUENTE_MEDIANTE_DIRECCIONAMIENTO = [
+  { fen: "6k1/p3B3/4R3/2P5/P2p2PP/7K/4p3/5r2 b - - 0 64", solution: ["Rf3+","Kg2","Re3"] },
+  { fen: "8/RP5p/6k1/P5p1/8/3K1p1P/1r6/8 w - - 0 1", solution: ["Kc3","Rb1","Ra6+","Kf7","Rb6","Rxb6","axb6","f2","b8=Q","f1=Q","Qc7+"] },
+  { fen: "8/4kp2/P3p1p1/2p5/1pP3r1/3R4/1P1K1P2/8 b - - 0 1", solution: ["Rg4-g1","a6-a7","Rg1-a1","Rd3-a3"] },
+  { fen: "8/RP5p/6k1/P5p1/8/3K1p1P/1r6/8 w - - 0 1", solution: ["Ra7-a6","Kg6-h5","Ra6-f6","Rb2xb7","Rf6xf3"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_OBSTRUYENDO_LA_PROMOCION = [
+  { fen: "8/4kp2/P3p1p1/2p5/1pP4r/3R4/1P1K1P2/8 w - - 0 2", solution: ["Rd8","Kxd8","a7"] },
+  { fen: "5R2/1p1k1p2/2p2Pp1/2P3P1/r5P1/P3pK2/8/8 b - - 0 1", solution: ["Ra4-e4","Rf8xf7","Kd7-e8","Kf3xe4"] },
+  { fen: "3k4/6R1/7p/rPPpp2P/1K4P1/p3P3/8/8 w - - 0 45", solution: ["Kxa5","a2","Kb6","a1=Q","c6","Ke8","c7","Kf8","Rh7","Kg8","Rd7","Qc3","Kb7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_T_CTICA_DE_PROMOCI_N_MEDIANTE_UNA_ENFILADA = [
+  { fen: "R7/P4k2/8/8/5K2/8/8/r7 w - - 0 1", solution: ["Ra8-h8","Ra1xa7","Rh8-h7","Kf7-g6","Rh7xa7"] },
+  { fen: "R7/P4k2/8/5P2/5K2/8/8/r7 w - - 0 1", solution: ["Ra8-h8","Ra1xa7","Rh8-h7","Kf7-f6"] },
+  { fen: "R7/P2k4/8/8/7K/8/8/r7 w - - 0 1", solution: ["Rf8","Rh1+","Kg3","Rg1+","Kf2"] },
+  { fen: "8/R1p3p1/8/1pP3k1/1P2p3/6P1/p3KP2/r7 b - - 0 1", solution: ["e4-e3","f2xe3","Ra1-h1","Ra7xa2","Rh1-h2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_2_PEONES_EN_LA_6TA_3ERA_FILA_SON_MAS_FUERTE_QUE_LA_TORRE = [
+  { fen: "1r3k2/1p4pp/1Pp2p2/P2p4/3Pb1P1/7P/5P2/2R2BK1 w - - 0 32", solution: ["Rxc6","bxc6","a6","Rxb6","a7"] },
+  { fen: "4r3/2R1n3/p1Pp2k1/4P3/8/7P/P7/6K1 w - - 0 1", solution: ["Rc7xe7","Re8xe7","e5xd6","Re7-e8"] },
+  { fen: "3r1k2/6p1/2P1p3/1P5p/7P/6P1/6P1/6K1 w - - 0 37", solution: ["c7","Ke7","cxd8=Q+","Kxd8","Kf2","Kc7","Ke3","Kb6","Kd4","Kxb5","Ke5"] },
+  { fen: "5bk1/p6p/6p1/1P1pP2P/2p2P2/3p2P1/1P5K/5R2 b - - 0 34", solution: ["Ba3","Kg2","Bxb2","hxg6","hxg6","Kf3","Bd4","Rd1","c3","Rxd3","c2"] },
+  { fen: "6k1/p1r2p2/P1P3pp/2P2R2/1p4P1/2P4P/8/6K1 w - - 0 1", solution: ["c3xb4","g6xf5","b4-b5","Kg8-f8","b5-b6","a7xb6","c5xb6","Rc7xc6","b6-b7"] },
+  { fen: "8/kp6/4R3/1P2K3/8/3pp3/8/8 w - - 0 1", solution: ["Kd6","d2","Kc7","d1=Q","Ra6+","bxa6","b6+","Ka8","b7+","Ka7","b8=Q#"] },
+  { fen: "4r3/8/2PP2k1/8/8/7P/P7/6K1 b - - 0 1", solution: ["Kg6-f6","d6-d7","Re8-g8","Kg1-f2","Kf6-e7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_FUERZA_DEL_PE_N_DE_TORRE_CONTRA_EL_CABALLO = [
+  { fen: "8/1p3pk1/6p1/p7/6P1/2P1bN1P/1P4K1/8 b - - 0 40", solution: ["a4","Ne1","Bc1","Nd3","Bxb2"] },
+  { fen: "8/1p6/p7/3k2p1/1P2p2p/PK2P2P/6P1/4Nb2 b - - 0 1", solution: ["Kd5-e5","Kb3-c3","g5-g4","Kc3-d2","Bf1xg2","Ne1xg2","g4xh3"] },
+  { fen: "8/1n6/P7/8/8/6k1/1K6/8 b - - 0 1", solution: ["Nd6","a7","Nc4+","Kc3","Nb6","Kd4","Kf4","Kc5","Na8","Kc6","Ke5","Kb7","Kd6","Kxa8","Kc7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_PROMOCI_N_MENOR_CON_TENEDOR_DE_CABALLO = [
+  { fen: "6K1/3q1P2/6k1/8/8/8/7P/8 w - - 0 1", solution: ["f8=N+","Kg5","Nxd7","Kg4","Ne5+","Kh3","Nf3","Kg4","h4"] },
+  { fen: "3n2k1/1p2q2p/pr2P1p1/3BQp2/1P6/P6P/6P1/4R2K w - - 0 1", solution: ["Qe5-c7","Qe7xc7","e6-e7","Kg8-g7","e7-e8N","Kg7-h6","Ne8xc7"] },
+  { fen: "5r2/2q1Prkp/6p1/p5Q1/1pBb4/1P6/P5PP/5R1K w - - 0 1", solution: ["Rf1xf7","Rf8xf7","e7-e8N","Kg7-f8","Ne8xc7"] },
+  { fen: "5r2/2q1Prkp/6p1/p5Q1/1pBb4/1P6/P5PP/5R1K w - - 0 31", solution: ["Bxf7","Rxf7","e8=N+","Kf8"] },
+  { fen: "r7/ppq2Pk1/5nrp/2n2Qp1/P7/1B5P/1PP3P1/3RR1K1 w - - 0 1", solution: ["Re1-e8","Ra8xe8","Qf5xf6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_UN_PERPETUO_DE_CABALLO = [
+  { fen: "5Q2/1p1r1Ppk/1pp2n1p/4q3/1P3p2/P7/2P3PP/6RK w - - 0 1", solution: ["Qf8-g8","Nf6xg8","f7-f8N","Kh7-h8","Nf8-g6"] },
+  { fen: "5Nnq/kp4p1/1pp4p/5P2/1P3pP1/P7/2P4P/6RK w - - 0 1", solution: ["Nf8-g6","Qh8-h7","Ng6-f8"] },
+  { fen: "3Q4/pp3kpp/5N2/2b5/P3n3/1P5P/1BP2qP1/3R3K b - - 0 29", solution: ["Qf1+","Rxf1","Ng3+","Kh2","Nxf1+","Kh1","Ng3+"] },
+  { fen: "5N1k/p5p1/1p3n1p/2p5/q1Br4/8/3B1PPP/1Q4K1 w - - 0 1", solution: ["Qb1-h7","Nf6xh7","Nf8-g6"] },
+  { fen: "2k5/ppp5/4ppb1/n6p/3r1prP/P4B2/1P3PP1/K2RN2R w - - 0 24", solution: ["b4","Nb3+","Kb2","Rxd1","Bxd1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_MOVIMIENTO_PERPETUO_DE_NIMZOWITSCH = [
+  { fen: "6k1/3R2p1/p3p3/7p/P2p1Pn1/3P2PP/1r6/2R3K1 b - - 0 1", solution: ["Ng4-h2","Rc1-c8","Kg8-h7","Rc8-c7","Nh2-f3","Kg1-f1","Rb2-d2","Rd7xg7","Kh7-h8","Rg7-d7","Nf3-h2","Kf1-e1","Nh2-f3","Ke1-f1","Nf3-h2","Kf1-g1","Nh2-f3"] },
+  { fen: "8/8/1Q3Npk/4pp1p/2P3nP/5K2/3r2P1/8 b - - 0 1", solution: ["Ng4-h2","Kf3-g3","Nh2-f1","Kg3-f3","Nf1-h2","Kf3-g3","Nh2-f1","Kg3-f3","Nf1-h2"] },
+  { fen: "8/6P1/4p2k/p2p3N/3P4/8/1rr4P/6RK w - - 0 1", solution: ["g7-g8N","Kh6xh5","Ng8-f6","Kh5-h4","Rg1-g4","Kh4-h3","Rg4-g3"] },
+  { fen: "5k2/3R4/5Np1/8/2Pp4/3n4/pp3PK1/8 b - - 0 55", solution: ["Nf4+","Kf3","Nh5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_UN_PERPETUO_DE_TORRE = [
+  { fen: "1r3rk1/1q3pp1/8/4p3/p2bP1Q1/1N1R4/1PP3PP/1K3R2 w - - 0 32", solution: ["Qxg7+","Kxg7","Rg3+"] },
+  { fen: "5rk1/Q4ppp/8/8/nP2P3/P2R1P2/q6r/3R1BK1 b - - 0 39", solution: ["Nb6","Qxb6","Rh6","Qc7","Rg6+","Kh1","Rh6+","Bh3","Rxh3+","Kg1","Qe2","Qf4","Rh6","R3d2","Rg6+","Kh1","Rh6+","Kg1","Rg6+"] },
+  { fen: "r4rk1/5ppp/b2pp3/q3P3/1p2NP2/1R2Q3/P5PP/5R1K w - - 0 1", solution: ["Ne4-f6","Kg8-h8","Qe3-e4","g7xf6","Qe4xh7","Kh8xh7","Rb3-h3","Kh7-g6","f4-f5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_BLOQUEO_PERPETUO = [
+  { fen: "3Q2bk/5q1p/p2p4/1p4B1/3b4/PP3r2/6RP/3R3K w - - 0 41", solution: ["Rdg1","Bxg1","Bf6+","Rxf6","Rxg8+","Qxg8","Qxf6+","Qg7"] },
+  { fen: "6qk/7q/p2p1Q2/1p6/8/PP6/7P/6bK b - - 0 1", solution: ["Qg8-g7","Qf6-d8","Qh7-g8","Qd8-h4","Qg7-h7","Qh4-f6","Qh7-g7","Qf6-h4"] },
+  { fen: "8/8/8/7p/7P/6P1/4pq2/1Q3k1K b - - 0 1", solution: ["e2-e1N","Qb1-b5","Qf2-e2","Qb5-f5","Qe2-f3","Qf5xf3","Ne1xf3","g3-g4","h5xg4","h4-h5","g4-g3","h5-h6","g3-g2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_TORRE_DESENFRENADA = [
+  { fen: "6k1/6R1/7p/7P/8/8/2q5/K7 b - - 0 1", solution: ["Kf8","Rf7+","Ke8","Re7+","Kd8","Rd7+","Kc8","Rd8+","Kb7","Rb8+","Ka6","Rb6+","Ka5","Rb5+","Ka4","Rb4+","Ka3","Rb3+"] },
+  { fen: "7k/1R4R1/7p/p2p3P/P2P4/8/1P3rP1/5K2 w - - 0 41", solution: ["Ke1","Re2+","Kd1","Rd2+","Kc1","Rc2+","Kb1","Rc1+","Ka2","Ra1+","Kb3","Ra3+","Kc2","Rc3+","Kd2","Rd3+","Ke2","Re3+","Kf2","Rf3+","Kg1","Rf1+","Kh2","Rh1+","Kg3","Rh3+","Kf4","Rf3+","Ke5","Rf5+","Kd6","Rf6+","Kc5","Rc6+","Kb5"] },
+  { fen: "7k/8/6Q1/8/6p1/5rP1/6K1/8 b - - 0 1", solution: ["Rf3-f2"] },
+  { fen: "k5r1/8/1Qn5/2B5/4B2P/4pP2/4P1K1/8 w - - 0 1", solution: ["Be4-g6","Rg8xg6","Kg2-h2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_CREAR_AHOGADO_EN_UNA_SITUACI_N_DE_REY_CONTRA_DAMA = [
+  { fen: "8/8/8/6pp/3Q1p2/7k/2q5/6RK w - - 0 56", solution: ["Qf2","Qxf2","Rg3+","fxg3"] },
+  { fen: "6qk/4Q3/7K/8/8/8/8/8 b - - 0 1", solution: ["Qe6+","Qxe6"] },
+  { fen: "6K1/5QP1/8/8/8/1q6/k7/8 b - - 0 89", solution: ["Ka1","Kf8","Qb8+","Qe8","Qf4+","Kg8","Qc4+","Qf7","Qb3"] },
+  { fen: "4r1rk/2PQ4/7K/8/p5P1/P6P/8/8 b - - 0 1", solution: ["Re8-e6","Qd7xe6","Rg8-g6","Kh6-h5"] },
+  { fen: "8/8/7p/5p1P/2pQ1P2/3b4/K1pk4/8 b - - 0 1", solution: ["c2-c1N","Ka2-a3","c4-c3","Qd4-b6","Nc1-e2","Qb6xh6","c3-c2"] },
+  { fen: "3Q4/8/7p/5p1P/2p2P2/3b4/K1pk4/8 w - - 0 1", solution: ["Qd8-b6"] },
+  { fen: "2K5/p1P3k1/8/8/6pp/2q5/7P/8 w - - 0 55", solution: ["Kb7","g3","h3","Qxc7+","Ka8","g2"] },
+  { fen: "8/2q4k/P1P4p/1K3PpP/6P1/2Q2P2/8/8 b - - 0 1", solution: ["Qc7-f7","Qc3-c4","Kh7-g7","Qc4xf7","Kg7-h8","a6-a7"] },
+  { fen: "8/3PR1P1/2K5/6r1/8/3k4/8/8 b - - 0 75", solution: ["Kc2","d8=Q","Rg3","Qd5","Kb2","Qb5+","Rb3","Qxb3+","Ka1","g8=Q"] },
+  { fen: "8/P7/5k2/1P6/2n2P2/5KP1/8/8 w - - 0 1", solution: ["a7-a8Q","Nc4-d6","Qa8-b7","Nd6-f7","Qb7-c6","Kf6-g7","Qc6-c7","Kg7-g8","Qc7xf7","Kg8-h8","b5-b6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EVITAR_LAS_TABLAS_POR_AHOGADO_PROMOCIONANDO_A_UNA_PIEZA_MENOR = [
+  { fen: "8/8/8/8/5b2/5k2/3p3p/5N1K b - - 0 1", solution: ["d2-d1B","Nf1xh2","Kf3-g3","Kh1-g1","Bf4-e3","Kg1-h1","Kg3-h3","Nh2-f1","Bd1-f3"] },
+  { fen: "4r1k1/3R2p1/2q1P2p/5QnP/5N2/6P1/5P2/6K1 w - - 0 54", solution: ["Qf7+","Nxf7","exf7+","Kh7","fxe8=B"] },
+  { fen: "8/5P1k/8/7K/8/8/8/8 w - - 0 1", solution: ["f8=R"] },
+  { fen: "n1K5/1P6/8/8/7P/kq6/8/8 w - - 0 1", solution: ["bxa8=R+","Kb2","Rb8","Qxb8+","Kxb8","Kc3","h5"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DEFENDERSE_CONTRA_UNA_CLAVADA_EN_LA_COLUMNA_E = [
+  { fen: "r1b1k2r/1pppqppp/p7/2bPN3/2Bn4/3P4/PPP2PPP/R1BQK2R w KQkq - 0 9", solution: ["O-O","O-O","Re1"] },
+  { fen: "rnb1kb1r/pp3ppp/2p2n2/4q3/4N3/3Q4/PPPB1PPP/R3KBNR w - - 0 1", solution: ["O-O-O"] },
+  { fen: "r1b1k1nr/p1ppq2p/6p1/bp1PNP2/8/2P2Q2/P4PPP/RNB1K2R w - - 0 1", solution: ["Ke1-d1"] },
+  { fen: "r1b1kb1r/1pppqppp/p1n5/8/P2NN3/8/1PP2PPP/R1BQKB1R w - - 0 1", solution: ["Ra1-a3","d7-d5","Bc1-g5","f7-f6","Bg5xf6","g7xf6","Qd1-h5","Qe7-f7","Ne4xf6","Ke8-e7","Ra3-e3","Ke7xf6","Re3-f3"] },
+  { fen: "3rk2r/pp2q1pp/2n1N3/2bp4/8/8/P1P2PPP/1RBQ1RK1 b k - 0 16", solution: ["Qxe6","Re1","Bxf2+","Kxf2","O-O+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DEFENDERSE_CON_Y_CONTRA_LA_CONTRACLAVADA = [
+  { fen: "5r1k/2q5/1R1Np1Qp/P1p1P3/1p6/1P3nP1/6K1/8 b - - 0 1", solution: ["Nf3-h4","g3xh4","Rf8-g8","Rb6-b8"] },
+  { fen: "5k2/6p1/p2q3p/b1B5/2Q5/7P/P5P1/6K1 b - - 0 1", solution: ["Bb6","Qf4+","Kg8","Qxd6"] },
+  { fen: "3k4/5Q2/2pq2pp/4p3/bP6/rB5P/6P1/3R2K1 b - - 0 40", solution: ["Ra1","Qf6+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DESCLAVAR_UN_CABALLO_CONTRAATACANDO_EL_ALFIL_CLAVADOR = [
+  { fen: "r2qkb1r/2p2ppp/p1np1n2/1p1Pp3/B3P1b1/2N2N2/PPP2PPP/R1BQK2R w - - 0 1", solution: ["Nc3xb5","a6xb5","Ba4xb5"] },
+  { fen: "r2qkb1r/ppp1pppp/2n5/6B1/3Pp1b1/4PN1P/PPP2PP1/R2QKB1R b KQkq - 0 7", solution: ["exf3","hxg4","Qd5"] },
+  { fen: "3qr1rk/3n1p1p/pb2bn2/1p2P1p1/1Pp4B/2N4P/P4PP1/1BRQRNK1 w - - 0 1", solution: ["Bg3"] },
+  { fen: "r1bq1rk1/ppp2pb1/2np1npp/8/3NP2B/2N5/PPPQ1PPP/2KR1B1R w - - 0 1", solution: ["Nd4xc6","b7xc6","e4-e5","g6-g5","e5xf6","Qd8xf6","Bh4-g3"] },
+  { fen: "r1bq1rk1/pppp1p2/5n1p/2b1P1p1/2Bp3B/8/PPP2PPP/RN1Q1RK1 w - - 0 1", solution: ["e5xf6","g5xh4","Qd1-g4","Kg8-h8","Qg4-g7"] },
+  { fen: "r2qkb1r/1bpn1p2/pp1ppn1p/4P1p1/3P3B/3B1N2/PPPNQPPP/R3K2R w - - 0 1", solution: ["e5xf6","g5xh4","Qe2xe6","f7xe6","Bd3-g6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_PUSHING_THE_B_PAWN = [
+  { fen: "rnbqk2r/ppp2ppp/5n2/4p3/1bpPP3/2N2N2/PP3PPP/R1BQKB1R w KQkq - 0 6", solution: ["Qa4+","Nc6","d5","Nxe4","dxc6","Nxc3","bxc3","Bxc3+","Bd2","b5","Qd1","Bxa1"] },
+  { fen: "r1b1k2r/p3bppp/2ppnn2/q3P3/Pp3P2/1BNQBN2/1PP3PP/R3K2R w - - 0 1", solution: ["Bb3xe6","Bc8xe6","e5xf6","b4xc3","b2-b4"] },
+  { fen: "rn2k2r/pp3ppp/5p2/q1b2N2/8/2p5/PP2PPPP/R2QKBNR w KQkq - 0 10", solution: ["b4","Bxb4","Qc2","Qxf5","Qxf5","c2#"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DEFENDERSE_CONTRA_UN_ATAQUE_DOBLE = [
+  { fen: "3B2k1/3R2p1/p1r1P3/1p6/1P1p4/3P4/PKP1n3/8 w - - 0 41", solution: ["c4","Nc3"] },
+  { fen: "8/RP5p/6k1/P5p1/8/3K1p1P/1r6/8 w - - 0 1", solution: ["a6"] },
+  { fen: "8/RP6/6k1/P7/8/8/8/1r6 w - - 0 1", solution: ["e1-g1"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_INTERPOSICI_N_DEL_JUGADOR_D_BIL = [
+  { fen: "6k1/p4p2/B3p2R/P3Q1p1/3P2K1/4P1P1/5rP1/3q4 w - - 0 1", solution: ["Ba6-e2","Qd1xe2","Kg4-h3"] },
+  { fen: "1r4k1/5p1p/p5p1/q3p2P/6P1/1KpBQP2/2P5/1R2R3 w - - 0 1", solution: ["Bd3-b5","Rb8xb5","Kb3-c4","Qa5-a2","Rb1-b3","Qa2xc2","Qe3xc3","Qc2-a2","Re1-a1","Qa2-e2","Qc3-d3","Qe2-f2","Rb3xb5"] },
+  { fen: "8/2pk3p/p1N4P/1QP1n2b/P7/8/6P1/3K4 w - - 0 43", solution: ["g4","Bxg4+","Kc1","axb5","Nxe5+","Ke6","Nxg4","bxa4","Kb2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_DEFENSA_MEDIANTE_EL_DESPEJE_DE_LA_S_PTIMA_FILA = [
+  { fen: "b4r1k/p1p3bp/1p4p1/4p1q1/1P5P/1QP1P1p1/P2RBP2/4R1K1 w - - 0 27", solution: ["Qg8+","Kxg8","Bc4+","Kh8","hxg5"] },
+  { fen: "r1b2rk1/qp2b1p1/4p1Q1/p2nPp2/8/4B2R/PP3PPP/4R1K1 b - - 0 1", solution: ["b7-b6","Rh3-h7","Be7-g5","Qg6-h5","Bg5-h6","Be3xh6","Kg8xh7"] },
+  { fen: "1r1r3k/5pnp/p2P2p1/4QN2/5P2/2P5/P1P3qP/2KR3R b - - 0 1", solution: ["f7-f6","Qe5xf6","g6xf5","Rh1-g1","Qg2-b7"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_MANIOBRA_DE_LA_ESCALERA = [
+  { fen: "1R6/8/8/8/8/2k5/4q3/K7 b - - 0 1", solution: ["Qe2-f1","Ka1-a2","Qf1-f2","Ka2-b1","Qf2-g1"] },
+  { fen: "q5k1/8/p6Q/8/1n6/5RP1/5PKP/3r4 w - - 0 1", solution: ["Qh6-g6","Kg8-h8","Qg6-h5","Kh8-g8","Qh5-g4","Kg8-h8","Qg4xb4"] },
+  { fen: "r4k1r/ppR3pp/4Qpq1/8/8/P7/3b1PPP/5RK1 w - - 0 1", solution: ["Qe6-d6","Kf8-g8","Qd6-d5","Kg8-f8","Qd5-c5","Kf8-g8","Rc7-c8","Ra8xc8","Qc5xc8","Kg8-f7","Qc8xh8"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_MANIOBRA_QD1_H5_E5_QD8_H4_E4 = [
+  { fen: "r1bqkbnr/ppp3pp/2p5/8/2B1p3/8/PPP2PPP/RNBQK2R w KQkq - 0 7", solution: ["Qh5+"] },
+  { fen: "rnbqk2r/ppp2ppp/4pn2/8/1b1PP3/2NB4/PPP3PP/R1BQK1NR b KQkq - 0 6", solution: ["Nxe4","Bxe4","Bxc3+","bxc3","Qh4+","Kf1","Qxe4"] },
+  { fen: "rnbqkbnr/pppp4/7p/6p1/3P1p2/6B1/PPP2PPP/RN1QKBNR w - - 0 1", solution: ["Qd1-h5","Ke8-e7","Bg3xf4","g5xf4","Qh5-e5","Ke7-f7","Bf1-c4","d7-d5","Bc4xd5","Qd8xd5","Qe5xd5"] },
+  { fen: "r3kb1r/1p3ppp/pqb1p3/8/3Np3/4P1B1/PPP2PPP/R2Q1RK1 w kq - 0 13", solution: ["Nxe6","fxe6","Qh5+","g6","Qe5"] },
+  { fen: "rnbqk2r/pppp1ppp/8/2b1nP2/2P1P3/5N2/PP4PP/RNBQKB1R w - - 0 1", solution: ["Nf3xe5","Qd8-h4","g2-g3","Qh4xe4","Qd1-e2","Qe4xh1","Ne5-g6","Ke8-d8","Ng6xh8"] },
+  { fen: "rnbqkb1r/pp1n1ppp/4p3/3pP3/3N1P2/8/PPPN2PP/R1BQKB1R b KQkq - 0 7", solution: ["Nxe5","fxe5","Qh4+","g3","Qxd4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_MANIOBRA_QD1_H5_E5_QD8_H4_E4_B = [
+  { fen: "r1bqkb1r/pppp1ppp/2n5/8/2BNn3/8/PPP2PPP/RNBQK2R w - - 0 1", solution: ["Bc4xf7","Ke8xf7","Qd1-h5","g7-g6","Qh5-d5","Kf7-g7","Qd5xe4","Bf8-b4","Ke1-f1","Rh8-e8","Nd4xc6","d7xc6"] },
+  { fen: "r1bqkbnr/2pp1ppp/p7/2p1N3/4P3/8/PPPP1PPP/RNBQK2R w KQkq - 0 6", solution: ["Nxf7","Kxf7","Qh5+","Kf6","Qf5+","Ke7","Qe5+","Kf7","Qd5+"] },
+  { fen: "r1bqkbnr/3ppppp/p7/1p6/2BpP3/8/PPPP1PPP/RNBQ1RK1 w - - 0 1", solution: ["Bc4xf7","Ke8xf7","Qd1-h5","g7-g6","Qh5-d5","e7-e6","Qd5xa8","Qd8-c7","b2-b4","Ng8-e7","d2-d3","Bf8-g7","Nb1-a3","Bc8-b7","Qa8-a7","d7-d6","Na3xb5","a6xb5","Qa7-a3","Qc7xc2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_LA_JUGADA_DIRECTA_QD1_D5 = [
+  { fen: "5r2/2q1Prkp/6p1/p5Q1/1pBb4/1P6/P5PP/5R1K w - - 0 31", solution: ["Qd5"] },
+  { fen: "r7/ppq2Pk1/5nrp/2n2Qp1/P7/1B5P/1PP3P1/3RR1K1 w - - 0 1", solution: ["Bb3-c4","e8-g8"] },
+  { fen: "rn2kbnr/p1qb1ppp/1pp1p3/3pP3/N2P1PP1/2P1B3/PP5P/R2QKBNR b KQkq - 0 9", solution: ["Bc5"] },
+  { fen: "r1bqkb1r/ppp2ppp/2np4/4P3/2B1n3/5N2/PPP2PPP/RNBQK2R w - - 0 1", solution: ["Bc4xf7","Ke8xf7","Qd1-d5","Bc8-e6","Qd5xe4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_SACRIFICAR_EN_F2_F7_PARA_PERMITIR_UN_SALTO_DE_CABALLO = [
+  { fen: "r1bqk2r/1p1nppbp/p2p1np1/P1p5/2B1P3/2N2N2/1PPP1PPP/R1BQK2R w KQkq - 0 8", solution: ["Bxf7+","Kxf7","Ng5+","Kg8","Ne6","Qe8","Nc7"] },
+  { fen: "r1bqk2r/pppnbppp/4pn2/6N1/3P4/5N2/PPP2PPP/R1BQKB1R w - - 0 1", solution: ["Ng5xf7","Ke8xf7","Nf3-g5","Kf7-g8","Ng5xe6","Qd8-e8","Ne6xc7","Be7-b4"] },
+  { fen: "r1bqk2r/pppnbppp/3p1n2/4p3/2BPP3/2N2N2/PPP2PPP/R1BQK2R w KQkq - 0 6", solution: ["Bxf7+","Kxf7","Ng5+","Kg8","Ne6","Qe8","Nxc7","Qg6","Nxa8","Qxg2","Rf1","exd4","Qxd4","Ne5","f3","Nh5","Qf2","Nxf3+","Ke2","Qh3","Qe3","Qxh2+","Kxf3","Bg4+","Kxg4","Qg2+","Kxh5","Qg6#"] },
+  { fen: "r1bqnrk1/pp1pppbp/6p1/n3P3/3N4/1BN1B3/PPP2PPP/R2QK2R w - - 0 1", solution: ["Bb3xf7","Kg8xf7","Nd4-e6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_SACRIFICIO_DE_CABALLO_EN_F2_F7 = [
+  { fen: "1rrq2k1/1b1n1pp1/4p3/1pp1N1bP/3p1B2/P2P4/1P2QPB1/2R1R1K1 w - - 0 1", solution: ["Ne5xf7","Kg8xf7","Qe2xe6","Kf7-f8","Bf4-d6","Bg5-e7","Bd6xe7"] },
+  { fen: "r2qr1k1/pb1nb1pp/1p2pn2/2p1Np2/2PP1B2/3B1N2/PP2QPPP/R4RK1 w - - 0 1", solution: ["Ne5-f7","Kg8xf7","Qe2xe6","Kf7-g6","g2-g4","Bb7-e4","Nf3-h4"] },
+  { fen: "rn2k2r/pp3Npb/2p1p2p/8/3q1P1P/1B4N1/P2BQ1P1/b3K2R b Kkq - 0 16", solution: ["O-O","Qxe6","Bc3","Ne5+","Kh8"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_DOS_TORRES_EN_LA_S_PTIMA_FILA = [
+  { fen: "6k1/5b2/1p1Rq1pp/pP2Pp2/1n5P/Q3P1P1/2r2r2/B3RBK1 b - - 0 31", solution: ["Qc4","Rd8+","Kh7","Rh8+","Kxh8","e6+","Kh7","Bxc4","Rg2+","Kh1","Rh2+","Kg1","Rcg2+","Kf1"] },
+  { fen: "8/7k/1p1pB1pp/pP3p2/7P/Q3P1P1/6rr/B4K2 b - - 0 1", solution: ["Rg2-d2","Kf1-e1","Rh2-e2","Ke1-f1","Re2-f2"] },
+  { fen: "3r2k1/R1R5/5p2/7b/p2P4/6K1/8/8 w - - 0 1", solution: ["Rc7-g7","Kg8-f8","Rg7-h7"] },
+  { fen: "3r2k1/R1R5/8/8/3P4/4P1K1/1q6/8 w - - 0 46", solution: ["Rg7+","Kh8","Rh7+","Kg8","Rag7+","Kf8","Rb7","Kg8","Rxb2","Kxh7"] },
+  { fen: "3QR3/1p4pk/3p2rp/pP1P4/8/7P/P1r2NPK/q7 b - - 0 1", solution: ["Qa1-e5","Re8xe5","Rc2xf2","Re5-e1","Rg6xg2","Kh2-h1","Rg2-h2","Kh1-g1","Rh2-g2"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_REGALO_GRIEGO = [
+  { fen: "rn1q1rk1/1b1n1ppp/p3p3/1pb1P3/8/P1NB1N2/1P3PPP/R1BQ1RK1 w - - 0 14", solution: ["Bxh7+","Kxh7","Ng5+","Kg6","Qd3+","f5","Qg3","Qe7","Ne2","f4","Qd3+","Kxg5","Nxf4","Rxf4","h4+","Kh5","Qh7+","Kg4","Qg6+","Kxh4","Bxf4","Nc6","Bg3#"] },
+  { fen: "r1bq1rk1/pp1n1ppp/4pb2/8/3p1B1P/3B1N2/PPP1QPP1/R3K2R w KQ - 0 11", solution: ["Bxh7+","Kxh7","Ng5+","Kg8","Qh5","Qa5+"] },
+  { fen: "3rr1k1/pb2qppp/1pP2n2/4b3/4p3/1PN1P3/PBQ2PPP/3RRBK1 b - - 0 1", solution: ["Bxh2+","Kxh2","Ng4+","Kg3","Qe5+","f4","Qh5","Nxe4"] },
+  { fen: "3rr1k1/pb2qppp/1pP2n2/4b3/4p3/1PN1P3/PBQ2PPP/3RRBK1 b - - 0 1", solution: ["Be5xh2","Kg1xh2","Nf6-g4","Kh2-g1","Qe7-h4","Bf1-b5","Qh4-h2","Kg1-f1","Qh2-h1","Kf1-e2","Qh1xg2","Nc3xe4"] },
+  { fen: "3rr1k1/pb2qppp/1pP2n2/4b3/4p3/1PN1P3/PBQ2PPP/3RRBK1 b - - 0 1", solution: ["Be5xh2","Kg1xh2","Nf6-g4","Kh2-g3","Qe7-e5","f2-f4","Qe5-h5","Rd1xd8","Qh5-h2","Kg3xg4","h7-h5","Kg4-g5","Qh2-g3","Kg5xh5","g7-g6","Kh5-h6","Qg3-h4"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_DOBLE_SACRIFICIO_DE_ALFIL_DE_LASKER = [
+  { fen: "r4rk1/1b2bppp/ppq1p3/2ppB2n/5P2/1P1BP3/P1PPQ1PP/R4RK1 w - - 0 15", solution: ["Bxh7+","Kxh7","Qxh5+","Kg8","Bxg7","Kxg7","Qg4+","Kh7","Rf3","e5","Rh3+","Qh6","Rxh6+","Kxh6","Qd7"] },
+  { fen: "r3k2r/1b1n1p1p/p2bpq2/8/PpNp2p1/1P2P3/1B2BPPP/R2Q1RK1 b kq - 0 17", solution: ["Bxh2+","Kxh2","Qh4+","Kg1","Bxg2","Kxg2","Qh3+","Kg1","g3","fxg3","Qxg3+","Kh1","Qh3+","Kg1","Rg8+","Bg4","Rxg4+","Qxg4","Qxg4+","Kf2","Nc5"] },
+  { fen: "2r2rk1/pbqnbppp/1p2p3/2pp4/3P1P2/1P1BP3/PBPN2PP/R2Q1RK1 w - - 0 13", solution: ["dxc5","bxc5","Bxh7+","Kxh7","Qh5+","Kg8","Bxg7","Kxg7","Qg4+","Kh8","Rf3","Nf6","Rh3+","Nh7","Rxh7+","Kxh7","Qh5+","Kg7","Qg4+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_BLOQUEO_DEL_PE_N_DE_F2_F7 = [
+  { fen: "r4rk1/pbq2ppp/1p1bp3/2np4/5P2/1P1BPQ2/PBPN2PP/R4RK1 w - - 0 1", solution: ["Bd3xh7","Kg8xh7","Qf3-h5","Kh7-g8","Bb2-f6","g7xf6","Qh5-g4","Kg8-h7","Rf1-f3"] },
+  { fen: "r3qr1k/pp3pbp/2pn4/7Q/3pP3/2NB3P/PPP3P1/R4RK1 w - - 0 1", solution: ["Rf1-f6","Kh8-g8","e4-e5","h7-h6","Nc3-e2"] },
+  { fen: "3r1rk1/5ppp/p1np1n2/1pq1p3/4PP2/P1NB2Q1/1PP3PP/3R1R1K w - - 0 23", solution: ["Nd5","Nh5","Qh4","Nxf4","b4","Qa7","Rxf4","exf4","Nf6+","gxf6","e5","f5","Bxf5","f6"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_DOBLE_SACRIFICIO_DE_TORRES = [
+  { fen: "r1b2rk1/pp1p1pbp/6p1/8/2PBq3/8/PP2BPPP/R2QK2R w KQ - 0 14", solution: ["Bxg7","Qxg2","Qd4","Qxh1+","Kd2","Qxa1","Qf6"] },
+  { fen: "rnb2rk1/ppp3pp/4p3/3pNp2/3PB3/2N1P3/PqP1QPPP/R3K2R w - - 0 1", solution: ["Nc3xd5","Qb2xa1","Ke1-d2","Qa1xh1","Nd5-e7","Kg8-h8","Qe2-h5","h7-h6","Ne5-f7","Rf8xf7","Qh5xf7"] },
+  { fen: "rnb2rk1/pp2ppbp/5Bp1/3p4/2PN4/1Q1BP3/PP1N1PqP/R3K2R w KQ - 0 12", solution: ["Bxg7","Qxh1+","Ke2","Qxa1","Bxf8","Kxf8","Bb1","Bg4+","f3","Bf5","Nxf5","gxf5","Qxb7","dxc4","Bxf5","Kg7","Nxc4","Qg1","Qxa8"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_EL_SACRIFICIO_DE_ATRACCI_N = [
+  { fen: "2r2bk1/1q1n1pp1/2b1r3/1p4N1/2p1P3/1p1P2P1/PB3PK1/Q1R4R w - - 0 1", solution: ["Rh1-h8"] },
+  { fen: "r1b2rk1/pppn1pp1/4p3/6q1/3P4/3B4/PPP1QPP1/R3K2R w KQ - 0 15", solution: ["Rh5","Qf6","Bh7+","Kh8","Bg6+","Kg8","Rh8+","Kxh8","Qh5+","Kg8","Qh7#"] },
+  { fen: "1k1r1br1/1b1p3p/1p2p1qP/1N4p1/2PP3n/1Q3p2/1P4PN/R1B2RK1 w - - 0 21", solution: ["Ra8+","Bxa8","Qa4","Bb7","Qa7+","Kc8","Qxb6"] },
+  { fen: "3r2k1/3r1pp1/4p1P1/pq1nP3/4BB2/1Pb5/3p1PK1/2Q4R w - - 0 34", solution: ["Rh8+","Kxh8","Qh1+","Kg8","Qh7+","Kf8","Qh8+","Ke7","Bg5+","Nf6","Bxf6+","gxf6","Qxf6+","Kf8","Qh8+"] }
+]
+
+const PUZZLES_PATTERNS_MUST_KNOW_PATRONES = [
+  { fen: "r2qk2r/pR2bppp/2n5/7b/2p1p3/P1PP1NPP/2P2PB1/2BQK2R w Kkq - 0 13", solution: ["dxe4","Qxd1+","Kxd1","O-O-O+"] },
+  { fen: "rn1qkbnr/pbpp2pp/1p2p3/8/3PN3/3B4/PPP2PPP/R1BQK1NR w - - 0 1", solution: ["Qd1-h5","g7-g6","Qh5-e5","Qd8-h4","Ng1-f3","Qh4-g4","O-O"] },
+  { fen: "r5k1/pbqrbppp/2p1pn2/2p3N1/3P4/1P4P1/PBQ2PBP/R3R1K1 w - - 0 1", solution: ["d4-d5","c6xd5","Bb2xf6","g7-g6"] },
+  { fen: "6k1/p2Q2n1/1p4r1/3p3q/2pP1R2/2P1r2P/PP4P1/5RK1 w - - 0 1", solution: ["Qd7-d8","Re3-e8","Rf4-f8","Kg8-h7","Rf8xe8","Ng7xe8","Rf1-f8","Qh5xh3","Rf8-h8","Kh7xh8","Qd8xe8","Kh8-g7","Qe8xg6","Kg7xg6","g2xh3"] },
+  { fen: "2r2rk1/p1n3pp/1p2qp2/n4N2/Q7/6P1/4PPBP/2R2RK1 w - - 0 23", solution: ["Qg4","g6","Bd5"] },
+  { fen: "r1bqk2r/ppp2ppp/2n2n2/2bppP2/4P3/2NP3P/PPP3P1/R1BQKBNR b KQkq - 0 6", solution: ["Nxe4","dxe4","Qh4+","Kd2","Qf4+","Kd3","Nb4+","Ke2","Qf2#"] },
+  { fen: "r2qk2r/pp3ppp/3pbn2/2p3B1/4P3/2Q5/PPP3PP/RN3RK1 b - - 0 1", solution: ["Nf6xe4","Qc3xg7","Qd8xg5","Qg7xh8","Ke8-e7","Qh8xa8","Qg5-e3","Kg1-h1","Ne4-f2","Kh1-g1","Nf2-h3","Kg1-h1","Qe3-g1","Rf1xg1","Nh3-f2"] },
+  { fen: "8/1P6/8/8/8/4q1QK/8/6k1 b - - 0 68", solution: ["Kh1","b8=Q","Qe6+","Qg4","Qe3+","Qbg3","Qh6+","Q4h4","Qe6+"] }
+]
+
+const SEED_BLOCKS_PATTERNS_MUST_KNOW = [
+  { name: "Aumentar la tensión de peones para un ataque doble de peones decisivo", description: "Aumentar la tensión de peones para un ataque doble de peones decisivo", category: "patterns_must_know", subcategory: "1. Doble Ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_AUMENTAR_LA_TENSI_N_DE_PEONES_PARA_UN_ATAQUE_DOBLE_DE_PEONES_DECISIVO },
+  { name: "Liberar la tensión para un ataque doble de peón decisivo", description: "Liberar la tensión para un ataque doble de peón decisivo", category: "patterns_must_know", subcategory: "1. Doble Ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LIBERAR_LA_TENSI_N_PARA_UN_ATAQUE_DOBLE_DE_PE_N_DECISIVO },
+  { name: "Una captura antiposicional para realizar un ataque doble o atrapar una pieza.", description: "Una captura antiposicional para realizar un ataque doble o atrapar una pieza.", category: "patterns_must_know", subcategory: "1. Doble Ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_UNA_CAPTURA_ANTIPOSICIONAL_PARA_REALIZAR_UN_ATAQUE_DOBLE_O_ATRAPAR_UNA_PIEZA },
+  { name: "Sacrificio de torre para un ataque doble de alfil", description: "Sacrificio de torre para un ataque doble de alfil", category: "patterns_must_know", subcategory: "1. Doble Ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_SACRIFICIO_DE_TORRE_PARA_UN_ATAQUE_DOBLE_DE_ALFIL },
+  { name: "Un sacrificio de dama en la esquina para un ataque doble de caballo", description: "Un sacrificio de dama en la esquina para un ataque doble de caballo", category: "patterns_must_know", subcategory: "1. Doble Ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_UN_SACRIFICIO_DE_DAMA_EN_LA_ESQUINA_PARA_UN_ATAQUE_DOBLE_DE_CABALLO },
+  { name: "Un ataque de la dama contra el Rey central y una pieza desprotegida", description: "Un ataque de la dama contra el Rey central y una pieza desprotegida", category: "patterns_must_know", subcategory: "1. Doble Ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_UN_ATAQUE_DE_LA_DAMA_CONTRA_EL_REY_CENTRAL_Y_UNA_PIEZA_DESPROTEGIDA },
+  { name: "El ataque a la descubierta de Alfil contra Peon y Alfil", description: "El ataque a la descubierta de Alfil contra Peon y Alfil", category: "patterns_must_know", subcategory: "1. Doble Ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_ATAQUE_A_LA_DESCUBIERTA_DE_ALFIL_CONTRA_PEON_Y_ALFIL },
+  { name: "El Alfil y Peon vs el Alfil a la descubierta", description: "El Alfil y Peon vs el Alfil a la descubierta", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_ALFIL_Y_PEON_VS_EL_ALFIL_A_LA_DESCUBIERTA },
+  { name: "El descubrimiento de la India de Dama", description: "El descubrimiento de la India de Dama", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_DESCUBRIMIENTO_DE_LA_INDIA_DE_DAMA },
+  { name: "El Carrusel", description: "El Carrusel", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_CARRUSEL },
+  { name: "Colaboracion de Alfil y Caballo", description: "Colaboracion de Alfil y Caballo", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_COLABORACION_DE_ALFIL_Y_CABALLO },
+  { name: "El Desesperado secuencia de captura", description: "El Desesperado secuencia de captura", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_DESESPERADO_SECUENCIA_DE_CAPTURA },
+  { name: "La Dama y el Caballo vs la Dama a la descubierta", description: "La Dama y el Caballo vs la Dama a la descubierta", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_DAMA_Y_EL_CABALLO_VS_LA_DAMA_A_LA_DESCUBIERTA },
+  { name: "La doble amenaza de la Dama y el Caballo", description: "La doble amenaza de la Dama y el Caballo", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_DOBLE_AMENAZA_DE_LA_DAMA_Y_EL_CABALLO },
+  { name: "El Gambito Milner-Barry", description: "El Gambito Milner-Barry", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_GAMBITO_MILNER_BARRY },
+  { name: "El molino invertido", description: "El molino invertido", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_MOLINO_INVERTIDO },
+  { name: "Doble jaque de Alfil y Torre", description: "Doble jaque de Alfil y Torre", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DOBLE_JAQUE_DE_ALFIL_Y_TORRE },
+  { name: "El molino", description: "El molino", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_MOLINO },
+  { name: "La contra descubierta", description: "La contra descubierta", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_CONTRA_DESCUBIERTA },
+  { name: "El despeje de la última fila", description: "El despeje de la última fila", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_DESPEJE_DE_LA_LTIMA_FILA },
+  { name: "Despejando con la Dama y el Alfil", description: "Despejando con la Dama y el Alfil", category: "patterns_must_know", subcategory: "2. Ataques a la descubierta y aperturas de líneas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DESPEJANDO_CON_LA_DAMA_Y_EL_ALFIL },
+  { name: "El Alfil enfilado en la diagonal a3-f8/f1-a6", description: "El Alfil enfilado en la diagonal a3-f8/f1-a6", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_ALFIL_ENFILADO_EN_LA_DIAGONAL_A3_F8_F1_A6 },
+  { name: "Sacrificar la Torre para una enfilada", description: "Sacrificar la Torre para una enfilada", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_SACRIFICAR_LA_TORRE_PARA_UNA_ENFILADA },
+  { name: "Atracción para una clavada absoluta en la diagonal a2-g8/g1-a7", description: "Atracción para una clavada absoluta en la diagonal a2-g8/g1-a7", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_ATRACCI_N_PARA_UNA_CLAVADA_ABSOLUTA_EN_LA_DIAGONAL_A2_G8_G1_A7 },
+  { name: "Explotación de la clavada del caballo a lo largo de la diagonal a4-e8/e1-a5", description: "Explotación de la clavada del caballo a lo largo de la diagonal a4-e8/e1-a5", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EXPLOTACI_N_DE_LA_CLAVADA_DEL_CABALLO_A_LO_LARGO_DE_LA_DIAGONAL_A4_E8_E1_A5 },
+  { name: "La clavada en la última fila", description: "La clavada en la última fila", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_CLAVADA_EN_LA_LTIMA_FILA },
+  { name: "Atacar el peón de g2/g7 clavado", description: "Atacar el peón de g2/g7 clavado", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_ATACAR_EL_PE_N_DE_G2_G7_CLAVADO },
+  { name: "El Peon Clavado f2 / f7 es un pobre defensor", description: "El Peon Clavado f2 / f7 es un pobre defensor", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_PEON_CLAVADO_F2_F7_ES_UN_POBRE_DEFENSOR },
+  { name: "El Clavado Eterno", description: "El Clavado Eterno", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_CLAVADO_ETERNO },
+  { name: "Cruz de San Andrés", description: "Cruz de San Andrés", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CRUZ_DE_SAN_ANDR_S },
+  { name: "La Cruz de Malta", description: "La Cruz de Malta", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_CRUZ_DE_MALTA },
+  { name: "La cruz oblicua", description: "La cruz oblicua", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_CRUZ_OBLICUA },
+  { name: "Maniobra de Dama y Torre en la apertura", description: "Maniobra de Dama y Torre en la apertura", category: "patterns_must_know", subcategory: "3. Enfilada y Clavada", puzzles: PUZZLES_PATTERNS_MUST_KNOW_MANIOBRA_DE_DAMA_Y_TORRE_EN_LA_APERTURA },
+  { name: "Moviendo el Caballo clavado con Jaque", description: "Moviendo el Caballo clavado con Jaque", category: "patterns_must_know", subcategory: "4. El Alfil clavado vs La Bateria de la Dama+Caballo", puzzles: PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_CON_JAQUE },
+  { name: "Moviendo el Caballo clavado con ataque en f2/f7", description: "Moviendo el Caballo clavado con ataque en f2/f7", category: "patterns_must_know", subcategory: "4. El Alfil clavado vs La Bateria de la Dama+Caballo", puzzles: PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_CON_ATAQUE_EN_F2_F7 },
+  { name: "Moviendo el Caballo clavado para explotar la diagonal a4-e8/e1-a5", description: "Moviendo el Caballo clavado para explotar la diagonal a4-e8/e1-a5", category: "patterns_must_know", subcategory: "4. El Alfil clavado vs La Bateria de la Dama+Caballo", puzzles: PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_PARA_EXPLOTAR_LA_DIAGONAL_A4_E8_E1_A5 },
+  { name: "Moviendo el Caballo clavado a la fila abierta E", description: "Moviendo el Caballo clavado a la fila abierta E", category: "patterns_must_know", subcategory: "4. El Alfil clavado vs La Bateria de la Dama+Caballo", puzzles: PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_A_LA_FILA_ABIERTA_E },
+  { name: "Moviendo el Caballo clavado con ataque", description: "Moviendo el Caballo clavado con ataque", category: "patterns_must_know", subcategory: "4. El Alfil clavado vs La Bateria de la Dama+Caballo", puzzles: PUZZLES_PATTERNS_MUST_KNOW_MOVIENDO_EL_CABALLO_CLAVADO_CON_ATAQUE },
+  { name: "Desviando la protección de la Dama del Rey con el Alfil", description: "Desviando la protección de la Dama del Rey con el Alfil", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_LA_PROTECCI_N_DE_LA_DAMA_DEL_REY_CON_EL_ALFIL },
+  { name: "Desviando la proteccion de la Torre del Rey con el Alfil", description: "Desviando la proteccion de la Torre del Rey con el Alfil", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_LA_PROTECCION_DE_LA_TORRE_DEL_REY_CON_EL_ALFIL },
+  { name: "The Hook and Ladder Trick", description: "The Hook and Ladder Trick", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_THE_HOOK_AND_LADDER_TRICK },
+  { name: "The Extended Hook and Ladder Trick", description: "The Extended Hook and Ladder Trick", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_THE_EXTENDED_HOOK_AND_LADDER_TRICK },
+  { name: "El doble sacrificio de torre en la ultima fila", description: "El doble sacrificio de torre en la ultima fila", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_DOBLE_SACRIFICIO_DE_TORRE_EN_LA_ULTIMA_FILA },
+  { name: "Desviando la proteccion de la Dama del Rey con la Torre", description: "Desviando la proteccion de la Dama del Rey con la Torre", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_LA_PROTECCION_DE_LA_DAMA_DEL_REY_CON_LA_TORRE },
+  { name: "Desviando el Alfil de la Dama", description: "Desviando el Alfil de la Dama", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_EL_ALFIL_DE_LA_DAMA },
+  { name: "Desviando el Alfil del Rey", description: "Desviando el Alfil del Rey", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DESVIANDO_EL_ALFIL_DEL_REY },
+  { name: "Explotando la casilla f3/f6", description: "Explotando la casilla f3/f6", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EXPLOTANDO_LA_CASILLA_F3_F6 },
+  { name: "El truco del gambito Smith-Morra", description: "El truco del gambito Smith-Morra", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_TRUCO_DEL_GAMBITO_SMITH_MORRA },
+  { name: "Cambiando Damas por una doble amenaza", description: "Cambiando Damas por una doble amenaza", category: "patterns_must_know", subcategory: "5. Eliminacion de la Defensa", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CAMBIANDO_DAMAS_POR_UNA_DOBLE_AMENAZA },
+  { name: "La trampa al paso", description: "La trampa al paso", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_TRAMPA_AL_PASO },
+  { name: "El ingenioso avance de peón", description: "El ingenioso avance de peón", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_INGENIOSO_AVANCE_DE_PE_N },
+  { name: "La trampa del arca de Noe", description: "La trampa del arca de Noe", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_TRAMPA_DEL_ARCA_DE_NOE },
+  { name: "Cierre de la diagonal del alfil", description: "Cierre de la diagonal del alfil", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CIERRE_DE_LA_DIAGONAL_DEL_ALFIL },
+  { name: "Cierre de la diagonal del alfil de Bobby Fischer", description: "Cierre de la diagonal del alfil de Bobby Fischer", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CIERRE_DE_LA_DIAGONAL_DEL_ALFIL_DE_BOBBY_FISCHER },
+  { name: "Capturando el caballo en el borde", description: "Capturando el caballo en el borde", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_EL_CABALLO_EN_EL_BORDE },
+  { name: "El retiro del caballo", description: "El retiro del caballo", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_RETIRO_DEL_CABALLO },
+  { name: "Capturando la Torre en la esquina", description: "Capturando la Torre en la esquina", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_LA_TORRE_EN_LA_ESQUINA },
+  { name: "Capturando la Dama en la esquina", description: "Capturando la Dama en la esquina", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_LA_DAMA_EN_LA_ESQUINA },
+  { name: "Capturando la Dama en b2/b7", description: "Capturando la Dama en b2/b7", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_LA_DAMA_EN_B2_B7 },
+  { name: "Obstruyendo la Dama", description: "Obstruyendo la Dama", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_OBSTRUYENDO_LA_DAMA },
+  { name: "Atrapar a la Dama con un giro inesperado", description: "Atrapar a la Dama con un giro inesperado", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_ATRAPAR_A_LA_DAMA_CON_UN_GIRO_INESPERADO },
+  { name: "Capturando la Dama en el borde", description: "Capturando la Dama en el borde", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CAPTURANDO_LA_DAMA_EN_EL_BORDE },
+  { name: "La trampa de Rubinstein", description: "La trampa de Rubinstein", category: "patterns_must_know", subcategory: "6. Capturando piezas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_TRAMPA_DE_RUBINSTEIN },
+  { name: "Sacrificando la Dama para una amenaza de doble promocion", description: "Sacrificando la Dama para una amenaza de doble promocion", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_SACRIFICANDO_LA_DAMA_PARA_UNA_AMENAZA_DE_DOBLE_PROMOCION },
+  { name: "La tactica Lasker-Loman", description: "La tactica Lasker-Loman", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_TACTICA_LASKER_LOMAN },
+  { name: "Atrayendo a la torre de la última fila para un ataque de peones", description: "Atrayendo a la torre de la última fila para un ataque de peones", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_ATRAYENDO_A_LA_TORRE_DE_LA_LTIMA_FILA_PARA_UN_ATAQUE_DE_PEONES },
+  { name: "La promocion de ignorar la captura", description: "La promocion de ignorar la captura", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_PROMOCION_DE_IGNORAR_LA_CAPTURA },
+  { name: "Un jaque intermedio en la ultima fila", description: "Un jaque intermedio en la ultima fila", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_UN_JAQUE_INTERMEDIO_EN_LA_ULTIMA_FILA },
+  { name: "Establecer un puente mediante direccionamiento", description: "Establecer un puente mediante direccionamiento", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_ESTABLECER_UN_PUENTE_MEDIANTE_DIRECCIONAMIENTO },
+  { name: "Obstruyendo la promocion", description: "Obstruyendo la promocion", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_OBSTRUYENDO_LA_PROMOCION },
+  { name: "La táctica de promoción mediante una enfilada", description: "La táctica de promoción mediante una enfilada", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_T_CTICA_DE_PROMOCI_N_MEDIANTE_UNA_ENFILADA },
+  { name: "2 Peones en la 6ta/3era fila son mas fuerte que la Torre ", description: "2 Peones en la 6ta/3era fila son mas fuerte que la Torre ", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_2_PEONES_EN_LA_6TA_3ERA_FILA_SON_MAS_FUERTE_QUE_LA_TORRE },
+  { name: "La fuerza del peón de torre contra el caballo", description: "La fuerza del peón de torre contra el caballo", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_FUERZA_DEL_PE_N_DE_TORRE_CONTRA_EL_CABALLO },
+  { name: "La promoción menor con tenedor de caballo", description: "La promoción menor con tenedor de caballo", category: "patterns_must_know", subcategory: "7. Promoción", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_PROMOCI_N_MENOR_CON_TENEDOR_DE_CABALLO },
+  { name: "Un perpetuo de caballo", description: "Un perpetuo de caballo", category: "patterns_must_know", subcategory: "8. Armas para conseguir tablas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_UN_PERPETUO_DE_CABALLO },
+  { name: "El movimiento perpetuo de Nimzowitsch", description: "El movimiento perpetuo de Nimzowitsch", category: "patterns_must_know", subcategory: "8. Armas para conseguir tablas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_MOVIMIENTO_PERPETUO_DE_NIMZOWITSCH },
+  { name: "Un perpetuo de Torre", description: "Un perpetuo de Torre", category: "patterns_must_know", subcategory: "8. Armas para conseguir tablas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_UN_PERPETUO_DE_TORRE },
+  { name: "El bloqueo perpetuo", description: "El bloqueo perpetuo", category: "patterns_must_know", subcategory: "8. Armas para conseguir tablas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_BLOQUEO_PERPETUO },
+  { name: "La torre desenfrenada", description: "La torre desenfrenada", category: "patterns_must_know", subcategory: "8. Armas para conseguir tablas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_TORRE_DESENFRENADA },
+  { name: "Crear ahogado en una situación de rey contra dama", description: "Crear ahogado en una situación de rey contra dama", category: "patterns_must_know", subcategory: "8. Armas para conseguir tablas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_CREAR_AHOGADO_EN_UNA_SITUACI_N_DE_REY_CONTRA_DAMA },
+  { name: "Evitar las tablas por ahogado promocionando a una pieza menor.", description: "Evitar las tablas por ahogado promocionando a una pieza menor.", category: "patterns_must_know", subcategory: "9. Armas defensivas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EVITAR_LAS_TABLAS_POR_AHOGADO_PROMOCIONANDO_A_UNA_PIEZA_MENOR },
+  { name: "Defenderse contra una clavada en la columna e", description: "Defenderse contra una clavada en la columna e", category: "patterns_must_know", subcategory: "9. Armas defensivas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DEFENDERSE_CONTRA_UNA_CLAVADA_EN_LA_COLUMNA_E },
+  { name: "Defenderse con y contra la contraclavada", description: "Defenderse con y contra la contraclavada", category: "patterns_must_know", subcategory: "9. Armas defensivas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DEFENDERSE_CON_Y_CONTRA_LA_CONTRACLAVADA },
+  { name: "Desclavar un caballo contraatacando el alfil clavador", description: "Desclavar un caballo contraatacando el alfil clavador", category: "patterns_must_know", subcategory: "9. Armas defensivas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DESCLAVAR_UN_CABALLO_CONTRAATACANDO_EL_ALFIL_CLAVADOR },
+  { name: "Pushing the b-Pawn", description: "Pushing the b-Pawn", category: "patterns_must_know", subcategory: "9. Armas defensivas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_PUSHING_THE_B_PAWN },
+  { name: "Defenderse contra un ataque doble", description: "Defenderse contra un ataque doble", category: "patterns_must_know", subcategory: "9. Armas defensivas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DEFENDERSE_CONTRA_UN_ATAQUE_DOBLE },
+  { name: "La interposición del jugador débil", description: "La interposición del jugador débil", category: "patterns_must_know", subcategory: "9. Armas defensivas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_INTERPOSICI_N_DEL_JUGADOR_D_BIL },
+  { name: "La defensa mediante el despeje de la séptima fila", description: "La defensa mediante el despeje de la séptima fila", category: "patterns_must_know", subcategory: "9. Armas defensivas", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_DEFENSA_MEDIANTE_EL_DESPEJE_DE_LA_S_PTIMA_FILA },
+  { name: "La maniobra de la escalera", description: "La maniobra de la escalera", category: "patterns_must_know", subcategory: "10. Maniobras de dama y el punto débil de f2/f7", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_MANIOBRA_DE_LA_ESCALERA },
+  { name: "La maniobra Qd1-h5-e5 / Qd8-h4-e4", description: "La maniobra Qd1-h5-e5 / Qd8-h4-e4", category: "patterns_must_know", subcategory: "10. Maniobras de dama y el punto débil de f2/f7", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_MANIOBRA_QD1_H5_E5_QD8_H4_E4 },
+  { name: "La maniobra Qd1-h5-e5 / Qd8-h4-e4 b", description: "La maniobra Qd1-h5-e5 / Qd8-h4-e4 b", category: "patterns_must_know", subcategory: "10. Maniobras de dama y el punto débil de f2/f7", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_MANIOBRA_QD1_H5_E5_QD8_H4_E4_B },
+  { name: "La jugada directa Qd1-d5", description: "La jugada directa Qd1-d5", category: "patterns_must_know", subcategory: "10. Maniobras de dama y el punto débil de f2/f7", puzzles: PUZZLES_PATTERNS_MUST_KNOW_LA_JUGADA_DIRECTA_QD1_D5 },
+  { name: "Sacrificar en f2/f7 para permitir un salto de caballo", description: "Sacrificar en f2/f7 para permitir un salto de caballo", category: "patterns_must_know", subcategory: "10. Maniobras de dama y el punto débil de f2/f7", puzzles: PUZZLES_PATTERNS_MUST_KNOW_SACRIFICAR_EN_F2_F7_PARA_PERMITIR_UN_SALTO_DE_CABALLO },
+  { name: "El sacrificio de caballo en f2/f7", description: "El sacrificio de caballo en f2/f7", category: "patterns_must_know", subcategory: "10. Maniobras de dama y el punto débil de f2/f7", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_SACRIFICIO_DE_CABALLO_EN_F2_F7 },
+  { name: "Dos torres en la séptima fila", description: "Dos torres en la séptima fila", category: "patterns_must_know", subcategory: "11. Armas de ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_DOS_TORRES_EN_LA_S_PTIMA_FILA },
+  { name: "El regalo griego", description: "El regalo griego", category: "patterns_must_know", subcategory: "11. Armas de ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_REGALO_GRIEGO },
+  { name: "El doble sacrificio de alfil de Lasker", description: "El doble sacrificio de alfil de Lasker", category: "patterns_must_know", subcategory: "11. Armas de ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_DOBLE_SACRIFICIO_DE_ALFIL_DE_LASKER },
+  { name: "El bloqueo del peón de f2/f7", description: "El bloqueo del peón de f2/f7", category: "patterns_must_know", subcategory: "11. Armas de ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_BLOQUEO_DEL_PE_N_DE_F2_F7 },
+  { name: "El doble sacrificio de torres", description: "El doble sacrificio de torres", category: "patterns_must_know", subcategory: "11. Armas de ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_DOBLE_SACRIFICIO_DE_TORRES },
+  { name: "El sacrificio de atracción", description: "El sacrificio de atracción", category: "patterns_must_know", subcategory: "11. Armas de ataque", puzzles: PUZZLES_PATTERNS_MUST_KNOW_EL_SACRIFICIO_DE_ATRACCI_N },
+  { name: "Patrones", description: "Patrones", category: "patterns_must_know", subcategory: "12. Combinaciones de patrones", puzzles: PUZZLES_PATTERNS_MUST_KNOW_PATRONES }
+]
+
 const SEED_BLOCKS = [
   ...SEED_BLOCKS_CHECKMATE_PATTERNS,
   ...SEED_BLOCKS_PALOMITA,
   ...SEED_BLOCKS_WOODPECKER_METHOD2,
+  ...SEED_BLOCKS_PATTERNS_MUST_KNOW,
 ]
 // ─── BLIND PUZZLES ────────────────────────────────────────────────────────────
 const BLIND_PUZZLES = [
