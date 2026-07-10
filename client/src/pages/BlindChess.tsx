@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Chess } from 'chess.js'
 import { useAuth } from '../lib/auth'
 import { fetchBlindPuzzle, advanceBlindPuzzle, BlindPuzzle } from '../lib/api'
@@ -65,11 +65,13 @@ const NAV_ITEMS = [
   { path: '/vision', label: 'Visión', icon: '👁' },
   { path: '/history', label: 'Historial', icon: '📋' },
   { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
+  { path: '/blind', label: 'Ciego', icon: '🎲' },
 ]
 
 export default function BlindChess() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [puzzle, setPuzzle] = useState<BlindPuzzle | null>(null)
   const [loading, setLoading] = useState(true)
@@ -277,27 +279,26 @@ export default function BlindChess() {
             </button>
           </div>
           <div className="flex items-center gap-0 overflow-x-auto pb-2">
-            <div className="flex items-center">
-              <button
-                onClick={() => setPhase('intro')}
-                className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all ${t.text2} hover:${t.text} relative group`}
-              >
-                <span className="text-lg">🎲</span>
-                <span className="whitespace-nowrap">Ciego</span>
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 transition-all scale-x-0 group-hover:scale-x-100" style={{ backgroundColor: accentColor }} />
-              </button>
-              <div className={`w-px h-4 ${t.borderLight}`} />
-            </div>
-            {NAV_ITEMS.map((item, idx) => (
-              <div key={item.path} className="flex items-center">
-                <button onClick={() => navigate(item.path)} className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all ${t.text2} hover:${t.text} relative group`}>
-                  <span className="text-lg">{item.icon}</span>
-                  <span className="whitespace-nowrap">{item.label}</span>
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 transition-all scale-x-0 group-hover:scale-x-100" style={{ backgroundColor: accentColor }} />
-                </button>
-                {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
-              </div>
-            ))}
+            {NAV_ITEMS.map((item, idx) => {
+              const isActive = location.pathname === item.path
+              return (
+                <div key={item.path} className="flex items-center">
+                  <button
+                    onClick={() => navigate(item.path)}
+                    className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all relative group ${isActive ? t.text : `${t.text2} hover:${t.text}`}`}
+                  >
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="whitespace-nowrap">{item.label}</span>
+                    <div
+                      className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}
+                      style={{ backgroundColor: accentColor }}
+                    />
+                  </button>
+                  {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
+                </div>
+              )
+            })}
+          </div>
           </div>
         </div>
       </nav>
