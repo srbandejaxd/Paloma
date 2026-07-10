@@ -34,7 +34,7 @@ const CATEGORIES = [
 ]
 
 const NAV_ITEMS = [
-  { path: '/solo', label: 'Solo', icon: '🪃' },
+  { path: '/solo', label: 'Home', icon: '🏠' },
   { path: '/vision', label: 'Visión', icon: '👁' },
   { path: '/history', label: 'Historial', icon: '📋' },
   { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
