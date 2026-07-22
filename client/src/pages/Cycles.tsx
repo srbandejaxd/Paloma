@@ -270,7 +270,7 @@
 	          const endResult = await endReviewSession(sessionId)
 	          setSessionResult(endResult)
 	          setTimeUp(true)
-	        }, 650)
+	        }, 300)
 	      } else if (result.nextPuzzle) {
 	        const next = result.nextPuzzle
 	        const elapsed = result.elapsedMs
@@ -279,7 +279,7 @@
 	          setPuzzleIndex(p => p + 1)
 	          puzzleStartRef.current = Date.now()
 	          if (elapsed !== undefined) setElapsed(elapsed)
-	        }, 650)
+	        }, 300)
 	      }
 	    } catch (e) { console.error(e) }
 	  }, [sessionId, currentPuzzle, puzzleAttempts, hintUsed])
