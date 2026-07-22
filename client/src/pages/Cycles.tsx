@@ -48,8 +48,7 @@
 	
 	const errorSound = new Audio('/sounds/error.mp3')
 	errorSound.preload = 'auto'
-	const correctSound = new Audio('/sounds/correct.mp3')
-correctSound.preload = 'auto'
+	
 
 
 	type Screen = 'intro' | 'list' | 'macrocycle' | 'cycle' | 'review' | 'session' | 'create'
@@ -121,8 +120,7 @@ correctSound.preload = 'auto'
 	  const [hintSquare, setHintSquare] = useState<string | null>(null)
 	  const boardStepRef = useRef(0)
 	  const [sessionSolved, setSessionSolved] = useState(0)
-	  const [sessionTotal, setSessionTotal] = useState<number | null>(null)
-	  const [showCorrectFlash, setShowCorrectFlash] = useState(false)
+  const [sessionTotal, setSessionTotal] = useState<number | null>(null)
 	  const [timeUp, setTimeUp] = useState(false)
 	  const [sessionResult, setSessionResult] = useState<{ reviewComplete?: boolean; cycleComplete?: boolean; macrocycleComplete?: boolean; restDays?: number } | null>(null)
 	
@@ -230,7 +228,6 @@ correctSound.preload = 'auto'
 	      setElapsed(0)
 	      setSessionSolved(0)
       setSessionTotal((data as any).totalPuzzles ?? null)
-      setShowCorrectFlash(false)
 	      setPuzzleAttempts(0)
 	      setHintUsed(false)
 	      setHintSquare(null)
@@ -261,10 +258,6 @@ correctSound.preload = 'auto'
 	        timeMs,
 	      })
 	
-	      correctSound.currentTime = 0
-	      correctSound.play().catch(() => {})
-	      setShowCorrectFlash(true)
-	      setTimeout(() => setShowCorrectFlash(false), 800)
 	      setSessionSolved(s => s + 1)
 	      setPuzzleAttempts(0)
 	      setSolutionStep(0)
@@ -986,16 +979,11 @@ correctSound.preload = 'auto'
 	          </div>
 	        </div>
 	
-	        {/* Flash verde de acierto */}
-	        {showCorrectFlash && (
-	          <div className="fixed inset-0 pointer-events-none z-50" style={{ backgroundColor: 'rgba(39,174,96,0.18)', transition: 'opacity 0.4s' }} />
-	        )}
-
-	        {/* Board + info lateral */}
-	        <div className="flex-1 flex items-start justify-center pt-8 px-6">
-	          <div className="flex items-start gap-6 w-full max-w-[780px]">
+	        {/* Board */}
+	        <div className="flex-1 flex items-start justify-center pt-8 px-4 pb-8">
+	          <div className="flex items-start gap-4 w-full max-w-fit">
 	            {/* Tablero */}
-	            <div className="flex-1 max-w-[520px]">
+	            <div>
 	              {currentPuzzle && (
 	                <PuzzleBoard
 	                  key={currentPuzzle.id}
@@ -1009,26 +997,15 @@ correctSound.preload = 'auto'
 	              )}
 	            </div>
 
-	            {/* Panel lateral derecho */}
-	            <div className="flex flex-col gap-4 pt-2 min-w-[150px]">
-	              {/* Categoría */}
-	              {subcatInfo && (
-	                <div className={`rounded-xl ${t.bg2} ${t.border} border px-5 py-4`}>
-	                  <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Categoría</p>
-	                  <p className="text-base font-bold leading-tight" style={{ color: subcatInfo.color }}>
-	                    {subcatInfo.label}
-	                  </p>
-	                </div>
-	              )}
-
-	              {/* Progreso de puzzles */}
-	              <div className={`rounded-xl ${t.bg2} ${t.border} border px-5 py-4`}>
-	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Puzzles</p>
-	                <p className="text-2xl font-bold font-mono" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
-	                  {sessionSolved + 1}{sessionTotal ? `/${sessionTotal}` : ''}
+	            {/* Panel lateral — categoría */}
+	            {subcatInfo && (
+	              <div className={`rounded-xl ${t.bg2} ${t.border} border px-4 py-4 mt-7 w-36 flex-shrink-0`}>
+	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-2`}>Categoría</p>
+	                <p className="text-sm font-bold leading-snug" style={{ color: subcatInfo.color }}>
+	                  {subcatInfo.label}
 	                </p>
 	              </div>
-	            </div>
+	            )}
 	          </div>
 	        </div>
 	      </div>

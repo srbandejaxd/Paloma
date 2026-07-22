@@ -537,12 +537,15 @@ router.post('/cycles/reviews/:id/start-session', authMiddleware, async (req, res
     const puzzles = await getCyclePuzzles(db, r.category, absoluteStart, 1)
     if (puzzles.length === 0) return res.status(404).json({ error: 'No hay más puzzles' })
 
+    const totalPuzzles = await getCyclePuzzleCount(db, r.category)
+
     res.json({
       sessionId,
       dayNumber,
       hoursPerDay: r.hoursPerDay,
       puzzle: puzzles[0],
-      puzzleIndex: absoluteStart
+      puzzleIndex: absoluteStart,
+      totalPuzzles
     })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
