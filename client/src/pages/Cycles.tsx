@@ -487,18 +487,35 @@ function playCorrect() {
 	              </select>
 	            </div>
 	
-	            {/* Horas por día */}
+	            {/* Tiempo por día: horas + minutos */}
 	            <div>
-	              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Horas de trabajo por día</label>
-	              <div className="flex items-center gap-4">
-	                <input
-	                  type="number"
-	                  min={0.5} max={8} step={0.5}
-	                  value={createHours}
-	                  onChange={e => setCreateHours(Number(e.target.value))}
-	                  className={`w-28 px-4 py-3 rounded-lg border focus:outline-none font-semibold text-center ${t.inputBg} ${t.border}`}
-	                />
-	                <p className={`text-sm ${t.text3}`}>{createHours}h por sesión</p>
+	              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Tiempo de trabajo por día</label>
+	              <div className="flex items-center gap-3 flex-wrap">
+	                <div className="flex items-center gap-2">
+	                  <select
+	                    value={createHours}
+	                    onChange={e => setCreateHours(Number(e.target.value))}
+	                    className={`px-3 py-3 rounded-lg border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
+	                  >
+	                    {[0,1,2,3,4,5,6,7,8].map(h => <option key={h} value={h}>{h}</option>)}
+	                  </select>
+	                  <span className={`text-sm font-semibold ${t.text2}`}>horas</span>
+	                </div>
+	                <div className="flex items-center gap-2">
+	                  <select
+	                    value={createMinutes}
+	                    onChange={e => setCreateMinutes(Number(e.target.value))}
+	                    className={`px-3 py-3 rounded-lg border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
+	                  >
+	                    {[0,10,15,20,30,45].map(m => <option key={m} value={m}>{String(m).padStart(2,'0')}</option>)}
+	                  </select>
+	                  <span className={`text-sm font-semibold ${t.text2}`}>min</span>
+	                </div>
+	                {(createHours > 0 || createMinutes > 0) && (
+	                  <p className={`text-sm ${t.text3}`}>
+	                    = {createHours > 0 ? `${createHours}h ` : ''}{createMinutes > 0 ? `${createMinutes}min` : ''} por sesión
+	                  </p>
+	                )}
 	              </div>
 	            </div>
 	
