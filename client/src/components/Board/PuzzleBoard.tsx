@@ -530,9 +530,6 @@ export default function PuzzleBoard({
           alt=""
         />
 
-        {feedback === 'correct' && (
-          <div className="absolute inset-0 pointer-events-none rounded-sm" style={{ backgroundColor: 'rgba(46,204,113,0.22)' }} />
-        )}
         {feedback === 'wrong' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className="font-mono text-red-400 text-4xl font-bold opacity-90 animate-bounce">✗</span>
