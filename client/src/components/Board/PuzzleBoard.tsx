@@ -12,6 +12,7 @@ interface PuzzleBoardProps {
   onMoveCorrect?: () => void
   autoSkipAfterErrors?: number
   externalHighlights?: string[]
+  onStepChange?: (step: number) => void
 }
 
 type FeedbackState = 'idle' | 'correct' | 'wrong' | 'opponent' | 'skipping'
@@ -80,6 +81,7 @@ export default function PuzzleBoard({
   disabled,
   autoSkipAfterErrors = 1,
   externalHighlights = [],
+  onStepChange,
 }: PuzzleBoardProps) {
   const [game, setGame] = useState(new Chess())
   const [displayFen, setDisplayFen] = useState('')
@@ -198,7 +200,7 @@ export default function PuzzleBoard({
   }, [puzzle])
 
   const solutionIndexRef = useRef(0)
-  useEffect(() => { solutionIndexRef.current = solutionIndex }, [solutionIndex])
+  useEffect(() => { solutionIndexRef.current = solutionIndex; onStepChange?.(solutionIndex) }, [solutionIndex, onStepChange])
 
   const playOpponentMove = useCallback(
     (currentGame: Chess, currentIndex: number) => {
@@ -238,7 +240,8 @@ export default function PuzzleBoard({
 
       if (nextPlayerIndex >= puzzle.solution.length) {
         const elapsed = Date.now() - startTimeRef.current
-        correctSound.currentTime = 0; correctSound.play()
+        // puzzle ends on opponent's move — board plays correct sound
+        correctSound.currentTime = 0; correctSound.play().catch(() => {})
         setTimeout(() => onSolved(elapsed, errorsRef.current), OPPONENT_ANIM_MS + 50)
       }
     },

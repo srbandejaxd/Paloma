@@ -49,8 +49,12 @@
 	const errorSound = new Audio('/sounds/error.mp3')
 	errorSound.preload = 'auto'
 	const correctSound = new Audio('/sounds/correct.mp3')
-	correctSound.preload = 'auto'
-	
+correctSound.preload = 'auto'
+
+function playCorrect() {
+  try { const s = new Audio('/sounds/correct.mp3'); s.play().catch(() => {}) } catch(_) {}
+}
+
 	type Screen = 'intro' | 'list' | 'macrocycle' | 'cycle' | 'review' | 'session' | 'create'
 	
 	function SunIcon() {
@@ -118,6 +122,7 @@
 	  const [puzzleAttempts, setPuzzleAttempts] = useState(0)
 	  const [hintUsed, setHintUsed] = useState(false)
 	  const [hintSquare, setHintSquare] = useState<string | null>(null)
+	  const boardStepRef = useRef(0)
 	  const [sessionSolved, setSessionSolved] = useState(0)
 	  const [timeUp, setTimeUp] = useState(false)
 	  const [sessionResult, setSessionResult] = useState<{ reviewComplete?: boolean; cycleComplete?: boolean; macrocycleComplete?: boolean; restDays?: number } | null>(null)
@@ -125,6 +130,7 @@
 	  // Create modal state
 	  const [createCategory, setCreateCategory] = useState<string>('palomita')
 	  const [createHours, setCreateHours] = useState<number>(2)
+  const [createMinutes, setCreateMinutes] = useState<number>(0)
 	  const [createConfig, setCreateConfig] = useState(DEFAULT_REVIEW_CONFIG)
 	  const [creating, setCreating] = useState(false)
 	  const [createError, setCreateError] = useState<string | null>(null)
@@ -254,11 +260,11 @@
 	        timeMs,
 	      })
 	
-	      correctSound.currentTime = 0
-	      correctSound.play().catch(() => {})
+	      playCorrect()
 	      setSessionSolved(s => s + 1)
 	      setPuzzleAttempts(0)
 	      setSolutionStep(0)
+	      boardStepRef.current = 0
 	      setHintUsed(false)
 	      setHintSquare(null)
 	
@@ -286,13 +292,13 @@
 	  if (!currentPuzzle) return
 	  setHintUsed(true)
 	  try {
+	    const step = boardStepRef.current
 	    const game = new Chess()
 	    game.load(currentPuzzle.fen)
-	    // Reproducir todos los movimientos hasta el turno actual
-	    for (let i = 0; i < solutionStep; i++) {
+	    for (let i = 0; i < step; i++) {
 	      game.move(currentPuzzle.solution[i])
 	    }
-	    const move = game.move(currentPuzzle.solution[solutionStep])
+	    const move = game.move(currentPuzzle.solution[step])
 	    setHintSquare(move ? move.from : null)
 	  } catch { setHintSquare(null) }
 	}
@@ -313,7 +319,7 @@
 	    try {
 	      await createMacrocycle({
 	        category: createCategory,
-	        hoursPerDay: createHours,
+	        hoursPerDay: createHours + createMinutes / 60,
 	        reviewConfig: createConfig,
 	      })
 	      await goToList()
@@ -925,18 +931,14 @@
 	                </div>
 	              </div>
 	
-	              {/* Puzzle counter + subcategory */}
+	              {/* Puzzle counter + categoría */}
 	              <div className="text-center">
 	                {subcatInfo && (
-	                  <span
-	                    className="text-xs px-3 py-1 rounded-full font-bold mb-1 inline-block"
-	                    style={{ backgroundColor: `${subcatInfo.color}20`, color: subcatInfo.color }}
-	                  >
-	                    {subcatInfo.label}
-	                  </span>
+	                  <p className="text-xs font-semibold mb-1" style={{ color: subcatInfo.color }}>
+	                    Categoría: {subcatInfo.label}
+	                  </p>
 	                )}
-	                <p className={`text-xs uppercase tracking-widest ${t.text3}`}>Puzzle</p>
-	                <p className={`text-2xl font-bold ${t.text}`}>{sessionSolved + 1}</p>
+	                <p className={`text-xs uppercase tracking-widest ${t.text3}`}>Puzzle {sessionSolved + 1}</p>
 	              </div>
 	
 	              {/* Acciones */}
@@ -976,6 +978,7 @@
 	                onError={handlePuzzleError}
 	                externalHighlights={hintSquare ? [hintSquare] : []}
 	                autoSkipAfterErrors={0}
+	                onStepChange={step => { boardStepRef.current = step }}
 	              />
 	            )}
 	          </div>
