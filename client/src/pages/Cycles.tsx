@@ -945,9 +945,12 @@
 	                </div>
 	              </div>
 	
-	              {/* Puzzle counter */}
-	              <div className="text-center">
-	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-0.5`}>Puzzles</p>
+	              {/* Puzzle counter + categoría */}
+	              <div className="text-center flex flex-col items-center gap-1">
+	                {subcatInfo && (
+	                  <p className="text-xs font-bold" style={{ color: subcatInfo.color }}>{subcatInfo.label}</p>
+	                )}
+	                <p className={`text-xs uppercase tracking-widest ${t.text3}`}>Puzzles</p>
 	                <div className="text-2xl font-bold font-mono" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
 	                  {sessionSolved + 1}{sessionTotal ? `/${sessionTotal}` : ''}
 	                </div>
@@ -994,11 +997,11 @@
 	              />
 	            )}
 
-	            {/* Panel lateral — categoría, fuera del flujo */}
+	            {/* Panel lateral — categoría */}
 	            {subcatInfo && (
 	              <div
-	                className={`absolute top-7 rounded-xl ${t.bg2} ${t.border} border px-4 py-4 w-36`}
-	                style={{ left: 'calc(100% + 16px)' }}
+	                className={`hidden lg:block absolute top-7 rounded-xl ${t.bg2} ${t.border} border px-4 py-4 w-36`}
+	                style={{ left: 'calc(100% + 20px)' }}
 	              >
 	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-2`}>Categoría</p>
 	                <p className="text-sm font-bold leading-snug" style={{ color: subcatInfo.color }}>

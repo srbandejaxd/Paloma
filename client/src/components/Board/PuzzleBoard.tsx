@@ -325,7 +325,7 @@ export default function PuzzleBoard({
         setFeedback('idle')
         feedbackRef.current = 'idle'
         playOpponentMove(gameCopy, currentSolutionIndex)
-      }, isLastPlayerMove ? 700 : 0)
+      }, isLastPlayerMove ? 600 : 0)
 
       return true
     } else {
