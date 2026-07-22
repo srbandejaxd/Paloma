@@ -9,6 +9,7 @@ interface PuzzleBoardProps {
   onError?: () => void
   onSkip?: (errors: number) => void
   disabled?: boolean
+  onMoveCorrect?: () => void
   autoSkipAfterErrors?: number
   externalHighlights?: string[]
 }
@@ -74,6 +75,7 @@ export default function PuzzleBoard({
   puzzle,
   onSolved,
   onError,
+  onMoveCorrect,
   onSkip,
   disabled,
   autoSkipAfterErrors = 1,
@@ -299,6 +301,7 @@ export default function PuzzleBoard({
     if (isCorrect) {
       if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
       else { moveSound.currentTime = 0; moveSound.play() }
+      onMoveCorrect?.()
       setHighlightSquares({
         [moveResult.from]: { background: 'rgba(46,204,113,0.25)' },
         [moveResult.to]: { background: 'rgba(46,204,113,0.4)' },
