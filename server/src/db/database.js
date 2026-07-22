@@ -138,15 +138,92 @@ async function migrateDb() {
   try {
     await db.execute(`ALTER TABLE blocks ADD COLUMN category TEXT NOT NULL DEFAULT 'woodpecker'`)
     console.log('✓ Migration: added category column to blocks')
-  } catch {
-    // Column already exists, no-op
-  }
+  } catch {}
   try {
     await db.execute(`ALTER TABLE blocks ADD COLUMN subcategory TEXT`)
     console.log('✓ Migration: added subcategory column to blocks')
-  } catch {
-    // Column already exists, no-op
-  }
+  } catch {}
+
+  // Ciclos
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS macrocycles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      category TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      hours_per_day REAL NOT NULL DEFAULT 2,
+      global_puzzle_pointer INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME
+    )`)
+    console.log('✓ Migration: macrocycles table')
+  } catch {}
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS cycles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      macrocycle_id INTEGER NOT NULL REFERENCES macrocycles(id),
+      cycle_number INTEGER NOT NULL,
+      puzzle_start INTEGER NOT NULL,
+      puzzle_end INTEGER,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME
+    )`)
+    console.log('✓ Migration: cycles table')
+  } catch {}
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cycle_id INTEGER NOT NULL REFERENCES cycles(id),
+      review_number INTEGER NOT NULL,
+      days_work INTEGER NOT NULL,
+      days_rest INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      puzzle_pointer INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME,
+      failed_at DATETIME
+    )`)
+    console.log('✓ Migration: reviews table')
+  } catch {}
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS review_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      review_id INTEGER NOT NULL REFERENCES reviews(id),
+      day_number INTEGER NOT NULL,
+      started_at DATETIME NOT NULL,
+      ended_at DATETIME,
+      puzzle_start INTEGER NOT NULL,
+      puzzle_end INTEGER,
+      puzzles_solved INTEGER NOT NULL DEFAULT 0,
+      puzzles_attempted INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'active'
+    )`)
+    console.log('✓ Migration: review_sessions table')
+  } catch {}
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS session_puzzles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id INTEGER NOT NULL REFERENCES review_sessions(id),
+      puzzle_id INTEGER NOT NULL REFERENCES puzzles(id),
+      order_in_session INTEGER NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 1,
+      hint_used INTEGER NOT NULL DEFAULT 0,
+      time_ms INTEGER NOT NULL,
+      solved_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`)
+    console.log('✓ Migration: session_puzzles table')
+  } catch {}
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS review_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      macrocycle_id INTEGER NOT NULL REFERENCES macrocycles(id),
+      review_number INTEGER NOT NULL,
+      days_work INTEGER NOT NULL,
+      days_rest INTEGER NOT NULL
+    )`)
+    console.log('✓ Migration: review_config table')
+  } catch {}
 }
 
 async function initDb() {
