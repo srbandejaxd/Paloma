@@ -121,6 +121,8 @@ correctSound.preload = 'auto'
 	  const [hintSquare, setHintSquare] = useState<string | null>(null)
 	  const boardStepRef = useRef(0)
 	  const [sessionSolved, setSessionSolved] = useState(0)
+	  const [sessionTotal, setSessionTotal] = useState<number | null>(null)
+	  const [showCorrectFlash, setShowCorrectFlash] = useState(false)
 	  const [timeUp, setTimeUp] = useState(false)
 	  const [sessionResult, setSessionResult] = useState<{ reviewComplete?: boolean; cycleComplete?: boolean; macrocycleComplete?: boolean; restDays?: number } | null>(null)
 	
@@ -227,6 +229,8 @@ correctSound.preload = 'auto'
 	      setSessionLimitMs(data.hoursPerDay * 3600 * 1000)
 	      setElapsed(0)
 	      setSessionSolved(0)
+      setSessionTotal((data as any).totalPuzzles ?? null)
+      setShowCorrectFlash(false)
 	      setPuzzleAttempts(0)
 	      setHintUsed(false)
 	      setHintSquare(null)
@@ -257,6 +261,10 @@ correctSound.preload = 'auto'
 	        timeMs,
 	      })
 	
+	      correctSound.currentTime = 0
+	      correctSound.play().catch(() => {})
+	      setShowCorrectFlash(true)
+	      setTimeout(() => setShowCorrectFlash(false), 800)
 	      setSessionSolved(s => s + 1)
 	      setPuzzleAttempts(0)
 	      setSolutionStep(0)
@@ -944,14 +952,12 @@ correctSound.preload = 'auto'
 	                </div>
 	              </div>
 	
-	              {/* Puzzle counter + categoría */}
+	              {/* Puzzle counter */}
 	              <div className="text-center">
-	                {subcatInfo && (
-	                  <p className="text-xs font-semibold mb-1" style={{ color: subcatInfo.color }}>
-	                    Categoría: {subcatInfo.label}
-	                  </p>
-	                )}
-	                <p className={`text-xs uppercase tracking-widest ${t.text3}`}>Puzzle {sessionSolved + 1}</p>
+	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-0.5`}>Puzzles</p>
+	                <div className="text-2xl font-bold font-mono" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
+	                  {sessionSolved + 1}{sessionTotal ? `/${sessionTotal}` : ''}
+	                </div>
 	              </div>
 	
 	              {/* Acciones */}
@@ -980,20 +986,49 @@ correctSound.preload = 'auto'
 	          </div>
 	        </div>
 	
-	        {/* Board */}
+	        {/* Flash verde de acierto */}
+	        {showCorrectFlash && (
+	          <div className="fixed inset-0 pointer-events-none z-50" style={{ backgroundColor: 'rgba(39,174,96,0.18)', transition: 'opacity 0.4s' }} />
+	        )}
+
+	        {/* Board + info lateral */}
 	        <div className="flex-1 flex items-start justify-center pt-8 px-6">
-	          <div className="w-full max-w-[520px]">
-	            {currentPuzzle && (
-	              <PuzzleBoard
-	                key={currentPuzzle.id}
-	                puzzle={currentPuzzle}
-	                onSolved={handlePuzzleSolved}
-	                onError={handlePuzzleError}
-	                externalHighlights={hintSquare ? [hintSquare] : []}
-	                autoSkipAfterErrors={0}
-	                onStepChange={step => { boardStepRef.current = step }}
-	              />
-	            )}
+	          <div className="flex items-start gap-6 w-full max-w-[780px]">
+	            {/* Tablero */}
+	            <div className="flex-1 max-w-[520px]">
+	              {currentPuzzle && (
+	                <PuzzleBoard
+	                  key={currentPuzzle.id}
+	                  puzzle={currentPuzzle}
+	                  onSolved={handlePuzzleSolved}
+	                  onError={handlePuzzleError}
+	                  externalHighlights={hintSquare ? [hintSquare] : []}
+	                  autoSkipAfterErrors={0}
+	                  onStepChange={step => { boardStepRef.current = step }}
+	                />
+	              )}
+	            </div>
+
+	            {/* Panel lateral derecho */}
+	            <div className="flex flex-col gap-4 pt-2 min-w-[150px]">
+	              {/* Categoría */}
+	              {subcatInfo && (
+	                <div className={`rounded-xl ${t.bg2} ${t.border} border px-5 py-4`}>
+	                  <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Categoría</p>
+	                  <p className="text-base font-bold leading-tight" style={{ color: subcatInfo.color }}>
+	                    {subcatInfo.label}
+	                  </p>
+	                </div>
+	              )}
+
+	              {/* Progreso de puzzles */}
+	              <div className={`rounded-xl ${t.bg2} ${t.border} border px-5 py-4`}>
+	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Puzzles</p>
+	                <p className="text-2xl font-bold font-mono" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
+	                  {sessionSolved + 1}{sessionTotal ? `/${sessionTotal}` : ''}
+	                </p>
+	              </div>
+	            </div>
 	          </div>
 	        </div>
 	      </div>
