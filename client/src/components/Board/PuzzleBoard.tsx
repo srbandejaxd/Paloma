@@ -314,7 +314,11 @@ export default function PuzzleBoard({
       setDisplayFen(gameCopy.fen())
 
       const isLastPlayerMove = currentSolutionIndex + 1 >= puzzle.solution.length
-      if (isLastPlayerMove) { setFeedback('correct'); feedbackRef.current = 'correct' }
+      if (isLastPlayerMove) {
+        // Play correct sound immediately — same instant as the green flash
+        correctSound.currentTime = 0; correctSound.play().catch(() => {})
+        setFeedback('correct'); feedbackRef.current = 'correct'
+      }
 
       clearTimeout(feedbackTimeout.current)
       feedbackTimeout.current = setTimeout(() => {

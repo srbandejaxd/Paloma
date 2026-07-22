@@ -51,9 +51,6 @@
 	const correctSound = new Audio('/sounds/correct.mp3')
 correctSound.preload = 'auto'
 
-function playCorrect() {
-  try { const s = new Audio('/sounds/correct.mp3'); s.play().catch(() => {}) } catch(_) {}
-}
 
 	type Screen = 'intro' | 'list' | 'macrocycle' | 'cycle' | 'review' | 'session' | 'create'
 	
@@ -260,7 +257,6 @@ function playCorrect() {
 	        timeMs,
 	      })
 	
-	      playCorrect()
 	      setSessionSolved(s => s + 1)
 	      setPuzzleAttempts(0)
 	      setSolutionStep(0)
