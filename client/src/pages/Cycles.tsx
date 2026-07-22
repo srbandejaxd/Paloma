@@ -249,37 +249,35 @@
 	  const handlePuzzleSolved = useCallback(async (_timeMs: number, errors: number) => {
 	    if (!sessionId || !currentPuzzle) return
 	    const timeMs = Date.now() - puzzleStartRef.current
-	
-	    try {
-	      const result = await submitSessionPuzzle(sessionId, {
+
+	    // Lanzar API y timer del flash en paralelo
+	    const [result] = await Promise.all([
+	      submitSessionPuzzle(sessionId, {
 	        puzzleId: currentPuzzle.id,
 	        attempts: puzzleAttempts + 1,
 	        hintUsed,
 	        timeMs,
-	      })
-	
-	      setSessionSolved(s => s + 1)
-	      setPuzzleAttempts(0)
-	      setSolutionStep(0)
-	      boardStepRef.current = 0
-	      setHintUsed(false)
-	      setHintSquare(null)
-	
+	      }),
+	      new Promise(r => setTimeout(r, 600)), // esperar flash
+	    ])
+
+	    setSessionSolved(s => s + 1)
+	    setPuzzleAttempts(0)
+	    setSolutionStep(0)
+	    boardStepRef.current = 0
+	    setHintUsed(false)
+	    setHintSquare(null)
+
+	    try {
 	      if (result.sessionComplete) {
-	        setTimeout(async () => {
-	          const endResult = await endReviewSession(sessionId)
-	          setSessionResult(endResult)
-	          setTimeUp(true)
-	        }, 300)
+	        const endResult = await endReviewSession(sessionId)
+	        setSessionResult(endResult)
+	        setTimeUp(true)
 	      } else if (result.nextPuzzle) {
-	        const next = result.nextPuzzle
-	        const elapsed = result.elapsedMs
-	        setTimeout(() => {
-	          setCurrentPuzzle(next)
-	          setPuzzleIndex(p => p + 1)
-	          puzzleStartRef.current = Date.now()
-	          if (elapsed !== undefined) setElapsed(elapsed)
-	        }, 300)
+	        setCurrentPuzzle(result.nextPuzzle)
+	        setPuzzleIndex(p => p + 1)
+	        puzzleStartRef.current = Date.now()
+	        if (result.elapsedMs !== undefined) setElapsed(result.elapsedMs)
 	      }
 	    } catch (e) { console.error(e) }
 	  }, [sessionId, currentPuzzle, puzzleAttempts, hintUsed])
