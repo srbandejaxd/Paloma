@@ -305,7 +305,8 @@ export default function PuzzleBoard({
       if (moveResult.captured) { captureSound.currentTime = 0; captureSound.play() }
       else { moveSound.currentTime = 0; moveSound.play() }
       onMoveCorrect?.()
-      setHighlightSquares({
+      const isLastPlayerMove = currentSolutionIndex + 1 >= puzzle.solution.length
+      setHighlightSquares(isLastPlayerMove ? {} : {
         [moveResult.from]: { background: 'rgba(46,204,113,0.25)' },
         [moveResult.to]: { background: 'rgba(46,204,113,0.4)' },
       })
@@ -313,7 +314,6 @@ export default function PuzzleBoard({
       gameRef.current = gameCopy
       setDisplayFen(gameCopy.fen())
 
-      const isLastPlayerMove = currentSolutionIndex + 1 >= puzzle.solution.length
       if (isLastPlayerMove) {
         // Play correct sound immediately — same instant as the green flash
         correctSound.currentTime = 0; correctSound.play().catch(() => {})
