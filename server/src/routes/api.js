@@ -287,7 +287,8 @@ router.post('/blind/advance', authMiddleware, async (req, res) => {
 // Obtener pool de puzzles ordenado por categoría (secuencia lineal para ciclos)
 async function getCyclePuzzles(db, category, offset, limit) {
   const result = await db.execute({
-    sql: `SELECT p.id, p.fen, p.solution, b.subcategory
+    sql: `SELECT p.id, p.fen, p.solution, b.subcategory,
+                 p.block_id as blockId, p.order_in_block as orderInBlock
           FROM puzzles p
           JOIN blocks b ON p.block_id = b.id
           WHERE b.category = ?

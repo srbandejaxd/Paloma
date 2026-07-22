@@ -235,6 +235,8 @@ export interface CyclePuzzle {
   fen: string
   solution: string[]
   subcategory: string | null
+  blockId: number
+  orderInBlock: number
 }
 
 export interface StartSessionResponse {
