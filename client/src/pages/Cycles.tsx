@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Chess } from 'chess.js'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
@@ -276,20 +277,15 @@ export default function Cycles() {
   }, [])
 
   function handleHint() {
-    if (!currentPuzzle) return
-    setHintUsed(true)
-    // Extraer casilla origen del primer movimiento de la solución
-    try {
-      const move = currentPuzzle.solution[0]
-      // En notación SAN/UCI, las últimas 4 chars son fromTo (ej. e2e4) o extraemos del SAN
-      // Si es UCI (ej. "e2e4"), from = move.slice(0,2)
-      // Si es SAN, necesitamos parsear — por ahora tomamos los primeros 2 chars si parecen coordenada
-      const from = move.length >= 4 && /[a-h][1-8]/.test(move.slice(0, 2))
-        ? move.slice(0, 2)
-        : null
-      setHintSquare(from)
-    } catch { setHintSquare(null) }
-  }
+  if (!currentPuzzle) return
+  setHintUsed(true)
+  try {
+    const game = new Chess()
+    game.load(currentPuzzle.fen)
+    const move = game.move(currentPuzzle.solution[0])
+    setHintSquare(move ? move.from : null)
+  } catch { setHintSquare(null) }
+}
 
   async function handleTimeUpConfirm() {
     if (!sessionId) return
@@ -728,8 +724,8 @@ export default function Cycles() {
     const sessionsDone = activeReview.sessions?.filter(s => s.status === 'completed').length || 0
     const lastSession = activeReview.sessions?.filter(s => s.status === 'completed').sort((a, b) => b.dayNumber - a.dayNumber)[0]
     const nextAvailable = lastSession
-      ? new Date(new Date(lastSession.startedAt).getTime() + 24 * 3600 * 1000).toISOString()
-      : null
+        ? new Date(new Date(lastSession.startedAt.endsWith('Z') ? lastSession.startedAt : lastSession.startedAt + 'Z').getTime() + 24 * 3600 * 1000).toISOString()
+        : null
     const canStart = activeReview.status === 'active' && sessionsDone < activeReview.daysWork && (!nextAvailable || new Date() >= new Date(nextAvailable))
 
     return (
@@ -880,42 +876,25 @@ export default function Cycles() {
       )
     }
 
-    // Tiempo agotado — esperando que termine el puzzle actual
-    if (timeUp && sessionResult === null) {
-      return (
-        <div className={`min-h-screen ${t.bg} flex flex-col transition-colors duration-300`}>
-          <div className={`${t.bg2} ${t.border} border-b px-6 py-4`}>
-            <div className="flex items-center justify-between max-w-6xl mx-auto">
-              <p className={`text-sm font-semibold`} style={{ color: '#E74C3C' }}>⏰ Tiempo agotado — termina este puzzle para cerrar la sesión</p>
-              <span className={`text-sm ${t.text3}`}>{sessionSolved} puzzles hoy</span>
-            </div>
-          </div>
-          <div className="flex-1 flex items-start justify-center pt-8 px-6">
-            <div className="w-full max-w-[520px]">
-              {currentPuzzle && (
-                <PuzzleBoard
-                  key={currentPuzzle.id}
-                  puzzle={currentPuzzle}
-                  onSolved={async () => {
-                    if (!sessionId || !currentPuzzle) return
-                    await submitSessionPuzzle(sessionId, {
-                      puzzleId: currentPuzzle.id,
-                      attempts: puzzleAttempts + 1,
-                      hintUsed,
-                      timeMs: Date.now() - puzzleStartRef.current,
-                    })
-                    await handleTimeUpConfirm()
-                  }}
-                  onError={handlePuzzleError}
-                  externalHighlights={hintSquare ? [hintSquare] : []}
-                  autoSkipAfterErrors={0}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )
-    }
+  // Tiempo agotado — cerrar sesión inmediatamente
+  if (timeUp && sessionResult === null) {
+  // Llamar endSession automáticamente si no se ha llamado aún
+  if (sessionId && !loading) {
+    handleTimeUpConfirm()
+  }
+  return (
+    <div className={`min-h-screen ${t.bg} flex items-center justify-center px-6 transition-colors duration-300`}>
+      <div className={`w-full max-w-md text-center rounded-2xl ${t.bg2} ${t.border} border p-10`}>
+        <div className="text-6xl mb-4">⏰</div>
+        <h2 className={`text-3xl font-bold ${t.text} mb-2`}>Tiempo agotado</h2>
+        <p className={`text-sm ${t.text3} mb-2`}>
+          <span className="font-bold" style={{ color: accentColor }}>{sessionSolved}</span> puzzles resueltos hoy
+        </p>
+        <p className={`text-sm ${t.text3}`}>Cerrando sesión...</p>
+      </div>
+    </div>
+  )
+}
 
     const subcatInfo = currentPuzzle?.subcategory ? SUBCATEGORY_LABELS[currentPuzzle.subcategory] : null
 

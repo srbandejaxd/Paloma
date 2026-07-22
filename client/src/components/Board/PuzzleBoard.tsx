@@ -203,7 +203,7 @@ export default function PuzzleBoard({
       const nextIndex = currentIndex + 1
       if (nextIndex >= puzzle.solution.length) {
         const elapsed = Date.now() - startTimeRef.current
-        setTimeout(() => onSolved(elapsed, errorsRef.current), 300)
+        setTimeout(() => onSolved(elapsed, errorsRef.current), 150)
         return
       }
       const opponentSAN = puzzle.solution[nextIndex]
@@ -237,7 +237,7 @@ export default function PuzzleBoard({
       if (nextPlayerIndex >= puzzle.solution.length) {
         const elapsed = Date.now() - startTimeRef.current
         correctSound.currentTime = 0; correctSound.play()
-        setTimeout(() => onSolved(elapsed, errorsRef.current), OPPONENT_ANIM_MS + 100)
+        setTimeout(() => onSolved(elapsed, errorsRef.current), OPPONENT_ANIM_MS + 50)
       }
     },
     [puzzle.solution, onSolved]
@@ -315,7 +315,7 @@ export default function PuzzleBoard({
         setFeedback('idle')
         feedbackRef.current = 'idle'
         playOpponentMove(gameCopy, currentSolutionIndex)
-      }, isLastPlayerMove ? 400 : 0)
+      }, isLastPlayerMove ? 200 : 0)
 
       return true
     } else {
