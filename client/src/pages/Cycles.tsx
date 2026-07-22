@@ -266,15 +266,20 @@
 	      setHintSquare(null)
 	
 	      if (result.sessionComplete) {
-	        // Tiempo agotado o pool terminado — cerrar sesión
-	        const endResult = await endReviewSession(sessionId)
-	        setSessionResult(endResult)
-	        setTimeUp(true)
+	        setTimeout(async () => {
+	          const endResult = await endReviewSession(sessionId)
+	          setSessionResult(endResult)
+	          setTimeUp(true)
+	        }, 650)
 	      } else if (result.nextPuzzle) {
-	        setCurrentPuzzle(result.nextPuzzle)
-	        setPuzzleIndex(p => p + 1)
-	        puzzleStartRef.current = Date.now()
-	        if (result.elapsedMs !== undefined) setElapsed(result.elapsedMs)
+	        const next = result.nextPuzzle
+	        const elapsed = result.elapsedMs
+	        setTimeout(() => {
+	          setCurrentPuzzle(next)
+	          setPuzzleIndex(p => p + 1)
+	          puzzleStartRef.current = Date.now()
+	          if (elapsed !== undefined) setElapsed(elapsed)
+	        }, 650)
 	      }
 	    } catch (e) { console.error(e) }
 	  }, [sessionId, currentPuzzle, puzzleAttempts, hintUsed])
@@ -945,12 +950,9 @@
 	                </div>
 	              </div>
 	
-	              {/* Puzzle counter + categoría */}
-	              <div className="text-center flex flex-col items-center gap-1">
-	                {subcatInfo && (
-	                  <p className="text-xs font-bold" style={{ color: subcatInfo.color }}>{subcatInfo.label}</p>
-	                )}
-	                <p className={`text-xs uppercase tracking-widest ${t.text3}`}>Puzzles</p>
+	              {/* Puzzle counter */}
+	              <div className="text-center">
+	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-0.5`}>Puzzles</p>
 	                <div className="text-2xl font-bold font-mono" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
 	                  {sessionSolved + 1}{sessionTotal ? `/${sessionTotal}` : ''}
 	                </div>
@@ -997,11 +999,11 @@
 	              />
 	            )}
 
-	            {/* Panel lateral — categoría */}
+	            {/* Panel lateral — categoría, fuera del flujo */}
 	            {subcatInfo && (
 	              <div
-	                className={`hidden lg:block absolute top-7 rounded-xl ${t.bg2} ${t.border} border px-4 py-4 w-36`}
-	                style={{ left: 'calc(100% + 20px)' }}
+	                className={`absolute top-7 rounded-xl ${t.bg2} ${t.border} border px-4 py-4 w-36`}
+	                style={{ left: 'calc(100% + 16px)' }}
 	              >
 	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-2`}>Categoría</p>
 	                <p className="text-sm font-bold leading-snug" style={{ color: subcatInfo.color }}>

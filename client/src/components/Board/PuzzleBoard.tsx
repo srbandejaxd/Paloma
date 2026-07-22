@@ -313,7 +313,6 @@ export default function PuzzleBoard({
       setGame(gameCopy)
       gameRef.current = gameCopy
       setDisplayFen(gameCopy.fen())
-
       if (isLastPlayerMove) {
         // Play correct sound immediately — same instant as the green flash
         correctSound.currentTime = 0; correctSound.play().catch(() => {})
