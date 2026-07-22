@@ -10,6 +10,7 @@ interface PuzzleBoardProps {
   onSkip?: (errors: number) => void
   disabled?: boolean
   autoSkipAfterErrors?: number
+  externalHighlights?: string[]
 }
 
 type FeedbackState = 'idle' | 'correct' | 'wrong' | 'opponent' | 'skipping'
@@ -76,6 +77,7 @@ export default function PuzzleBoard({
   onSkip,
   disabled,
   autoSkipAfterErrors = 1,
+  externalHighlights = [],
 }: PuzzleBoardProps) {
   const [game, setGame] = useState(new Chess())
   const [displayFen, setDisplayFen] = useState('')
@@ -441,6 +443,9 @@ export default function PuzzleBoard({
 
   const allHighlights = { ...highlightSquares }
   if (draggedSquare) allHighlights[draggedSquare] = { background: 'rgba(212,160,23,0.3)' }
+  externalHighlights.forEach(sq => {
+    allHighlights[sq] = { background: 'radial-gradient(circle, rgba(212,160,23,0.9) 0%, rgba(212,160,23,0.4) 60%, transparent 100%)' }
+  })
 
   useEffect(() => {
     if (!draggedSquare) return

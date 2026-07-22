@@ -170,3 +170,206 @@ export async function advanceBlindPuzzle(): Promise<{ ok: boolean; nextPuzzle: n
   if (!res.ok) throw new Error('Failed to advance blind puzzle')
   return res.json()
 }
+
+// ─── CYCLES ──────────────────────────────────────────────────────────────────
+
+export interface Macrocycle {
+  id: number
+  category: string
+  status: 'active' | 'completed'
+  hoursPerDay: number
+  globalPuzzlePointer: number
+  createdAt: string
+  completedAt: string | null
+  cycles?: Cycle[]
+  reviewConfig?: ReviewConfig[]
+}
+
+export interface Cycle {
+  id: number
+  macrocycleId: number
+  cycleNumber: number
+  puzzleStart: number
+  puzzleEnd: number | null
+  status: 'active' | 'completed'
+  createdAt: string
+  completedAt: string | null
+  reviews?: Review[]
+}
+
+export interface Review {
+  id: number
+  cycleId: number
+  reviewNumber: number
+  daysWork: number
+  daysRest: number
+  status: 'active' | 'completed' | 'failed'
+  puzzlePointer: number
+  createdAt: string
+  completedAt: string | null
+  failedAt: string | null
+  sessions?: ReviewSession[]
+}
+
+export interface ReviewSession {
+  id: number
+  reviewId: number
+  dayNumber: number
+  startedAt: string
+  endedAt: string | null
+  puzzleStart: number
+  puzzleEnd: number | null
+  puzzlesSolved: number
+  puzzlesAttempted: number
+  status: 'active' | 'completed'
+}
+
+export interface ReviewConfig {
+  reviewNumber: number
+  daysWork: number
+  daysRest: number
+}
+
+export interface CyclePuzzle {
+  id: number
+  fen: string
+  solution: string[]
+  subcategory: string | null
+}
+
+export interface StartSessionResponse {
+  sessionId: number
+  dayNumber: number
+  hoursPerDay: number
+  puzzle: CyclePuzzle
+  puzzleIndex: number
+}
+
+export interface PuzzleResponse {
+  puzzle?: CyclePuzzle
+  puzzleIndex?: number
+  elapsedMs: number
+  limitMs: number
+  timeUp: boolean
+  finished?: boolean
+}
+
+export interface SubmitResponse {
+  sessionComplete: boolean
+  nextPuzzle?: CyclePuzzle
+  elapsedMs?: number
+  limitMs?: number
+  timeUp?: boolean
+  poolFinished?: boolean
+}
+
+export interface EndSessionResponse {
+  sessionComplete?: boolean
+  daysDone?: number
+  daysWork?: number
+  reviewComplete?: boolean
+  cycleComplete?: boolean
+  macrocycleComplete?: boolean
+  restDays?: number
+}
+
+// Listar macrociclos del usuario
+export async function fetchMacrocycles(): Promise<Macrocycle[]> {
+  const res = await fetch(`${BASE}/api/cycles/macrocycles`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch macrocycles')
+  return res.json()
+}
+
+// Crear nuevo macrociclo
+export async function createMacrocycle(data: {
+  category: string
+  hoursPerDay?: number
+  reviewConfig?: { review_number: number; days_work: number; days_rest: number }[]
+}): Promise<{ macrocycleId: number; cycleId: number }> {
+  const res = await fetch(`${BASE}/api/cycles/macrocycles`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error || 'Failed to create macrocycle')
+  return json
+}
+
+// Detalle de un macrociclo (con ciclos y config)
+export async function fetchMacrocycle(id: number): Promise<Macrocycle> {
+  const res = await fetch(`${BASE}/api/cycles/macrocycles/${id}`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch macrocycle')
+  return res.json()
+}
+
+// Editar configuración de un macrociclo
+export async function updateMacrocycleConfig(id: number, data: {
+  hoursPerDay?: number
+  reviewConfig?: { reviewNumber: number; daysWork: number; daysRest: number }[]
+}): Promise<void> {
+  const res = await fetch(`${BASE}/api/cycles/macrocycles/${id}/config`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to update config')
+}
+
+// Detalle de un ciclo (con repasos)
+export async function fetchCycle(id: number): Promise<Cycle & { reviews: Review[]; category: string; hoursPerDay: number }> {
+  const res = await fetch(`${BASE}/api/cycles/cycles/${id}`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch cycle')
+  return res.json()
+}
+
+// Detalle de un repaso (con sesiones)
+export async function fetchReview(id: number): Promise<Review & { sessions: ReviewSession[]; category: string; hoursPerDay: number; cycleStart: number }> {
+  const res = await fetch(`${BASE}/api/cycles/reviews/${id}`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch review')
+  return res.json()
+}
+
+// Iniciar sesión del día
+export async function startReviewSession(reviewId: number): Promise<StartSessionResponse> {
+  const res = await fetch(`${BASE}/api/cycles/reviews/${reviewId}/start-session`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error || 'Failed to start session')
+  return json
+}
+
+// Obtener puzzle actual de la sesión
+export async function fetchSessionPuzzle(sessionId: number): Promise<PuzzleResponse> {
+  const res = await fetch(`${BASE}/api/cycles/sessions/${sessionId}/puzzle`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch session puzzle')
+  return res.json()
+}
+
+// Registrar puzzle completado
+export async function submitSessionPuzzle(sessionId: number, data: {
+  puzzleId: number
+  attempts: number
+  hintUsed: boolean
+  timeMs: number
+}): Promise<SubmitResponse> {
+  const res = await fetch(`${BASE}/api/cycles/sessions/${sessionId}/submit`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to submit puzzle')
+  return res.json()
+}
+
+// Terminar sesión (tiempo agotado, después del último puzzle)
+export async function endReviewSession(sessionId: number): Promise<EndSessionResponse> {
+  const res = await fetch(`${BASE}/api/cycles/sessions/${sessionId}/end`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to end session')
+  return res.json()
+}

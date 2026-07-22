@@ -281,4 +281,530 @@ router.post('/blind/advance', authMiddleware, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
+
+// ─── CYCLES ───────────────────────────────────────────────────────────────────
+
+// Obtener pool de puzzles ordenado por categoría (secuencia lineal para ciclos)
+async function getCyclePuzzles(db, category, offset, limit) {
+  const result = await db.execute({
+    sql: `SELECT p.id, p.fen, p.solution, b.subcategory
+          FROM puzzles p
+          JOIN blocks b ON p.block_id = b.id
+          WHERE b.category = ?
+          ORDER BY b.id ASC, p.order_in_block ASC
+          LIMIT ? OFFSET ?`,
+    args: [category, limit, offset]
+  })
+  return result.rows.map(p => ({ ...p, solution: JSON.parse(p.solution) }))
+}
+
+async function getCyclePuzzleCount(db, category) {
+  const result = await db.execute({
+    sql: `SELECT COUNT(*) as total FROM puzzles p JOIN blocks b ON p.block_id = b.id WHERE b.category = ?`,
+    args: [category]
+  })
+  return Number(result.rows[0].total)
+}
+
+const DEFAULT_REVIEW_CONFIG = [
+  { review_number: 1, days_work: 7, days_rest: 3 },
+  { review_number: 2, days_work: 5, days_rest: 2 },
+  { review_number: 3, days_work: 3, days_rest: 1 },
+  { review_number: 4, days_work: 1, days_rest: 0 },
+]
+
+// GET /cycles/macrocycles — listar macrociclos del usuario
+router.get('/cycles/macrocycles', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const result = await db.execute({
+      sql: `SELECT id, category, status, hours_per_day as hoursPerDay,
+                   global_puzzle_pointer as globalPuzzlePointer,
+                   created_at as createdAt, completed_at as completedAt
+            FROM macrocycles WHERE user_id = ? ORDER BY created_at DESC`,
+      args: [req.user.userId]
+    })
+    res.json(result.rows)
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// POST /cycles/macrocycles — crear nuevo macrociclo
+router.post('/cycles/macrocycles', authMiddleware, async (req, res) => {
+  const { category, hoursPerDay = 2, reviewConfig } = req.body
+  if (!category) return res.status(400).json({ error: 'category requerido' })
+  const db = getDb()
+  try {
+    // Solo 1 macrociclo activo por categoría
+    const existing = await db.execute({
+      sql: `SELECT id FROM macrocycles WHERE user_id = ? AND category = ? AND status = 'active'`,
+      args: [req.user.userId, category]
+    })
+    if (existing.rows.length > 0) return res.status(409).json({ error: 'Ya tienes un macrociclo activo para esta categoría' })
+
+    const result = await db.execute({
+      sql: `INSERT INTO macrocycles (user_id, category, hours_per_day) VALUES (?, ?, ?)`,
+      args: [req.user.userId, category, hoursPerDay]
+    })
+    const macrocycleId = Number(result.lastInsertRowid)
+
+    // Insertar configuración de repasos (default o custom)
+    const config = reviewConfig || DEFAULT_REVIEW_CONFIG
+    for (const rc of config) {
+      await db.execute({
+        sql: `INSERT INTO review_config (macrocycle_id, review_number, days_work, days_rest) VALUES (?, ?, ?, ?)`,
+        args: [macrocycleId, rc.review_number, rc.days_work, rc.days_rest]
+      })
+    }
+
+    // Crear el primer ciclo
+    const cycleResult = await db.execute({
+      sql: `INSERT INTO cycles (macrocycle_id, cycle_number, puzzle_start) VALUES (?, 1, 0)`,
+      args: [macrocycleId]
+    })
+    const cycleId = Number(cycleResult.lastInsertRowid)
+
+    // Crear el primer repaso con la config
+    await db.execute({
+      sql: `INSERT INTO reviews (cycle_id, review_number, days_work, days_rest, puzzle_pointer)
+            VALUES (?, 1, ?, ?, 0)`,
+      args: [cycleId, config[0].days_work, config[0].days_rest]
+    })
+
+    res.json({ macrocycleId, cycleId })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// GET /cycles/macrocycles/:id — detalle completo de un macrociclo
+router.get('/cycles/macrocycles/:id', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const macro = await db.execute({
+      sql: `SELECT id, category, status, hours_per_day as hoursPerDay,
+                   global_puzzle_pointer as globalPuzzlePointer,
+                   created_at as createdAt, completed_at as completedAt
+            FROM macrocycles WHERE id = ? AND user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (macro.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+
+    const cycles = await db.execute({
+      sql: `SELECT id, cycle_number as cycleNumber, puzzle_start as puzzleStart,
+                   puzzle_end as puzzleEnd, status, created_at as createdAt, completed_at as completedAt
+            FROM cycles WHERE macrocycle_id = ? ORDER BY cycle_number ASC`,
+      args: [req.params.id]
+    })
+
+    const config = await db.execute({
+      sql: `SELECT review_number as reviewNumber, days_work as daysWork, days_rest as daysRest
+            FROM review_config WHERE macrocycle_id = ? ORDER BY review_number ASC`,
+      args: [req.params.id]
+    })
+
+    res.json({ ...macro.rows[0], cycles: cycles.rows, reviewConfig: config.rows })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// GET /cycles/cycles/:id — detalle de un ciclo con sus repasos
+router.get('/cycles/cycles/:id', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const cycle = await db.execute({
+      sql: `SELECT c.id, c.macrocycle_id as macrocycleId, c.cycle_number as cycleNumber,
+                   c.puzzle_start as puzzleStart, c.puzzle_end as puzzleEnd,
+                   c.status, m.category, m.hours_per_day as hoursPerDay
+            FROM cycles c JOIN macrocycles m ON m.id = c.macrocycle_id
+            WHERE c.id = ? AND m.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (cycle.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+
+    const reviews = await db.execute({
+      sql: `SELECT id, review_number as reviewNumber, days_work as daysWork, days_rest as daysRest,
+                   status, puzzle_pointer as puzzlePointer,
+                   created_at as createdAt, completed_at as completedAt, failed_at as failedAt
+            FROM reviews WHERE cycle_id = ? ORDER BY review_number ASC`,
+      args: [req.params.id]
+    })
+
+    res.json({ ...cycle.rows[0], reviews: reviews.rows })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// GET /cycles/reviews/:id — detalle de un repaso con sesiones
+router.get('/cycles/reviews/:id', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const review = await db.execute({
+      sql: `SELECT r.id, r.cycle_id as cycleId, r.review_number as reviewNumber,
+                   r.days_work as daysWork, r.days_rest as daysRest,
+                   r.status, r.puzzle_pointer as puzzlePointer,
+                   r.created_at as createdAt, r.completed_at as completedAt, r.failed_at as failedAt,
+                   c.puzzle_start as cycleStart, c.macrocycle_id as macrocycleId, m.category, m.hours_per_day as hoursPerDay
+            FROM reviews r
+            JOIN cycles c ON c.id = r.cycle_id
+            JOIN macrocycles m ON m.id = c.macrocycle_id
+            WHERE r.id = ? AND m.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (review.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+
+    const sessions = await db.execute({
+      sql: `SELECT id, day_number as dayNumber, started_at as startedAt, ended_at as endedAt,
+                   puzzle_start as puzzleStart, puzzle_end as puzzleEnd,
+                   puzzles_solved as puzzlesSolved, puzzles_attempted as puzzlesAttempted, status
+            FROM review_sessions WHERE review_id = ? ORDER BY day_number ASC`,
+      args: [req.params.id]
+    })
+
+    res.json({ ...review.rows[0], sessions: sessions.rows })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// POST /cycles/reviews/:id/start-session — iniciar sesión del día
+router.post('/cycles/reviews/:id/start-session', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const review = await db.execute({
+      sql: `SELECT r.id, r.status, r.puzzle_pointer as puzzlePointer, r.days_work as daysWork,
+                   r.days_rest as daysRest, c.puzzle_start as cycleStart, m.category, m.hours_per_day as hoursPerDay
+            FROM reviews r
+            JOIN cycles c ON c.id = r.cycle_id
+            JOIN macrocycles m ON m.id = c.macrocycle_id
+            WHERE r.id = ? AND m.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (review.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+    const r = review.rows[0]
+
+    if (r.status !== 'active') return res.status(400).json({ error: `Repaso ${r.status}` })
+
+    // Verificar que no hay sesión activa ya
+    const activeSession = await db.execute({
+      sql: `SELECT id FROM review_sessions WHERE review_id = ? AND status = 'active'`,
+      args: [req.params.id]
+    })
+    if (activeSession.rows.length > 0) return res.status(409).json({ error: 'Ya hay una sesión activa' })
+
+    // Verificar ventana de tiempo (24h desde última sesión completada)
+    const lastSession = await db.execute({
+      sql: `SELECT started_at as startedAt FROM review_sessions WHERE review_id = ? AND status = 'completed' ORDER BY day_number DESC LIMIT 1`,
+      args: [req.params.id]
+    })
+    if (lastSession.rows.length > 0) {
+      const lastStart = new Date(lastSession.rows[0].startedAt)
+      const nextAvailable = new Date(lastStart.getTime() + 24 * 60 * 60 * 1000)
+      if (new Date() < nextAvailable) {
+        return res.status(425).json({
+          error: 'Sesión no disponible aún',
+          availableAt: nextAvailable.toISOString()
+        })
+      }
+
+      // Verificar límite de 48h (gracia)
+      const graceEnd = new Date(nextAvailable.getTime() + 48 * 60 * 60 * 1000)
+      if (new Date() > graceEnd) {
+        // Cancelar el repaso
+        await db.execute({
+          sql: `UPDATE reviews SET status = 'failed', failed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          args: [req.params.id]
+        })
+        return res.status(410).json({ error: 'Repaso cancelado por inactividad' })
+      }
+    }
+
+    // Contar sesiones existentes para el número de día
+    const sessionCount = await db.execute({
+      sql: `SELECT COUNT(*) as cnt FROM review_sessions WHERE review_id = ?`,
+      args: [req.params.id]
+    })
+    const dayNumber = Number(sessionCount.rows[0].cnt) + 1
+
+    if (dayNumber > r.daysWork) return res.status(400).json({ error: 'Ya completaste todos los días de este repaso' })
+
+    // Crear la sesión
+    const puzzleStart = Number(r.puzzlePointer)
+    const absoluteStart = Number(r.cycleStart) + puzzleStart
+
+    const sessionResult = await db.execute({
+      sql: `INSERT INTO review_sessions (review_id, day_number, started_at, puzzle_start, status)
+            VALUES (?, ?, CURRENT_TIMESTAMP, ?, 'active')`,
+      args: [req.params.id, dayNumber, puzzleStart]
+    })
+    const sessionId = Number(sessionResult.lastInsertRowid)
+
+    // Obtener el primer puzzle
+    const puzzles = await getCyclePuzzles(db, r.category, absoluteStart, 1)
+    if (puzzles.length === 0) return res.status(404).json({ error: 'No hay más puzzles' })
+
+    res.json({
+      sessionId,
+      dayNumber,
+      hoursPerDay: r.hoursPerDay,
+      puzzle: puzzles[0],
+      puzzleIndex: absoluteStart
+    })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// GET /cycles/sessions/:id/puzzle — obtener puzzle actual de la sesión
+router.get('/cycles/sessions/:id/puzzle', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const session = await db.execute({
+      sql: `SELECT rs.id, rs.review_id as reviewId, rs.puzzle_start as puzzleStart,
+                   rs.puzzles_attempted as puzzlesAttempted, rs.status,
+                   rs.started_at as startedAt, m.hours_per_day as hoursPerDay, m.category,
+                   c.puzzle_start as cycleStart
+            FROM review_sessions rs
+            JOIN reviews r ON r.id = rs.review_id
+            JOIN cycles c ON c.id = r.cycle_id
+            JOIN macrocycles m ON m.id = c.macrocycle_id
+            WHERE rs.id = ? AND m.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (session.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+    const s = session.rows[0]
+
+    if (s.status !== 'active') return res.status(400).json({ error: 'Sesión no activa' })
+
+    // Verificar tiempo límite
+    const startedAt = new Date(s.startedAt)
+    const elapsedMs = Date.now() - startedAt.getTime()
+    const limitMs = s.hoursPerDay * 60 * 60 * 1000
+    if (elapsedMs >= limitMs) {
+      return res.status(200).json({ timeUp: true, elapsedMs, limitMs })
+    }
+
+    const absoluteOffset = Number(s.cycleStart) + Number(s.puzzleStart) + Number(s.puzzlesAttempted)
+    const puzzles = await getCyclePuzzles(db, s.category, absoluteOffset, 1)
+    if (puzzles.length === 0) return res.json({ finished: true })
+
+    res.json({
+      puzzle: puzzles[0],
+      puzzleIndex: absoluteOffset,
+      elapsedMs,
+      limitMs,
+      timeUp: false
+    })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// POST /cycles/sessions/:id/submit — registrar resultado de un puzzle
+router.post('/cycles/sessions/:id/submit', authMiddleware, async (req, res) => {
+  const { puzzleId, attempts, hintUsed, timeMs } = req.body
+  const db = getDb()
+  try {
+    const session = await db.execute({
+      sql: `SELECT rs.id, rs.review_id as reviewId, rs.puzzle_start as puzzleStart,
+                   rs.puzzles_attempted as puzzlesAttempted, rs.puzzles_solved as puzzlesSolved,
+                   rs.status, rs.started_at as startedAt,
+                   m.hours_per_day as hoursPerDay, m.category, c.puzzle_start as cycleStart,
+                   r.days_work as daysWork, r.puzzle_pointer as reviewPointer
+            FROM review_sessions rs
+            JOIN reviews r ON r.id = rs.review_id
+            JOIN cycles c ON c.id = r.cycle_id
+            JOIN macrocycles m ON m.id = c.macrocycle_id
+            WHERE rs.id = ? AND m.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (session.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+    const s = session.rows[0]
+    if (s.status !== 'active') return res.status(400).json({ error: 'Sesión no activa' })
+
+    const orderInSession = Number(s.puzzlesAttempted) + 1
+
+    // Registrar puzzle
+    await db.execute({
+      sql: `INSERT INTO session_puzzles (session_id, puzzle_id, order_in_session, attempts, hint_used, time_ms)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [req.params.id, puzzleId, orderInSession, attempts || 1, hintUsed ? 1 : 0, timeMs || 0]
+    })
+
+    const newAttempted = Number(s.puzzlesAttempted) + 1
+    const newSolved = Number(s.puzzlesSolved) + 1
+
+    // Actualizar sesión
+    await db.execute({
+      sql: `UPDATE review_sessions SET puzzles_attempted = ?, puzzles_solved = ? WHERE id = ?`,
+      args: [newAttempted, newSolved, req.params.id]
+    })
+
+    // Actualizar puzzle_pointer del repaso
+    const newReviewPointer = Number(s.reviewPointer) + 1
+    await db.execute({
+      sql: `UPDATE reviews SET puzzle_pointer = ? WHERE id = ?`,
+      args: [newReviewPointer, s.reviewId]
+    })
+
+    // Verificar si se acabó el tiempo o no hay más puzzles
+    const startedAt = new Date(s.startedAt)
+    const elapsedMs = Date.now() - startedAt.getTime()
+    const limitMs = s.hoursPerDay * 60 * 60 * 1000
+    const timeUp = elapsedMs >= limitMs
+
+    // Verificar si hay más puzzles
+    const nextOffset = Number(s.cycleStart) + Number(s.puzzleStart) + newAttempted
+    const nextPuzzles = await getCyclePuzzles(db, s.category, nextOffset, 1)
+    const poolFinished = nextPuzzles.length === 0
+
+    if (timeUp || poolFinished) {
+      // Terminar la sesión
+      await db.execute({
+        sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP, puzzle_end = ? WHERE id = ?`,
+        args: [newReviewPointer - 1, req.params.id]
+      })
+      return res.json({ sessionComplete: true, timeUp, poolFinished })
+    }
+
+    res.json({
+      sessionComplete: false,
+      nextPuzzle: nextPuzzles[0],
+      elapsedMs,
+      limitMs
+    })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// POST /cycles/sessions/:id/end — terminar sesión manualmente (tiempo agotado)
+router.post('/cycles/sessions/:id/end', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const session = await db.execute({
+      sql: `SELECT rs.id, rs.review_id as reviewId, rs.puzzles_attempted as puzzlesAttempted,
+                   rs.puzzle_start as puzzleStart, rs.status,
+                   r.puzzle_pointer as reviewPointer, r.days_work as daysWork,
+                   r.review_number as reviewNumber, c.id as cycleId, c.puzzle_start as cycleStart,
+                   c.macrocycle_id as macrocycleId, m.category
+            FROM review_sessions rs
+            JOIN reviews r ON r.id = rs.review_id
+            JOIN cycles c ON c.id = r.cycle_id
+            JOIN macrocycles m ON m.id = c.macrocycle_id
+            WHERE rs.id = ? AND m.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (session.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+    const s = session.rows[0]
+    if (s.status !== 'active') return res.status(400).json({ error: 'Sesión ya terminada' })
+
+    // Cerrar sesión
+    await db.execute({
+      sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP, puzzle_end = ? WHERE id = ?`,
+      args: [Number(s.reviewPointer) - 1, req.params.id]
+    })
+
+    // Verificar si el repaso está completo (todos los días hechos)
+    const completedSessions = await db.execute({
+      sql: `SELECT COUNT(*) as cnt FROM review_sessions WHERE review_id = ? AND status = 'completed'`,
+      args: [s.reviewId]
+    })
+    const daysDone = Number(completedSessions.rows[0].cnt)
+
+    if (daysDone >= Number(s.daysWork)) {
+      // Completar el repaso
+      await db.execute({
+        sql: `UPDATE reviews SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        args: [s.reviewId]
+      })
+
+      // Verificar si hay más repasos configurados
+      const nextReviewConfig = await db.execute({
+        sql: `SELECT review_number as reviewNumber, days_work as daysWork, days_rest as daysRest
+              FROM review_config WHERE macrocycle_id = ? AND review_number = ?`,
+        args: [s.macrocycleId, Number(s.reviewNumber) + 1]
+      })
+
+      if (nextReviewConfig.rows.length > 0) {
+        const nc = nextReviewConfig.rows[0]
+        // Crear siguiente repaso (pointer vuelve a 0 — empieza desde el inicio del tramo)
+        await db.execute({
+          sql: `INSERT INTO reviews (cycle_id, review_number, days_work, days_rest, puzzle_pointer)
+                VALUES (?, ?, ?, ?, 0)`,
+          args: [s.cycleId, nc.reviewNumber, nc.daysWork, nc.daysRest]
+        })
+        return res.json({ reviewComplete: true, cycleComplete: false, restDays: s.daysRest })
+      } else {
+        // Todos los repasos del ciclo completos → completar ciclo
+        const maxPointer = Number(s.cycleStart) + Number(s.reviewPointer)
+        await db.execute({
+          sql: `UPDATE cycles SET status = 'completed', puzzle_end = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          args: [maxPointer, s.cycleId]
+        })
+        // Actualizar puntero global del macrociclo
+        await db.execute({
+          sql: `UPDATE macrocycles SET global_puzzle_pointer = ? WHERE id = ?`,
+          args: [maxPointer, s.macrocycleId]
+        })
+        // Verificar si hay más puzzles (crear nuevo ciclo)
+        const totalPuzzles = await getCyclePuzzleCount(db, s.category)
+        if (maxPointer < totalPuzzles) {
+          const cycleCount = await db.execute({
+            sql: `SELECT COUNT(*) as cnt FROM cycles WHERE macrocycle_id = ?`,
+            args: [s.macrocycleId]
+          })
+          const nextCycleNumber = Number(cycleCount.rows[0].cnt) + 1
+          const cycleResult = await db.execute({
+            sql: `INSERT INTO cycles (macrocycle_id, cycle_number, puzzle_start) VALUES (?, ?, ?)`,
+            args: [s.macrocycleId, nextCycleNumber, maxPointer]
+          })
+          const firstConfig = await db.execute({
+            sql: `SELECT days_work as daysWork, days_rest as daysRest FROM review_config WHERE macrocycle_id = ? AND review_number = 1`,
+            args: [s.macrocycleId]
+          })
+          const fc = firstConfig.rows[0]
+          await db.execute({
+            sql: `INSERT INTO reviews (cycle_id, review_number, days_work, days_rest, puzzle_pointer) VALUES (?, 1, ?, ?, 0)`,
+            args: [Number(cycleResult.lastInsertRowid), fc.daysWork, fc.daysRest]
+          })
+          return res.json({ reviewComplete: true, cycleComplete: true, macrocycleComplete: false })
+        } else {
+          // Macrociclo completo
+          await db.execute({
+            sql: `UPDATE macrocycles SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            args: [s.macrocycleId]
+          })
+          return res.json({ reviewComplete: true, cycleComplete: true, macrocycleComplete: true })
+        }
+      }
+    }
+
+    res.json({ sessionComplete: true, daysDone, daysWork: s.daysWork })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// PUT /cycles/macrocycles/:id/config — editar configuración de repasos
+router.put('/cycles/macrocycles/:id/config', authMiddleware, async (req, res) => {
+  const { reviewConfig, hoursPerDay } = req.body
+  const db = getDb()
+  try {
+    const macro = await db.execute({
+      sql: `SELECT id FROM macrocycles WHERE id = ? AND user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (macro.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+
+    if (hoursPerDay) {
+      await db.execute({
+        sql: `UPDATE macrocycles SET hours_per_day = ? WHERE id = ?`,
+        args: [hoursPerDay, req.params.id]
+      })
+    }
+
+    if (reviewConfig?.length) {
+      await db.execute({
+        sql: `DELETE FROM review_config WHERE macrocycle_id = ?`,
+        args: [req.params.id]
+      })
+      for (const rc of reviewConfig) {
+        await db.execute({
+          sql: `INSERT INTO review_config (macrocycle_id, review_number, days_work, days_rest) VALUES (?, ?, ?, ?)`,
+          args: [req.params.id, rc.reviewNumber, rc.daysWork, rc.daysRest]
+        })
+      }
+    }
+
+    res.json({ ok: true })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+
 module.exports = router

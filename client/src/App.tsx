@@ -7,12 +7,14 @@ import Leaderboard from './pages/Leaderboard'
 import Puzzles from './pages/Puzzles'
 import Vision from './pages/Vision'
 import BlindChess from './pages/BlindChess'
+import Cycles from './pages/Cycles'
 
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/cycles" element={<Cycles />} />
         <Route path="/solo" element={<Solo />} />
         <Route path="/history" element={<History />} />
         <Route path="/leaderboard" element={<Leaderboard />} />

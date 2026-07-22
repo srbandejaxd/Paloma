@@ -66,6 +66,7 @@ const NAV_ITEMS = [
   { path: '/history', label: 'Historial', icon: '📋' },
   { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
   { path: '/blind', label: 'Ciego', icon: '🎲' },
+  { path: '/cycles', label: 'Ciclos', icon: '🔄' },
 ]
 
 export default function BlindChess() {
