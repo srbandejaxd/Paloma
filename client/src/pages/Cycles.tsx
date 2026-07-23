@@ -156,12 +156,6 @@ import { flushSync } from 'react-dom'
 	    if (!user) { navigate('/'); return }
 	  }, [user, navigate])
 	
-	  // Cerrar sesión cuando tiempo se acaba
-	  useEffect(() => {
-	    if (!timeUp || sessionResult !== null || !sessionId || loading) return
-	    handleTimeUpConfirm()
-	  }, [timeUp])
-
 	  // Cronómetro de sesión
 	  useEffect(() => {
 	    if (screen !== 'session' || !sessionStartedAt || timeUp) return
@@ -783,7 +777,7 @@ import { flushSync } from 'react-dom'
 	          <h3 className={`text-xl font-bold ${t.text} mb-4`}>Repasos</h3>
 	          <div className="space-y-3">
 	            {activeCycle.reviews?.map(r => {
-	              const sessionsCount = r.sessions?.length || 0
+	              const sessionsCount = (r as any).completedSessions ?? r.sessions?.filter((s: any) => s.status === 'completed').length ?? 0
 	              return (
 	                <button
 	                  key={r.id}
@@ -990,8 +984,12 @@ import { flushSync } from 'react-dom'
 	      )
 	    }
 	
-	  // Tiempo agotado — useEffect llama handleTimeUpConfirm automáticamente
+	  // Tiempo agotado — cerrar sesión inmediatamente
 	  if (timeUp && sessionResult === null) {
+	  // Llamar endSession automáticamente si no se ha llamado aún
+	  if (sessionId && !loading) {
+	    handleTimeUpConfirm()
+	  }
 	  return (
 	    <div className={`min-h-screen ${t.bg} flex items-center justify-center px-6 transition-colors duration-300`}>
 	      <div className={`w-full max-w-md text-center rounded-2xl ${t.bg2} ${t.border} border p-10`}>

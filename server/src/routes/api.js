@@ -427,7 +427,16 @@ router.get('/cycles/cycles/:id', authMiddleware, async (req, res) => {
       args: [req.params.id]
     })
 
-    res.json({ ...cycle.rows[0], reviews: reviews.rows })
+    // Agregar conteo de sesiones completadas a cada repaso
+    const reviewsWithSessions = await Promise.all(reviews.rows.map(async (r) => {
+      const sessionCount = await db.execute({
+        sql: `SELECT COUNT(*) as cnt FROM review_sessions WHERE review_id = ? AND status = 'completed'`,
+        args: [r.id]
+      })
+      return { ...r, completedSessions: Number(sessionCount.rows[0].cnt) }
+    }))
+
+    res.json({ ...cycle.rows[0], reviews: reviewsWithSessions })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
@@ -686,12 +695,6 @@ router.post('/cycles/sessions/:id/submit', authMiddleware, async (req, res) => {
         sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP, puzzle_end = ? WHERE id = ?`,
         args: [newReviewPointer - 1, req.params.id]
       })
-      // Actualizar global_puzzle_pointer
-      const currentPointer = Number(s.cycleStart) + newReviewPointer
-      await db.execute({
-        sql: `UPDATE macrocycles SET global_puzzle_pointer = MAX(global_puzzle_pointer, ?) WHERE id = ?`,
-        args: [currentPointer, s.macrocycleId]
-      })
       return res.json({ sessionComplete: true, timeUp, poolFinished })
     }
 
@@ -726,17 +729,9 @@ router.post('/cycles/sessions/:id/end', authMiddleware, async (req, res) => {
     if (s.status !== 'active') return res.status(400).json({ error: 'Sesión ya terminada' })
 
     // Cerrar sesión
-    const puzzleEnd = Number(s.reviewPointer) - 1
     await db.execute({
       sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP, puzzle_end = ? WHERE id = ?`,
-      args: [puzzleEnd, req.params.id]
-    })
-
-    // Actualizar global_puzzle_pointer con el máximo alcanzado hasta ahora
-    const currentPointer = Number(s.cycleStart) + Number(s.reviewPointer)
-    await db.execute({
-      sql: `UPDATE macrocycles SET global_puzzle_pointer = MAX(global_puzzle_pointer, ?) WHERE id = ?`,
-      args: [currentPointer, s.macrocycleId]
+      args: [Number(s.reviewPointer) - 1, req.params.id]
     })
 
     // Verificar si el repaso está completo (todos los días hechos)
