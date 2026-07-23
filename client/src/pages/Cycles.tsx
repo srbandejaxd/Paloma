@@ -1,5 +1,5 @@
 	import { useState, useEffect, useRef, useCallback } from 'react'
-import { flushSync } from 'react-dom'
+    import { flushSync } from 'react-dom'
 	import { Chess } from 'chess.js'
 	import { useNavigate, useLocation } from 'react-router-dom'
 	import { useAuth } from '../lib/auth'
