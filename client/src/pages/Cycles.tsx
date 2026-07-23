@@ -83,7 +83,16 @@
 	  return `${m}:${String(sec).padStart(2, '0')}`
 	}
 	
-	function formatDate(iso: string): string {
+	function formatDuration(hoursPerDay: number): string {
+  const totalMinutes = Math.round(hoursPerDay * 60)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  if (h === 0) return `${m}min`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}min`
+}
+
+function formatDate(iso: string): string {
 	  return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 	}
 	
@@ -677,7 +686,7 @@
 	                          <h3 className={`text-lg font-bold ${t.text}`}>{catLabel}</h3>
 	                          <StatusBadge status={m.status} />
 	                        </div>
-	                        <p className={`text-sm ${t.text3}`}>Iniciado {formatDate(m.createdAt)} · {m.hoursPerDay}h/día · Ejercicio {m.globalPuzzlePointer} alcanzado</p>
+	                        <p className={`text-sm ${t.text3}`}>Iniciado {formatDate(m.createdAt)} · {formatDuration(m.hoursPerDay)}/día · Ejercicio {m.globalPuzzlePointer} alcanzado</p>
 	                      </div>
 	                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
 	                        <polyline points="9 18 15 12 9 6"/>
@@ -714,7 +723,7 @@
 	              Macrociclo
 	            </h2>
 	            <div className={`flex gap-6 text-sm ${t.text3}`}>
-	              <span>🕐 {activeMacrocycle.hoursPerDay}h por sesión</span>
+	              <span>🕐 {formatDuration(activeMacrocycle.hoursPerDay)} por sesión</span>
 	              <span>📍 Ejercicio {activeMacrocycle.globalPuzzlePointer} alcanzado</span>
 	              <span>📅 Iniciado {formatDate(activeMacrocycle.createdAt)}</span>
 	            </div>
@@ -1059,31 +1068,33 @@
 	        </div>
 	
 	        {/* Board */}
-	        <div className="flex-1 flex flex-col items-center justify-start pt-8 px-4 pb-8 gap-4">
-	          {currentPuzzle && (
-	            <PuzzleBoard
-	              key={currentPuzzle.id}
-	              puzzle={currentPuzzle}
-	              onSolved={handlePuzzleSolved}
-	              onError={handlePuzzleError}
-	              externalHighlights={hintSquare ? [hintSquare] : []}
-	              autoSkipAfterErrors={0}
-	              onStepChange={step => { boardStepRef.current = step }}
-	            />
-	          )}
+	        <div className="flex-1 flex items-start justify-center pt-8 px-4 pb-8">
+	          <div className="relative">
+	            {currentPuzzle && (
+	              <PuzzleBoard
+	                key={currentPuzzle.id}
+	                puzzle={currentPuzzle}
+	                onSolved={handlePuzzleSolved}
+	                onError={handlePuzzleError}
+	                externalHighlights={hintSquare ? [hintSquare] : []}
+	                autoSkipAfterErrors={0}
+	                onStepChange={step => { boardStepRef.current = step }}
+	              />
+	            )}
 
-	          {/* Etiqueta de categoría — debajo del tablero, centrada */}
-	          {subcatInfo && (
-	            <div className="flex items-center gap-2">
-	              <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Categoría</span>
-	              <span
-	                className="text-xs font-bold px-3 py-1 rounded-full"
-	                style={{ backgroundColor: `${subcatInfo.color}20`, color: subcatInfo.color }}
+	            {/* Panel lateral — categoría, fuera del flujo */}
+	            {subcatInfo && (
+	              <div
+	                className={`absolute top-7 rounded-xl ${t.bg2} ${t.border} border px-4 py-4 w-36`}
+	                style={{ left: 'calc(100% + 16px)' }}
 	              >
-	                {subcatInfo.label}
-	              </span>
-	            </div>
-	          )}
+	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-2`}>Categoría</p>
+	                <p className="text-sm font-bold leading-snug" style={{ color: subcatInfo.color }}>
+	                  {subcatInfo.label}
+	                </p>
+	              </div>
+	            )}
+	          </div>
 	        </div>
 	      </div>
 	    )
