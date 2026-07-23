@@ -1059,33 +1059,31 @@
 	        </div>
 	
 	        {/* Board */}
-	        <div className="flex-1 flex items-start justify-center pt-8 px-4 pb-8">
-	          <div className="relative">
-	            {currentPuzzle && (
-	              <PuzzleBoard
-	                key={currentPuzzle.id}
-	                puzzle={currentPuzzle}
-	                onSolved={handlePuzzleSolved}
-	                onError={handlePuzzleError}
-	                externalHighlights={hintSquare ? [hintSquare] : []}
-	                autoSkipAfterErrors={0}
-	                onStepChange={step => { boardStepRef.current = step }}
-	              />
-	            )}
+	        <div className="flex-1 flex flex-col items-center justify-start pt-8 px-4 pb-8 gap-4">
+	          {currentPuzzle && (
+	            <PuzzleBoard
+	              key={currentPuzzle.id}
+	              puzzle={currentPuzzle}
+	              onSolved={handlePuzzleSolved}
+	              onError={handlePuzzleError}
+	              externalHighlights={hintSquare ? [hintSquare] : []}
+	              autoSkipAfterErrors={0}
+	              onStepChange={step => { boardStepRef.current = step }}
+	            />
+	          )}
 
-	            {/* Panel lateral — categoría, fuera del flujo */}
-	            {subcatInfo && (
-	              <div
-	                className={`absolute top-7 rounded-xl ${t.bg2} ${t.border} border px-4 py-4 w-36`}
-	                style={{ left: 'calc(100% + 16px)' }}
+	          {/* Etiqueta de categoría — debajo del tablero, centrada */}
+	          {subcatInfo && (
+	            <div className="flex items-center gap-2">
+	              <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Categoría</span>
+	              <span
+	                className="text-xs font-bold px-3 py-1 rounded-full"
+	                style={{ backgroundColor: `${subcatInfo.color}20`, color: subcatInfo.color }}
 	              >
-	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-2`}>Categoría</p>
-	                <p className="text-sm font-bold leading-snug" style={{ color: subcatInfo.color }}>
-	                  {subcatInfo.label}
-	                </p>
-	              </div>
-	            )}
-	          </div>
+	                {subcatInfo.label}
+	              </span>
+	            </div>
+	          )}
 	        </div>
 	      </div>
 	    )
