@@ -1,4 +1,5 @@
 	import { useState, useEffect, useRef, useCallback } from 'react'
+import { flushSync } from 'react-dom'
 	import { Chess } from 'chess.js'
 	import { useNavigate, useLocation } from 'react-router-dom'
 	import { useAuth } from '../lib/auth'
@@ -270,21 +271,23 @@
 	    setSessionError(null)
 	    try {
 	      const data = await startReviewSession(reviewId)
-	      setSessionId(data.sessionId)
-	      setCurrentPuzzle(data.puzzle)
-	      setPuzzleIndex(data.puzzleIndex)
-	      setSessionStartedAt(Date.now())
-	      setSessionLimitMs(data.hoursPerDay * 3600 * 1000)
-	      setElapsed(0)
-	      setSessionSolved(0)
-      setSessionTotal((data as any).totalPuzzles ?? null)
-	      setPuzzleAttempts(0)
-	      setHintUsed(false)
-	      setHintSquare(null)
-	      setTimeUp(false)
-	      setSessionResult(null)
-	      puzzleStartRef.current = Date.now()
-	      setScreen('session')
+	      flushSync(() => {
+	        setSessionId(data.sessionId)
+	        setCurrentPuzzle(data.puzzle)
+	        setPuzzleIndex(data.puzzleIndex)
+	        setSessionStartedAt(Date.now())
+	        setSessionLimitMs(data.hoursPerDay * 3600 * 1000)
+	        setElapsed(0)
+	        setSessionSolved(0)
+	        setSessionTotal((data as any).totalPuzzles ?? null)
+	        setPuzzleAttempts(0)
+	        setHintUsed(false)
+	        setHintSquare(null)
+	        setTimeUp(false)
+	        setSessionResult(null)
+	        puzzleStartRef.current = Date.now()
+	        setScreen('session')
+	      })
 	    } catch (e: unknown) {
 	      const err = e as Error
 	      if (err.message?.includes('disponible')) {
@@ -1022,7 +1025,7 @@
 	              <div className="text-center">
 	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-0.5`}>Puzzles</p>
 	                <div className="text-2xl font-bold font-mono" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
-	                  {puzzleIndex + 1}{sessionTotal ? `/${sessionTotal}` : ''}
+	                  {sessionSolved + 1}{sessionTotal ? `/${sessionTotal}` : ''}
 	                </div>
 	              </div>
 	
