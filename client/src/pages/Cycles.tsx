@@ -686,7 +686,7 @@ function formatDate(iso: string): string {
 	                          <h3 className={`text-lg font-bold ${t.text}`}>{catLabel}</h3>
 	                          <StatusBadge status={m.status} />
 	                        </div>
-	                        <p className={`text-sm ${t.text3}`}>Iniciado {formatDate(m.createdAt)} · {formatDuration(m.hoursPerDay)}/día · Ejercicio {m.globalPuzzlePointer} alcanzado</p>
+	                        <p className={`text-sm ${t.text3}`}>Iniciado {formatDate(m.createdAt)} · {formatDuration(Number(m.hoursPerDay))}/día · Ejercicio {m.globalPuzzlePointer} alcanzado</p>
 	                      </div>
 	                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
 	                        <polyline points="9 18 15 12 9 6"/>
@@ -723,7 +723,7 @@ function formatDate(iso: string): string {
 	              Macrociclo
 	            </h2>
 	            <div className={`flex gap-6 text-sm ${t.text3}`}>
-	              <span>🕐 {formatDuration(activeMacrocycle.hoursPerDay)} por sesión</span>
+	              <span>🕐 {formatDuration(Number(activeMacrocycle.hoursPerDay))} por sesión</span>
 	              <span>📍 Ejercicio {activeMacrocycle.globalPuzzlePointer} alcanzado</span>
 	              <span>📅 Iniciado {formatDate(activeMacrocycle.createdAt)}</span>
 	            </div>
@@ -1082,16 +1082,11 @@ function formatDate(iso: string): string {
 	              />
 	            )}
 
-	            {/* Panel lateral — categoría, fuera del flujo */}
+	            {/* Categoría — debajo del tablero */}
 	            {subcatInfo && (
-	              <div
-	                className={`absolute top-7 rounded-xl ${t.bg2} ${t.border} border px-4 py-4 w-36`}
-	                style={{ left: 'calc(100% + 16px)' }}
-	              >
-	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-2`}>Categoría</p>
-	                <p className="text-sm font-bold leading-snug" style={{ color: subcatInfo.color }}>
-	                  {subcatInfo.label}
-	                </p>
+	              <div className="mt-4 flex items-center justify-center gap-3">
+	                <span className={`text-xs uppercase tracking-widest ${t.text3}`}>Categoría</span>
+	                <span className="text-lg font-bold" style={{ color: subcatInfo.color }}>{subcatInfo.label}</span>
 	              </div>
 	            )}
 	          </div>
