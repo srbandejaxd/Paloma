@@ -44,8 +44,6 @@ function CrownIcon() {
 
 const CATEGORIES = [
   { id: "checkmate_patterns", label: "The Checkmate Patterns Manual" },
-  { id: "palomita", label: "Woodpecker Method" },
-  { id: "woodpecker_method2", label: "Woodpecker Method 2" },
   { id: "patterns_must_know", label: "Los 100 patrones que debes saber" },
 ]
 
