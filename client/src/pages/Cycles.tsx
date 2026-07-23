@@ -135,6 +135,7 @@
 	  const [loading, setLoading] = useState(false)
 	  const [sessionError, setSessionError] = useState<string | null>(null)
 	  const [availableAt, setAvailableAt] = useState<string | null>(null)
+      const [activeOrphanSession, setActiveOrphanSession] = useState<{ id: number; elapsedMs: number; limitMs: number; puzzle: CyclePuzzle | null } | null>(null)
 	
 	  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 	  const puzzleStartRef = useRef<number>(Date.now())
