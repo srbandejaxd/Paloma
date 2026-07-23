@@ -127,8 +127,8 @@ import { flushSync } from 'react-dom'
 	
 	  // Create modal state
 	  const [createCategory, setCreateCategory] = useState<string>('palomita')
-	  const [createHours, setCreateHours] = useState<number>(2)
-  const [createMinutes, setCreateMinutes] = useState<number>(0)
+	  const [createHours, setCreateHours] = useState<number>(0)
+      const [createMinutes, setCreateMinutes] = useState<number>(30)
 	  const [createConfig, setCreateConfig] = useState(DEFAULT_REVIEW_CONFIG)
 	  const [creating, setCreating] = useState(false)
 	  const [createError, setCreateError] = useState<string | null>(null)
@@ -547,23 +547,24 @@ import { flushSync } from 'react-dom'
 	              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Tiempo de trabajo por día</label>
 	              <div className="flex items-center gap-3 flex-wrap">
 	                <div className="flex items-center gap-2">
-	                  <select
+	                  <input
+	                    type="number"
+	                    min={0}
 	                    value={createHours}
-	                    onChange={e => setCreateHours(Number(e.target.value))}
-	                    className={`px-3 py-3 rounded-lg border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
-	                  >
-	                    {[0,1,2,3,4,5,6,7,8].map(h => <option key={h} value={h}>{h}</option>)}
-	                  </select>
+	                    onChange={e => setCreateHours(Math.max(0, Math.floor(Number(e.target.value))))}
+	                    className={`w-20 px-3 py-3 rounded-lg border focus:outline-none font-semibold text-center ${t.inputBg} ${t.border}`}
+	                  />
 	                  <span className={`text-sm font-semibold ${t.text2}`}>horas</span>
 	                </div>
 	                <div className="flex items-center gap-2">
-	                  <select
+	                  <input
+	                    type="number"
+	                    min={0}
+	                    max={59}
 	                    value={createMinutes}
-	                    onChange={e => setCreateMinutes(Number(e.target.value))}
-	                    className={`px-3 py-3 rounded-lg border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
-	                  >
-	                    {[0,10,15,20,30,45].map(m => <option key={m} value={m}>{String(m).padStart(2,'0')}</option>)}
-	                  </select>
+	                    onChange={e => setCreateMinutes(Math.min(59, Math.max(0, Math.floor(Number(e.target.value)))))}
+	                    className={`w-20 px-3 py-3 rounded-lg border focus:outline-none font-semibold text-center ${t.inputBg} ${t.border}`}
+	                  />
 	                  <span className={`text-sm font-semibold ${t.text2}`}>min</span>
 	                </div>
 	                {(createHours > 0 || createMinutes > 0) && (
