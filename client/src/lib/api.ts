@@ -339,7 +339,11 @@ export async function startReviewSession(reviewId: number): Promise<StartSession
     headers: authHeaders(),
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.error || 'Failed to start session')
+  if (!res.ok) {
+    const err = new Error(json.error || 'Failed to start session') as Error & { data?: Record<string, unknown> }
+    err.data = json
+    throw err
+  }
   return json
 }
 

@@ -481,10 +481,35 @@ router.post('/cycles/reviews/:id/start-session', authMiddleware, async (req, res
 
     // Verificar que no hay sesión activa ya
     const activeSession = await db.execute({
-      sql: `SELECT id FROM review_sessions WHERE review_id = ? AND status = 'active'`,
+      sql: `SELECT id, started_at as startedAt FROM review_sessions WHERE review_id = ? AND status = 'active'`,
       args: [req.params.id]
     })
-    if (activeSession.rows.length > 0) return res.status(409).json({ error: 'Ya hay una sesión activa' })
+    if (activeSession.rows.length > 0) {
+      const orphan = activeSession.rows[0]
+      const startedAt = new Date(orphan.startedAt.endsWith('Z') ? orphan.startedAt : orphan.startedAt + 'Z')
+      const elapsedMs = Date.now() - startedAt.getTime()
+      const limitMs = Number(r.hoursPerDay) * 60 * 60 * 1000
+      // Si la sesión ya venció (tiempo agotado + 5 min de margen), cerrarla automáticamente
+      if (elapsedMs > limitMs + 5 * 60 * 1000) {
+        await db.execute({
+          sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          args: [orphan.id]
+        })
+        // No retornamos error, seguimos para crear la nueva sesión
+      } else {
+        // Sesión aún vigente — devolver el sessionId para reanudar
+        const puzzles = await getCyclePuzzles(db, r.category, Number(r.cycleStart) + Number(r.puzzlePointer), 1)
+        return res.status(409).json({
+          error: 'Ya hay una sesión activa',
+          sessionId: Number(orphan.id),
+          resumable: true,
+          puzzle: puzzles[0] || null,
+          elapsedMs,
+          limitMs,
+          hoursPerDay: r.hoursPerDay,
+        })
+      }
+    }
 
     // Verificar ventana de tiempo (24h desde última sesión completada)
     const lastSession = await db.execute({

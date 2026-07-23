@@ -215,7 +215,39 @@
 	    finally { setLoading(false) }
 	  }
 	
-	  async function handleStartSession(reviewId: number) {
+	  async function handleResumeSession() {
+    if (!activeOrphanSession || !activeReview) return
+    setLoading(true)
+    try {
+      // Obtener puzzle actual de la sesión
+      const data = await fetchSessionPuzzle(activeOrphanSession.id)
+      if (data.timeUp || !data.puzzle) {
+        // Tiempo venció mientras cargábamos — cerrar y refrescar
+        try { await endReviewSession(activeOrphanSession.id) } catch {}
+        await goToReview(activeReview.id)
+        return
+      }
+      setSessionId(activeOrphanSession.id)
+      setCurrentPuzzle(data.puzzle)
+      setPuzzleIndex(data.puzzleIndex || 0)
+      const elapsedNow = data.elapsedMs || activeOrphanSession.elapsedMs
+      setSessionStartedAt(Date.now() - elapsedNow)
+      setSessionLimitMs(data.limitMs || activeOrphanSession.limitMs)
+      setElapsed(elapsedNow)
+      setSessionSolved(0)
+      setPuzzleAttempts(0)
+      setSolutionStep(0)
+      setHintUsed(false)
+      setHintSquare(null)
+      setTimeUp(false)
+      setSessionResult(null)
+      puzzleStartRef.current = Date.now()
+      setScreen('session')
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  async function handleStartSession(reviewId: number) {
 	    setLoading(true)
 	    setSessionError(null)
 	    try {
@@ -810,7 +842,27 @@
 	            </div>
 	          )}
 	
-	          {canStart && (
+	          {activeOrphanSession && (
+	            <div className={`rounded-xl border p-5 mb-4`} style={{ backgroundColor: 'rgba(212,160,23,0.08)', borderColor: 'rgba(212,160,23,0.3)' }}>
+	              <p className="text-xs uppercase tracking-widest font-semibold mb-1" style={{ color: accentColor }}>Sesión en curso</p>
+	              <p className={`text-sm ${t.text2} mb-4`}>
+	                Tienes una sesión activa de hoy. Tiempo restante:{' '}
+	                <span className="font-bold" style={{ color: accentColor }}>
+	                  {formatHMS(Math.max(0, activeOrphanSession.limitMs - activeOrphanSession.elapsedMs))}
+	                </span>
+	              </p>
+	              <button
+	                onClick={handleResumeSession}
+	                disabled={loading}
+	                className="w-full py-4 rounded-xl font-bold text-sm tracking-widest uppercase text-white transition-all hover:opacity-90 hover:scale-105 disabled:opacity-50"
+	                style={{ backgroundColor: accentColor }}
+	              >
+	                {loading ? 'Cargando...' : '▶ Reanudar sesión'}
+	              </button>
+	            </div>
+	          )}
+
+	          {canStart && !activeOrphanSession && (
 	            <button
 	              onClick={() => handleStartSession(activeReview.id)}
 	              disabled={loading}
