@@ -27,34 +27,40 @@ function MoonIcon() {
 
 const FEATURES = [
   {
+    icon: '🔄',
+    title: 'Ciclos — el núcleo del método',
+    desc: 'La herramienta principal. Organiza tu entrenamiento en macrociclos, ciclos y repasos exactamente como indica el libro de Axel Smith. Cada repaso recorre los mismos puzzles; cada vez deberías ser más rápido.',
+    highlight: true,
+  },
+  {
     icon: '⚡',
-    title: 'Ciclos de repetición',
-    desc: 'Resuelve el mismo set de puzzles una y otra vez. Cada ciclo tu tiempo baja — eso es el método funcionando.',
+    title: 'Puzzles libres',
+    desc: 'Accede a cualquier puzzle de cualquier bloque para practicar sin estructura. Útil para explorar o repasar puzzles específicos que fallaste.',
+    highlight: false,
   },
   {
     icon: '📈',
-    title: 'Seguimiento real',
-    desc: 'Historial de cada ciclo con tiempo, errores y score. Ves exactamente cómo mejoras semana a semana.',
+    title: 'Historial y seguimiento',
+    desc: 'Cada sesión queda registrada con tiempo, errores y score. Ves exactamente cuánto mejoraste de un repaso al siguiente.',
+    highlight: false,
   },
   {
     icon: '🏆',
     title: 'Ranking global',
-    desc: 'Compite con otros jugadores por el mejor tiempo en cada bloque de puzzles.',
+    desc: 'Compite con otros jugadores por el mejor tiempo en cada bloque de puzzles y en el modo de visión.',
+    highlight: false,
   },
   {
     icon: '👁',
     title: 'Entrenamiento visual',
-    desc: 'Modo de visión para reconocer coordenadas y piezas en el tablero a velocidad. 30 segundos, máximos aciertos.',
+    desc: 'Reconoce coordenadas del tablero a velocidad. 30 segundos, máximos aciertos. Un complemento rápido para el entrenamiento diario.',
+    highlight: false,
   },
   {
     icon: '♟',
     title: 'Ajedrez ciego',
     desc: 'Memoriza la posición y juega sin ver las piezas. El nivel más alto de entrenamiento táctico.',
-  },
-  {
-    icon: '🗂',
-    title: 'Múltiples categorías',
-    desc: 'Woodpecker clásico, patrones de mate, posicionales y más. Cada categoría con sus propios bloques y subcategorías.',
+    highlight: false,
   },
 ]
 
@@ -342,11 +348,26 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURES.map(({ icon, title, desc }) => (
-              <div key={title} className={`border rounded-sm p-6 transition-colors ${t.cardBg} ${t.border} hover:border-opacity-70`}>
-                <div className="text-2xl mb-4">{icon}</div>
-                <div className={`text-sm font-bold mb-2 ${t.text}`}>{title}</div>
-                <div className={`text-xs leading-relaxed ${t.text3}`}>{desc}</div>
+            {FEATURES.map(({ icon, title, desc, highlight }, idx) => (
+              <div
+                key={title}
+                className={`border rounded-sm p-6 transition-colors ${t.cardBg} ${t.border} hover:border-opacity-70 ${idx === 0 ? 'md:col-span-2 lg:col-span-3' : ''}`}
+                style={highlight ? { borderLeftWidth: 2, borderLeftColor: accentColor } : {}}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`text-2xl mt-0.5 flex-shrink-0`}>{icon}</div>
+                  <div>
+                    <div className={`text-sm font-bold mb-2 flex items-center gap-3 ${t.text}`}>
+                      {title}
+                      {highlight && (
+                        <span className="text-xs px-2 py-0.5 rounded-sm font-bold uppercase tracking-widest" style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
+                          Principal
+                        </span>
+                      )}
+                    </div>
+                    <div className={`text-xs leading-relaxed ${t.text3}`}>{desc}</div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
