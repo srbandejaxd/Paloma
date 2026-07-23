@@ -156,6 +156,12 @@ import { flushSync } from 'react-dom'
 	    if (!user) { navigate('/'); return }
 	  }, [user, navigate])
 	
+	  // Cerrar sesión cuando tiempo se acaba
+	  useEffect(() => {
+	    if (!timeUp || sessionResult !== null || !sessionId || loading) return
+	    handleTimeUpConfirm()
+	  }, [timeUp])
+
 	  // Cronómetro de sesión
 	  useEffect(() => {
 	    if (screen !== 'session' || !sessionStartedAt || timeUp) return
@@ -547,24 +553,23 @@ import { flushSync } from 'react-dom'
 	              <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Tiempo de trabajo por día</label>
 	              <div className="flex items-center gap-3 flex-wrap">
 	                <div className="flex items-center gap-2">
-	                  <input
-	                    type="number"
-	                    min={0}
+	                  <select
 	                    value={createHours}
-	                    onChange={e => setCreateHours(Math.max(0, Math.floor(Number(e.target.value))))}
-	                    className={`w-20 px-3 py-3 rounded-lg border focus:outline-none font-semibold text-center ${t.inputBg} ${t.border}`}
-	                  />
+	                    onChange={e => setCreateHours(Number(e.target.value))}
+	                    className={`px-3 py-3 rounded-lg border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
+	                  >
+	                    {[0,1,2,3,4,5,6,7,8].map(h => <option key={h} value={h}>{h}</option>)}
+	                  </select>
 	                  <span className={`text-sm font-semibold ${t.text2}`}>horas</span>
 	                </div>
 	                <div className="flex items-center gap-2">
-	                  <input
-	                    type="number"
-	                    min={0}
-	                    max={59}
+	                  <select
 	                    value={createMinutes}
-	                    onChange={e => setCreateMinutes(Math.min(59, Math.max(0, Math.floor(Number(e.target.value)))))}
-	                    className={`w-20 px-3 py-3 rounded-lg border focus:outline-none font-semibold text-center ${t.inputBg} ${t.border}`}
-	                  />
+	                    onChange={e => setCreateMinutes(Number(e.target.value))}
+	                    className={`px-3 py-3 rounded-lg border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
+	                  >
+	                    {[0,10,15,20,30,45].map(m => <option key={m} value={m}>{String(m).padStart(2,'0')}</option>)}
+	                  </select>
 	                  <span className={`text-sm font-semibold ${t.text2}`}>min</span>
 	                </div>
 	                {(createHours > 0 || createMinutes > 0) && (
@@ -985,12 +990,8 @@ import { flushSync } from 'react-dom'
 	      )
 	    }
 	
-	  // Tiempo agotado — cerrar sesión inmediatamente
+	  // Tiempo agotado — useEffect llama handleTimeUpConfirm automáticamente
 	  if (timeUp && sessionResult === null) {
-	  // Llamar endSession automáticamente si no se ha llamado aún
-	  if (sessionId && !loading) {
-	    handleTimeUpConfirm()
-	  }
 	  return (
 	    <div className={`min-h-screen ${t.bg} flex items-center justify-center px-6 transition-colors duration-300`}>
 	      <div className={`w-full max-w-md text-center rounded-2xl ${t.bg2} ${t.border} border p-10`}>
