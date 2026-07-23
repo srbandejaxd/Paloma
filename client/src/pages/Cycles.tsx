@@ -135,7 +135,6 @@
 	  const [loading, setLoading] = useState(false)
 	  const [sessionError, setSessionError] = useState<string | null>(null)
 	  const [availableAt, setAvailableAt] = useState<string | null>(null)
-      const [activeOrphanSession, setActiveOrphanSession] = useState<{ id: number; elapsedMs: number; limitMs: number; puzzle: CyclePuzzle | null } | null>(null)
 	
 	  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 	  const puzzleStartRef = useRef<number>(Date.now())
@@ -211,44 +210,61 @@
 	      setActiveReview(data)
 	      setSessionError(null)
 	      setAvailableAt(null)
+	      setActiveOrphanSession(null)
+
+	      // Detectar sesión activa huérfana
+	      const orphan = data.sessions?.find((s: ReviewSession) => s.status === 'active')
+	      if (orphan) {
+	        const startedAt = new Date(orphan.startedAt.endsWith('Z') ? orphan.startedAt : orphan.startedAt + 'Z')
+	        const elapsedMs = Date.now() - startedAt.getTime()
+	        const limitMs = Number(data.hoursPerDay) * 3600 * 1000
+	        if (elapsedMs < limitMs) {
+	          setActiveOrphanSession({ id: Number(orphan.id), elapsedMs, limitMs, puzzle: null })
+	        } else {
+	          // Tiempo ya venció — cerrar automáticamente
+	          try { await endReviewSession(Number(orphan.id)) } catch {}
+	          const refreshed = await fetchReview(id)
+	          setActiveReview(refreshed)
+	        }
+	      }
+
 	      setScreen('review')
 	    } catch (e) { console.error(e) }
 	    finally { setLoading(false) }
 	  }
 	
 	  async function handleResumeSession() {
-    if (!activeOrphanSession || !activeReview) return
-    setLoading(true)
-    try {
-      // Obtener puzzle actual de la sesión
-      const data = await fetchSessionPuzzle(activeOrphanSession.id)
-      if (data.timeUp || !data.puzzle) {
-        // Tiempo venció mientras cargábamos — cerrar y refrescar
-        try { await endReviewSession(activeOrphanSession.id) } catch {}
-        await goToReview(activeReview.id)
-        return
-      }
-      setSessionId(activeOrphanSession.id)
-      setCurrentPuzzle(data.puzzle)
-      setPuzzleIndex(data.puzzleIndex || 0)
-      const elapsedNow = data.elapsedMs || activeOrphanSession.elapsedMs
-      setSessionStartedAt(Date.now() - elapsedNow)
-      setSessionLimitMs(data.limitMs || activeOrphanSession.limitMs)
-      setElapsed(elapsedNow)
-      setSessionSolved(0)
-      setPuzzleAttempts(0)
-      setSolutionStep(0)
-      setHintUsed(false)
-      setHintSquare(null)
-      setTimeUp(false)
-      setSessionResult(null)
-      puzzleStartRef.current = Date.now()
-      setScreen('session')
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
-  }
+	    if (!activeOrphanSession || !activeReview) return
+	    setLoading(true)
+	    try {
+	      const data = await fetchSessionPuzzle(activeOrphanSession.id)
+	      if (data.timeUp || !data.puzzle) {
+	        try { await endReviewSession(activeOrphanSession.id) } catch {}
+	        setActiveOrphanSession(null)
+	        await goToReview(activeReview.id)
+	        return
+	      }
+	      setSessionId(activeOrphanSession.id)
+	      setCurrentPuzzle(data.puzzle)
+	      setPuzzleIndex(data.puzzleIndex || 0)
+	      const elapsedNow = data.elapsedMs || activeOrphanSession.elapsedMs
+	      setSessionStartedAt(Date.now() - elapsedNow)
+	      setSessionLimitMs(data.limitMs || activeOrphanSession.limitMs)
+	      setElapsed(elapsedNow)
+	      setSessionSolved(0)
+	      setPuzzleAttempts(0)
+	      setSolutionStep(0)
+	      setHintUsed(false)
+	      setHintSquare(null)
+	      setTimeUp(false)
+	      setSessionResult(null)
+	      puzzleStartRef.current = Date.now()
+	      setScreen('session')
+	    } catch (e) { console.error(e) }
+	    finally { setLoading(false) }
+	  }
 
-  async function handleStartSession(reviewId: number) {
+	  async function handleStartSession(reviewId: number) {
 	    setLoading(true)
 	    setSessionError(null)
 	    try {
@@ -847,7 +863,7 @@
 	            <div className={`rounded-xl border p-5 mb-4`} style={{ backgroundColor: 'rgba(212,160,23,0.08)', borderColor: 'rgba(212,160,23,0.3)' }}>
 	              <p className="text-xs uppercase tracking-widest font-semibold mb-1" style={{ color: accentColor }}>Sesión en curso</p>
 	              <p className={`text-sm ${t.text2} mb-4`}>
-	                Tienes una sesión activa de hoy. Tiempo restante:{' '}
+	                Tienes una sesión activa. Tiempo restante:{' '}
 	                <span className="font-bold" style={{ color: accentColor }}>
 	                  {formatHMS(Math.max(0, activeOrphanSession.limitMs - activeOrphanSession.elapsedMs))}
 	                </span>
