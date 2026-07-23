@@ -608,9 +608,13 @@ router.get('/cycles/sessions/:id/puzzle', authMiddleware, async (req, res) => {
     const puzzles = await getCyclePuzzles(db, s.category, absoluteOffset, 1)
     if (puzzles.length === 0) return res.json({ finished: true })
 
+    const totalPuzzles = await getCyclePuzzleCount(db, s.category)
+
     res.json({
       puzzle: puzzles[0],
       puzzleIndex: absoluteOffset,
+      puzzlesAttempted: Number(s.puzzlesAttempted),
+      totalPuzzles,
       elapsedMs,
       limitMs,
       timeUp: false
