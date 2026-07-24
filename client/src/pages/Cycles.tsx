@@ -1037,7 +1037,7 @@ function formatDate(iso: string): string {
 	              <div className="text-center">
 	                <p className={`text-xs uppercase tracking-widest ${t.text3} mb-0.5`}>Puzzles</p>
 	                <div className="text-2xl font-bold font-mono" style={{ color: accentColor, letterSpacing: '-0.02em' }}>
-	                  {sessionSolved + 1}{sessionTotal ? `/${sessionTotal}` : ''}
+	                  {puzzleIndex + 1}{sessionTotal ? `/${sessionTotal}` : ''}
 	                </div>
 	              </div>
 	
