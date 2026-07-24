@@ -66,7 +66,7 @@ export default function Vision() {
   const errorsRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const boardSize = typeof window !== 'undefined' && window.innerWidth < 640 ? 300 : 460
+  const boardSize = typeof window !== 'undefined' && window.innerWidth < 640 ? 340 : 560
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -246,7 +246,7 @@ export default function Vision() {
         </div>
 
         {/* Right — stats + controls */}
-        <div className="lg:w-72 flex flex-col gap-6 lg:pt-24">
+        <div className="lg:w-72 flex flex-col gap-6 lg:pt-4">
 
           {/* Stats */}
           <div className={`rounded-2xl ${t.bg2} border ${t.border} overflow-hidden`}>
@@ -260,8 +260,8 @@ export default function Vision() {
               ...(bestScore !== null ? [{ label: 'Récord', value: String(bestScore), color: accentColor }] : []),
             ].map((stat, i, arr) => (
               <div key={stat.label} className={`flex items-center justify-between px-6 py-4 ${i < arr.length - 1 ? `border-b ${t.border}` : ''}`}>
-                <span className={`text-sm ${t.text3}`}>{stat.label}</span>
-                <span className="text-2xl font-bold font-mono" style={{ color: stat.color || (dark ? '#E8E6E0' : '#1A1814') }}>
+                <span className={`text-xs ${t.text3}`}>{stat.label}</span>
+                <span className="text-lg font-bold font-mono" style={{ color: stat.color || (dark ? '#E8E6E0' : '#1A1814') }}>
                   {stat.value}
                 </span>
               </div>
@@ -276,26 +276,19 @@ export default function Vision() {
             <div className="px-6 py-4 flex flex-col gap-3">
               <button
                 onClick={() => setFlipped(f => !f)}
-                className={`w-full py-3 rounded-lg border ${t.border} text-sm font-semibold ${t.text2} transition-all hover:${t.text}`}
+                className={`w-full py-2.5 rounded-lg border ${t.border} text-xs font-semibold ${t.text2} transition-all hover:${t.text}`}
               >
                 {flipped ? '♟ Vista negras' : '♙ Vista blancas'}
               </button>
               <button
                 onClick={() => { logout(); navigate('/') }}
-                className={`w-full py-3 rounded-lg border ${t.border} text-sm ${t.text3} transition-all hover:text-red-400`}
+                className={`w-full py-2.5 rounded-lg border ${t.border} text-xs ${t.text3} transition-all hover:text-red-400`}
               >
                 Cerrar sesión
               </button>
             </div>
           </div>
 
-          {/* Tip */}
-          <div className={`rounded-2xl ${t.bg2} border ${t.border} px-6 py-5`}>
-            <p className={`text-xs uppercase tracking-widest ${t.text3} mb-3`}>Cómo funciona</p>
-            <p className={`text-xs leading-relaxed ${t.text3}`}>
-              Aparece una coordenada en pantalla. Haz clic en esa casilla lo más rápido posible. Tienes 30 segundos — máximas respuestas correctas. Tu mejor marca queda guardada.
-            </p>
-          </div>
 
         </div>
       </div>
