@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './lib/auth'
 import Home from './pages/Home'
+import Dashboard from './pages/Dashboard'
 import Solo from './pages/Solo'
 import History from './pages/History'
 import Leaderboard from './pages/Leaderboard'
@@ -14,6 +15,7 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Dashboard />} />
         <Route path="/cycles" element={<Cycles />} />
         <Route path="/solo" element={<Solo />} />
         <Route path="/history" element={<History />} />
