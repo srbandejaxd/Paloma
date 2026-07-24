@@ -479,7 +479,7 @@ function formatDate(iso: string): string {
 	
 	          {/* ── FUNDAMENTO TEÓRICO ─────────────────────────────────── */}
 	          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-6`}>
-	            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-6`}>Fundamento teórico · Por qué Cycles contradice al Woodpecker</p>
+	            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-6`}>Fundamento teórico · Por qué La Paloma contradice al Woodpecker</p>
 	            <div className="space-y-6">
 
 	              {/* Ebbinghaus */}
@@ -519,28 +519,32 @@ function formatDate(iso: string): string {
 	              <div className="flex gap-4">
 	                <div className="text-2xl flex-shrink-0 mt-0.5">♟️</div>
 	                <div>
-	                  <p className={`font-bold ${t.text} mb-1`}>La contrapropuesta de Cycles</p>
+	                  <p className={`font-bold ${t.text} mb-1`}>La contrapropuesta de La Paloma</p>
 	                  <p className={`text-sm ${t.text2} leading-relaxed`}>
-	                    Cycles invierte la progresión: los primeros repasos son los más largos (cuando el material es nuevo y difícil) y los últimos son cortos (cuando ya está casi consolidado). Los días de descanso entre repasos también aumentan, dejando que el olvido natural haga su trabajo antes del siguiente repaso.
+	                    La Paloma invierte la progresión: los primeros repasos son los más largos (cuando el material es nuevo y difícil) y los últimos son cortos (cuando ya está casi consolidado). Los días de descanso entre repasos también aumentan progresivamente, dejando que el olvido natural haga su trabajo antes del siguiente repaso.
 	                  </p>
 	                  <div className={`mt-4 rounded-lg ${t.bg3} ${t.border} border overflow-hidden`}>
-	                    <div className={`grid grid-cols-4 gap-0 text-xs font-bold uppercase tracking-widest ${t.text3} border-b ${t.border}`}>
+	                    {/* Header fila 1: Repaso + Descanso spanning */}
+	                    <div className={`grid grid-cols-3 gap-0 text-xs font-bold uppercase tracking-widest ${t.text3} border-b ${t.border}`}>
 	                      <div className="px-4 py-2">Repaso</div>
-	                      <div className="px-4 py-2">Woodpecker</div>
-	                      <div className="px-4 py-2">Cycles</div>
-	                      <div className="px-4 py-2">Descanso</div>
+	                      <div className="px-4 py-2 col-span-2 text-center border-l ${t.border}">Días de descanso entre repasos</div>
+	                    </div>
+	                    {/* Header fila 2: subcolumnas */}
+	                    <div className={`grid grid-cols-3 gap-0 text-xs font-bold uppercase tracking-widest border-b ${t.border}`}>
+	                      <div className={`px-4 py-2 ${t.text3}`}></div>
+	                      <div className={`px-4 py-2 border-l ${t.border} ${t.text3}`}>Woodpecker</div>
+	                      <div className="px-4 py-2 font-bold" style={{ color: '#27ae60' }}>La Paloma</div>
 	                    </div>
 	                    {[
-	                      { r: '1°', wp: '7 días', cy: '10 días', rest: '1 día' },
-	                      { r: '2°', wp: '5 días', cy: '7 días', rest: '3 días' },
-	                      { r: '3°', wp: '3 días', cy: '4 días', rest: '5 días' },
-	                      { r: '4°', wp: '1 día',  cy: '1 día',  rest: '7 días' },
+	                      { r: '1°', wp: '10', cy: '1' },
+	                      { r: '2°', wp: '7',  cy: '3' },
+	                      { r: '3°', wp: '3',  cy: '7' },
+	                      { r: '4°', wp: '1',  cy: '10' },
 	                    ].map(row => (
-	                      <div key={row.r} className={`grid grid-cols-4 gap-0 text-sm border-b last:border-0 ${t.border}`}>
+	                      <div key={row.r} className={`grid grid-cols-3 gap-0 text-sm border-b last:border-0 ${t.border}`}>
 	                        <div className={`px-4 py-3 font-bold ${t.text}`}>{row.r}</div>
-	                        <div className={`px-4 py-3 ${t.text3} line-through`}>{row.wp}</div>
-	                        <div className="px-4 py-3 font-bold" style={{ color: '#27ae60' }}>{row.cy}</div>
-	                        <div className={`px-4 py-3 ${t.text2}`}>{row.rest}</div>
+	                        <div className={`px-4 py-3 border-l ${t.border} ${t.text3} line-through`}>{row.wp} días</div>
+	                        <div className="px-4 py-3 font-bold" style={{ color: '#27ae60' }}>{row.cy} {row.cy === '1' ? 'día' : 'días'}</div>
 	                      </div>
 	                    ))}
 	                  </div>
@@ -585,7 +589,7 @@ function formatDate(iso: string): string {
 	
 	          <div className={`rounded-xl ${t.bg3} ${t.border} border px-6 py-4 mb-10`}>
 	            <p className={`text-xs ${t.text3} leading-relaxed`}>
-	              💡 Por defecto los repasos siguen la progresión de Cycles: 10 días → 7 días → 4 días → 1 día, con descansos crecientes de 1, 3, 5 y 7 días respectivamente. Puedes personalizar esta configuración al crear un macrociclo.
+	              💡 Por defecto los repasos siguen la progresión de La Paloma: 10 días → 7 días → 4 días → 1 día, con descansos crecientes de 1, 3, 5 y 7 días respectivamente. Puedes personalizar esta configuración al crear un macrociclo.
 	            </p>
 	          </div>
 	
