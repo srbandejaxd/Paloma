@@ -94,7 +94,7 @@ export default function Home() {
         ? await register(nickname.trim(), password)
         : await loginApi(nickname.trim(), password)
       login(data.nickname, data.token)
-      navigate('/solo')
+      navigate('/home')
     } catch (e: any) {
       setError(e.message)
     } finally {
