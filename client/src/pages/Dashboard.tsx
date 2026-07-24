@@ -32,76 +32,48 @@ const NAV_ITEMS = [
   { path: '/blind',       label: 'Ciego',     icon: '🎲' },
 ]
 
-const SECTIONS = [
-  {
-    path: '/cycles',
-    icon: '🕊️',
-    label: 'La Paloma · Ciclos',
-    tag: 'Método principal',
-    headline: 'El núcleo de tu entrenamiento',
-    body: 'Aquí es donde ocurre el trabajo real. Crea un macrociclo para una categoría de puzzles y el sistema te guía a través de 4 repasos del mismo material. Cada repaso recorre los mismos ejercicios desde el principio — el objetivo no es ver más puzzles, sino resolver los mismos en menos tiempo cada vez.\n\nLa Paloma aplica repetición espaciada inversa: el primer repaso es el más largo (cuando el material es nuevo), el último el más corto (cuando ya está consolidado). Exactamente lo contrario al método Woodpecker original, y fundamentado en la curva del olvido de Ebbinghaus.',
-    detail: '4 repasos · intervalos crecientes · sesiones cronometradas',
-    primary: true,
-  },
+const TOOLS = [
   {
     path: '/solo',
     icon: '⚡',
     label: 'Solo',
-    tag: 'Práctica libre',
-    headline: 'Puzzles sin estructura ni presión',
-    body: 'Accede a cualquier puzzle de cualquier categoría y resuélvelo sin presión de tiempo ni registro de sesión. Útil cuando quieres explorar un bloque nuevo antes de comprometerte con un macrociclo, o simplemente practicar sin el cronómetro encima.',
-    detail: 'Sin límite · todas las categorías · sin cronómetro obligatorio',
-    primary: false,
+    sub: 'Práctica libre',
+    desc: 'Accede a cualquier puzzle sin estructura. Sin cronómetro, sin sesión. Útil para explorar una categoría antes de comprometerte con un macrociclo.',
   },
   {
     path: '/puzzles',
     icon: '📚',
     label: 'Puzzles',
-    tag: 'Explorador',
-    headline: 'Navega el banco completo',
-    body: 'Vista completa de todos los puzzles disponibles organizados por categoría y dificultad. Desde aquí puedes ver el material que cubre cada categoría antes de arrancar un macrociclo.',
-    detail: 'Filtros por categoría · vista previa de posiciones',
-    primary: false,
+    sub: 'Explorador',
+    desc: 'Navega el banco completo de puzzles. Ve el material de cada categoría, filtra por dificultad y elige qué quieres trabajar.',
   },
   {
     path: '/history',
     icon: '📋',
     label: 'Historial',
-    tag: 'Seguimiento',
-    headline: 'Tu progreso, sesión por sesión',
-    body: 'Cada vez que terminas una sesión dentro de La Paloma, queda registrada: tiempo total, puzzles resueltos, errores y score. El historial te muestra si eres más rápido en el repaso 2 que en el 1 — esa es la métrica que importa.',
-    detail: 'Score por sesión · comparativa entre repasos · tiempo promedio',
-    primary: false,
+    sub: 'Seguimiento',
+    desc: 'Cada sesión queda registrada. Compara tu tiempo entre el repaso 1 y el repaso 2 — si bajas, el método está funcionando.',
   },
   {
     path: '/leaderboard',
     icon: '🏆',
     label: 'Ranking',
-    tag: 'Global',
-    headline: 'Compite con otros jugadores',
-    body: 'Tabla de posiciones global por categoría. Se rankea por tiempo promedio por puzzle dentro de cada bloque. Una manera de calibrar si tu velocidad es competitiva.',
-    detail: 'Rankings por categoría · tiempo por puzzle · actualización en tiempo real',
-    primary: false,
+    sub: 'Competencia',
+    desc: 'Tabla global por categoría. Rankea por tiempo promedio por puzzle. Úsala para calibrar si tu nivel es competitivo.',
   },
   {
     path: '/vision',
     icon: '👁️',
     label: 'Visión',
-    tag: 'Complemento rápido',
-    headline: 'Entrena el tablero en 30 segundos',
-    body: 'Se muestra una coordenada y tienes que hacer clic en la casilla correcta lo más rápido posible. 30 segundos, máximos aciertos. Ideal como calentamiento antes de una sesión de puzzles.',
-    detail: '30 segundos · máximas respuestas · ranking global',
-    primary: false,
+    sub: 'Calentamiento · 30 seg',
+    desc: 'Identifica coordenadas del tablero a velocidad máxima. Treinta segundos, máximos aciertos. Perfecto antes de una sesión de puzzles.',
   },
   {
     path: '/blind',
     icon: '♟️',
     label: 'Ajedrez Ciego',
-    tag: 'Avanzado',
-    headline: 'Juega sin ver las piezas',
-    body: 'Se te muestra la posición inicial y luego el tablero desaparece. Tienes que resolver el puzzle de memoria, introduciendo los movimientos sin referencia visual. El nivel más exigente de entrenamiento táctico.',
-    detail: 'Memoria de posición · movimientos a ciegas · alta dificultad',
-    primary: false,
+    sub: 'Nivel avanzado',
+    desc: 'Ves la posición inicial y el tablero desaparece. Resuelves de memoria. El entrenamiento táctico más exigente de la plataforma.',
   },
 ]
 
@@ -124,23 +96,13 @@ export default function Dashboard() {
   }
 
   const t = dark ? {
-    bg:    'bg-[#0A0A0F]',
-    bg2:   'bg-[#12121A]',
-    bg3:   'bg-[#1C1C28]',
-    border:'border-[#252535]',
-    borderLight: 'border-[#252535]',
-    text:  'text-[#E8E6E0]',
-    text2: 'text-[#B8B5AC]',
-    text3: 'text-[#7A776E]',
+    bg: 'bg-[#0A0A0F]', bg2: 'bg-[#12121A]', bg3: 'bg-[#1C1C28]',
+    border: 'border-[#252535]', borderRaw: '#252535',
+    text: 'text-[#E8E6E0]', text2: 'text-[#B8B5AC]', text3: 'text-[#7A776E]',
   } : {
-    bg:    'bg-[#F5F0E8]',
-    bg2:   'bg-[#EDE8DF]',
-    bg3:   'bg-[#E2DBD0]',
-    border:'border-[#D4CABF]',
-    borderLight: 'border-[#D4CABF]',
-    text:  'text-[#1A1814]',
-    text2: 'text-[#4A4640]',
-    text3: 'text-[#8A8478]',
+    bg: 'bg-[#F5F0E8]', bg2: 'bg-[#EDE8DF]', bg3: 'bg-[#E2DBD0]',
+    border: 'border-[#D4CABF]', borderRaw: '#D4CABF',
+    text: 'text-[#1A1814]', text2: 'text-[#4A4640]', text3: 'text-[#8A8478]',
   }
 
   const accentColor = dark ? '#D4A017' : '#A07810'
@@ -151,40 +113,31 @@ export default function Dashboard() {
     <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300`}>
 
       {/* Nav */}
-      <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95 transition-colors duration-300`}>
+      <nav className={`sticky top-0 z-50 ${t.bg2} border-b ${t.border} backdrop-blur-xl transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
+            <div>
               <p className={`text-xs uppercase tracking-[0.15em] ${t.text3} mb-1`}>Bienvenido de vuelta</p>
-              <h1 className={`text-3xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>
-                {user.nickname}
-              </h1>
+              <h1 className={`text-3xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>{user.nickname}</h1>
             </div>
-            <button
-              onClick={toggleTheme}
-              className={`flex items-center justify-center w-10 h-10 rounded-lg ${t.bg3} ${t.border} border transition-all hover:scale-105 ${t.text3}`}
-            >
+            <button onClick={toggleTheme} className={`w-10 h-10 rounded-lg ${t.bg3} border ${t.border} flex items-center justify-center ${t.text3} hover:${t.text} transition-all`}>
               {dark ? <SunIcon /> : <MoonIcon />}
             </button>
           </div>
-
-          <div className="flex items-center gap-0 overflow-x-auto pb-2">
+          <div className="flex items-center overflow-x-auto pb-1">
             {NAV_ITEMS.map((item, idx) => {
               const isActive = location.pathname === item.path
               return (
-                <div key={item.path} className="flex items-center">
+                <div key={item.path} className="flex items-center flex-shrink-0">
                   <button
                     onClick={() => navigate(item.path)}
                     className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all relative group ${isActive ? t.text : `${t.text2} hover:${t.text}`}`}
                   >
-                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-base">{item.icon}</span>
                     <span className="whitespace-nowrap">{item.label}</span>
-                    <div
-                      className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}
-                      style={{ backgroundColor: accentColor }}
-                    />
+                    <div className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} style={{ backgroundColor: accentColor }} />
                   </button>
-                  {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
+                  {idx < NAV_ITEMS.length - 1 && <div className="w-px h-4 mx-0.5" style={{ backgroundColor: t.borderRaw }} />}
                 </div>
               )
             })}
@@ -192,96 +145,108 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6">
+      {/* Hero */}
+      <section className="max-w-7xl mx-auto px-6 pt-28 pb-28">
+        <p className={`text-xs uppercase tracking-[0.25em] ${t.text3} mb-6`}>Panel de inicio</p>
+        <h2 className={`text-7xl font-bold ${t.text} leading-none mb-8`} style={{ letterSpacing: '-0.035em' }}>
+          ¿Por dónde<br />
+          <span style={{ color: accentColor }}>empezamos?</span>
+        </h2>
+        <p className={`text-xl ${t.text2} max-w-lg leading-relaxed`}>
+          La Paloma es el método central. El resto son herramientas complementarias para cuando no estás en sesión.
+        </p>
+      </section>
 
-        {/* Hero */}
-        <div className="py-24 border-b" style={{ borderColor: dark ? '#252535' : '#D4CABF' }}>
-          <p className={`text-xs uppercase tracking-[0.2em] ${t.text3} mb-5`}>Panel de inicio</p>
-          <h2 className={`text-6xl font-bold ${t.text} mb-6 leading-none`} style={{ letterSpacing: '-0.03em' }}>
-            ¿Por dónde<br />
-            <span style={{ color: accentColor }}>empezamos hoy?</span>
-          </h2>
-          <p className={`text-lg ${t.text2} max-w-xl leading-relaxed`}>
-            La Paloma es el método. Todo lo demás es un complemento. Si no sabes qué hacer, abre Ciclos y sigue donde lo dejaste.
-          </p>
-        </div>
+      <div style={{ borderTop: `1px solid ${t.borderRaw}` }} />
 
-        {/* Sección principal destacada */}
-        <div className="py-20 border-b" style={{ borderColor: dark ? '#252535' : '#D4CABF' }}>
-          <p className={`text-xs uppercase tracking-[0.2em] ${t.text3} mb-12`}>Método principal</p>
-          <div
-            className={`rounded-2xl ${t.bg2} border-2 p-10 cursor-pointer transition-all hover:scale-[1.005]`}
-            style={{ borderColor: accentColor }}
-            onClick={() => navigate('/cycles')}
-          >
-            <div className="flex items-start gap-6 mb-8">
+      {/* Método principal */}
+      <section className="max-w-7xl mx-auto px-6 py-28">
+        <div className="grid lg:grid-cols-2 gap-20 items-center">
+          <div>
+            <p className={`text-xs uppercase tracking-[0.25em] ${t.text3} mb-6`}>Método principal</p>
+            <div className="flex items-center gap-4 mb-8">
               <span className="text-5xl">🕊️</span>
               <div>
-                <span
-                  className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full"
-                  style={{ backgroundColor: `${accentColor}22`, color: accentColor }}
-                >
-                  {SECTIONS[0].tag}
-                </span>
-                <h3 className={`text-3xl font-bold ${t.text} mt-3 mb-1`} style={{ letterSpacing: '-0.02em' }}>
-                  {SECTIONS[0].label}
-                </h3>
-                <p className={`text-sm ${t.text3}`}>{SECTIONS[0].headline}</p>
+                <h3 className={`text-4xl font-bold ${t.text}`} style={{ letterSpacing: '-0.025em' }}>La Paloma</h3>
+                <p style={{ color: accentColor }} className="text-sm font-semibold mt-1">Ciclos de repetición espaciada</p>
               </div>
             </div>
-            {SECTIONS[0].body.split('\n\n').map((para, i) => (
-              <p key={i} className={`text-base leading-relaxed ${t.text2} mb-4 max-w-3xl`}>{para}</p>
-            ))}
-            <div className="flex items-center justify-between mt-8 pt-8 border-t" style={{ borderColor: dark ? '#252535' : '#D4CABF' }}>
-              <p className={`text-xs ${t.text3}`}>{SECTIONS[0].detail}</p>
+            <p className={`text-base leading-loose ${t.text2} mb-6`}>
+              Crea un macrociclo para una categoría y el sistema te guía por 4 repasos del mismo material. Cada repaso recorre los mismos ejercicios desde el principio. El objetivo no es ver más puzzles — es resolver los mismos en menos tiempo cada vez.
+            </p>
+            <p className={`text-base leading-loose ${t.text2} mb-10`}>
+              Los intervalos son crecientes: el primer repaso dura más, el último menos. Fundamentado en la curva del olvido de Ebbinghaus — exactamente lo contrario al Woodpecker original.
+            </p>
+            <div className="flex items-center gap-4 flex-wrap">
               <button
-                className="px-8 py-3 rounded-xl font-bold text-sm tracking-widest uppercase text-black transition-all hover:opacity-90 hover:scale-105"
+                onClick={() => navigate('/cycles')}
+                className="px-8 py-4 rounded-xl font-bold text-sm tracking-widest uppercase text-black transition-all hover:opacity-90 hover:scale-105"
                 style={{ backgroundColor: accentColor }}
               >
                 Abrir La Paloma →
               </button>
+              <p className={`text-xs ${t.text3}`}>4 repasos · sesiones cronometradas · intervalos crecientes</p>
             </div>
           </div>
-        </div>
 
-        {/* Grid resto de secciones */}
-        <div className="py-20">
-          <p className={`text-xs uppercase tracking-[0.2em] ${t.text3} mb-12`}>Herramientas complementarias</p>
-          <div className="grid md:grid-cols-2 gap-6">
-            {SECTIONS.slice(1).map(s => (
-              <div
-                key={s.path}
-                onClick={() => navigate(s.path)}
-                className={`rounded-2xl ${t.bg2} border ${t.border} p-8 cursor-pointer transition-all hover:scale-[1.02] hover:border-opacity-80 flex flex-col`}
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="text-3xl">{s.icon}</span>
-                  <div>
-                    <p className={`font-bold text-lg ${t.text}`} style={{ letterSpacing: '-0.01em' }}>{s.label}</p>
-                    <p className={`text-xs ${t.text3} uppercase tracking-widest`}>{s.tag}</p>
-                  </div>
+          {/* Tabla de repasos */}
+          <div className={`rounded-2xl ${t.bg2} border ${t.border} overflow-hidden`}>
+            <div className="px-8 py-6 border-b" style={{ borderColor: t.borderRaw }}>
+              <p className={`text-xs uppercase tracking-widest ${t.text3}`}>Estructura de repasos</p>
+            </div>
+            {[
+              { n: '01', days: '10 días', rest: '1 día de descanso', label: 'Primera exposición' },
+              { n: '02', days: '7 días',  rest: '3 días de descanso', label: 'Consolidación inicial' },
+              { n: '03', days: '4 días',  rest: '5 días de descanso', label: 'Refuerzo profundo' },
+              { n: '04', days: '1 día',   rest: '7 días de descanso', label: 'Verificación final' },
+            ].map((row, i) => (
+              <div key={i} className={`flex items-center gap-6 px-8 py-5 border-b last:border-0`} style={{ borderColor: t.borderRaw }}>
+                <span className="text-2xl font-bold w-8" style={{ color: accentColor }}>{row.n}</span>
+                <div className="flex-1">
+                  <p className={`text-sm font-bold ${t.text}`}>{row.label}</p>
+                  <p className={`text-xs ${t.text3} mt-0.5`}>{row.rest}</p>
                 </div>
-                <p className={`text-sm font-semibold mb-3`} style={{ color: accentColor }}>{s.headline}</p>
-                <p className={`text-sm leading-relaxed ${t.text2} flex-1`}>{s.body}</p>
-                <div className="flex items-center justify-between mt-6 pt-6 border-t" style={{ borderColor: dark ? '#252535' : '#D4CABF' }}>
-                  <p className={`text-xs ${t.text3}`}>{s.detail}</p>
-                  <span className={`text-xs font-bold ${t.text3}`}>→</span>
-                </div>
+                <span className={`text-sm font-mono font-bold ${t.text2}`}>{row.days}</span>
               </div>
             ))}
           </div>
         </div>
+      </section>
 
-      </div>
+      <div style={{ borderTop: `1px solid ${t.borderRaw}` }} />
+
+      {/* Herramientas complementarias */}
+      <section className="max-w-7xl mx-auto px-6 py-28">
+        <p className={`text-xs uppercase tracking-[0.25em] ${t.text3} mb-20`}>Herramientas complementarias</p>
+
+        {TOOLS.map((tool, i) => (
+          <div key={tool.path}>
+            <div
+              className="grid lg:grid-cols-3 gap-8 py-12 cursor-pointer group"
+              onClick={() => navigate(tool.path)}
+            >
+              <div className="flex items-center gap-5">
+                <span className="text-4xl">{tool.icon}</span>
+                <div>
+                  <p className={`text-xl font-bold ${t.text} group-hover:underline`} style={{ letterSpacing: '-0.01em' }}>{tool.label}</p>
+                  <p className={`text-xs uppercase tracking-widest mt-1`} style={{ color: accentColor }}>{tool.sub}</p>
+                </div>
+              </div>
+              <div className="lg:col-span-2 flex items-center justify-between gap-8">
+                <p className={`text-sm leading-loose ${t.text2} max-w-xl`}>{tool.desc}</p>
+                <span className={`text-2xl ${t.text3} group-hover:${t.text} transition-all group-hover:translate-x-1 flex-shrink-0`}>→</span>
+              </div>
+            </div>
+            {i < TOOLS.length - 1 && <div style={{ borderTop: `1px solid ${t.borderRaw}` }} />}
+          </div>
+        ))}
+      </section>
 
       {/* Footer */}
-      <div className={`border-t ${t.border} py-8 px-6 mt-8`}>
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className={`text-xs ${t.text3}`}>🪃 Woodpecker · Método GM Axel Smith & Hans Tikkanen</span>
-          <button
-            onClick={() => { logout(); navigate('/') }}
-            className={`text-xs ${t.text3} hover:${t.text} transition-colors`}
-          >
+      <div style={{ borderTop: `1px solid ${t.borderRaw}` }}>
+        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between">
+          <span className={`text-xs ${t.text3}`}>🪃 Woodpecker · GM Axel Smith & Hans Tikkanen</span>
+          <button onClick={() => { logout(); navigate('/') }} className={`text-xs ${t.text3} hover:${t.text} transition-colors`}>
             Cerrar sesión
           </button>
         </div>

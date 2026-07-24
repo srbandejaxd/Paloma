@@ -14,13 +14,13 @@
 	
 	const NAV_ITEMS = [
 	  { path: '/home', label: 'Home', icon: '🏠' },
+	  { path: '/cycles', label: 'Ciclos', icon: '🕊️' },
 	  { path: '/solo', label: 'Solo', icon: '⚡' },
 	  { path: '/puzzles', label: 'Puzzles', icon: '📚' },
 	  { path: '/vision', label: 'Visión', icon: '👁' },
 	  { path: '/history', label: 'Historial', icon: '📋' },
 	  { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
 	  { path: '/blind', label: 'Ciego', icon: '🎲' },
-	  { path: '/cycles', label: 'Ciclos', icon: '🔄' },
 	]
 	
 	const CATEGORIES = [
