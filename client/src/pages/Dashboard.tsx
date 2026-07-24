@@ -38,7 +38,7 @@ const TOOLS = [
     icon: '⚡',
     label: 'Solo',
     sub: 'Práctica libre',
-    desc: 'Accede a cualquier puzzle sin estructura. Sin cronómetro, sin sesión. Útil para explorar una categoría antes de comprometerte con un macrociclo.',
+    desc: 'Entrena patrones tácticos y de mate por libro y bloque. Hay presión de tiempo y tus marcas quedan registradas en el historial. Ideal para trabajar patrones específicos fuera del ciclo principal.',
   },
   {
     path: '/puzzles',
@@ -52,7 +52,7 @@ const TOOLS = [
     icon: '📋',
     label: 'Historial',
     sub: 'Seguimiento',
-    desc: 'Cada sesión queda registrada. Compara tu tiempo entre el repaso 1 y el repaso 2 — si bajas, el método está funcionando.',
+    desc: 'Registra tus sesiones de Solo y Visión: tiempo, aciertos y marcas personales. El progreso de La Paloma tiene su propio seguimiento dentro de Ciclos.',
   },
   {
     path: '/leaderboard',
@@ -175,7 +175,7 @@ export default function Dashboard() {
               Crea un macrociclo para una categoría y el sistema te guía por 4 repasos del mismo material. Cada repaso recorre los mismos ejercicios desde el principio. El objetivo no es ver más puzzles — es resolver los mismos en menos tiempo cada vez.
             </p>
             <p className={`text-base leading-loose ${t.text2} mb-10`}>
-              Los intervalos son crecientes: el primer repaso dura más, el último menos. Fundamentado en la curva del olvido de Ebbinghaus — exactamente lo contrario al Woodpecker original.
+              Los descansos son crecientes: el primer descanso dura menos, el último mas. Fundamentado en la curva del olvido de Ebbinghaus — exactamente lo contrario al Woodpecker original.
             </p>
             <div className="flex items-center gap-4 flex-wrap">
               <button
