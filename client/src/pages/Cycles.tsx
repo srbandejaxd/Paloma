@@ -28,10 +28,10 @@
 	]
 	
 	const DEFAULT_REVIEW_CONFIG = [
-	  { review_number: 1, days_work: 7, days_rest: 3 },
-	  { review_number: 2, days_work: 5, days_rest: 2 },
-	  { review_number: 3, days_work: 3, days_rest: 1 },
-	  { review_number: 4, days_work: 1, days_rest: 0 },
+	  { review_number: 1, days_work: 10, days_rest: 1 },
+	  { review_number: 2, days_work: 7, days_rest: 3 },
+	  { review_number: 3, days_work: 4, days_rest: 5 },
+	  { review_number: 4, days_work: 1, days_rest: 7 },
 	]
 	
 	const SUBCATEGORY_LABELS: Record<string, { label: string; color: string }> = {
@@ -477,6 +477,90 @@ function formatDate(iso: string): string {
 	            </p>
 	          </div>
 	
+	          {/* ── FUNDAMENTO TEÓRICO ─────────────────────────────────── */}
+	          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-6`}>
+	            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-6`}>Fundamento teórico · Por qué Cycles contradice al Woodpecker</p>
+	            <div className="space-y-6">
+
+	              {/* Ebbinghaus */}
+	              <div className="flex gap-4">
+	                <div className="text-2xl flex-shrink-0 mt-0.5">🧠</div>
+	                <div>
+	                  <p className={`font-bold ${t.text} mb-1`}>La curva del olvido — Hermann Ebbinghaus (1885)</p>
+	                  <p className={`text-sm ${t.text2} leading-relaxed`}>
+	                    El psicólogo alemán Hermann Ebbinghaus descubrió que la memoria decae de forma exponencial con el tiempo. Sin repaso, olvidamos cerca del 70 % de lo aprendido en 24 horas. Su hallazgo clave: cada vez que repasamos un material <em>justo antes de olvidarlo</em>, el recuerdo se consolida más profundamente y tarda más en decaer la próxima vez.
+	                  </p>
+	                </div>
+	              </div>
+
+	              {/* Repetición espaciada */}
+	              <div className="flex gap-4">
+	                <div className="text-2xl flex-shrink-0 mt-0.5">📈</div>
+	                <div>
+	                  <p className={`font-bold ${t.text} mb-1`}>Repetición espaciada: más días entre repasos, no menos</p>
+	                  <p className={`text-sm ${t.text2} leading-relaxed`}>
+	                    La ciencia del aprendizaje es clara: el intervalo óptimo entre repasos debe <strong>aumentar</strong> con cada repetición. Repaso 1 → corto. Repaso 2 → más largo. Repaso 3 → aún más largo. Así la memoria se graba a largo plazo en lugar de mantenerse artificialmente en la memoria a corto plazo.
+	                  </p>
+	                </div>
+	              </div>
+
+	              {/* Crítica al Woodpecker */}
+	              <div className="flex gap-4">
+	                <div className="text-2xl flex-shrink-0 mt-0.5">⚠️</div>
+	                <div>
+	                  <p className={`font-bold ${t.text} mb-1`}>El problema del método Woodpecker original</p>
+	                  <p className={`text-sm ${t.text2} leading-relaxed`}>
+	                    El Woodpecker propone 4 repasos con intervalos <strong>decrecientes</strong>: 7 → 5 → 3 → 1 días. Esto va en sentido contrario a la curva del olvido: los repasos se vuelven más frecuentes justo cuando el material ya empieza a consolidarse, lo que reduce su efectividad y desperdicia tiempo de estudio.
+	                  </p>
+	                </div>
+	              </div>
+
+	              {/* La contrapropuesta */}
+	              <div className="flex gap-4">
+	                <div className="text-2xl flex-shrink-0 mt-0.5">♟️</div>
+	                <div>
+	                  <p className={`font-bold ${t.text} mb-1`}>La contrapropuesta de Cycles</p>
+	                  <p className={`text-sm ${t.text2} leading-relaxed`}>
+	                    Cycles invierte la progresión: los primeros repasos son los más largos (cuando el material es nuevo y difícil) y los últimos son cortos (cuando ya está casi consolidado). Los días de descanso entre repasos también aumentan, dejando que el olvido natural haga su trabajo antes del siguiente repaso.
+	                  </p>
+	                  <div className={`mt-4 rounded-lg ${t.bg3} ${t.border} border overflow-hidden`}>
+	                    <div className={`grid grid-cols-4 gap-0 text-xs font-bold uppercase tracking-widest ${t.text3} border-b ${t.border}`}>
+	                      <div className="px-4 py-2">Repaso</div>
+	                      <div className="px-4 py-2">Woodpecker</div>
+	                      <div className="px-4 py-2">Cycles</div>
+	                      <div className="px-4 py-2">Descanso</div>
+	                    </div>
+	                    {[
+	                      { r: '1°', wp: '7 días', cy: '10 días', rest: '1 día' },
+	                      { r: '2°', wp: '5 días', cy: '7 días', rest: '3 días' },
+	                      { r: '3°', wp: '3 días', cy: '4 días', rest: '5 días' },
+	                      { r: '4°', wp: '1 día',  cy: '1 día',  rest: '7 días' },
+	                    ].map(row => (
+	                      <div key={row.r} className={`grid grid-cols-4 gap-0 text-sm border-b last:border-0 ${t.border}`}>
+	                        <div className={`px-4 py-3 font-bold ${t.text}`}>{row.r}</div>
+	                        <div className={`px-4 py-3 ${t.text3} line-through`}>{row.wp}</div>
+	                        <div className="px-4 py-3 font-bold" style={{ color: '#27ae60' }}>{row.cy}</div>
+	                        <div className={`px-4 py-3 ${t.text2}`}>{row.rest}</div>
+	                      </div>
+	                    ))}
+	                  </div>
+	                </div>
+	              </div>
+
+	              {/* Personalización */}
+	              <div className="flex gap-4">
+	                <div className="text-2xl flex-shrink-0 mt-0.5">⚙️</div>
+	                <div>
+	                  <p className={`font-bold ${t.text} mb-1`}>Sigue siendo tuyo</p>
+	                  <p className={`text-sm ${t.text2} leading-relaxed`}>
+	                    Los valores anteriores son el punto de partida predeterminado. Al crear un macrociclo puedes ajustar libremente los días de trabajo y descanso de cada repaso según tu ritmo, disponibilidad o preferencia.
+	                  </p>
+	                </div>
+	              </div>
+
+	            </div>
+	          </div>
+
 	          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-6`}>
 	            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-6`}>Cómo funciona</p>
 	            <div className="space-y-6">
@@ -501,7 +585,7 @@ function formatDate(iso: string): string {
 	
 	          <div className={`rounded-xl ${t.bg3} ${t.border} border px-6 py-4 mb-10`}>
 	            <p className={`text-xs ${t.text3} leading-relaxed`}>
-	              💡 Por defecto los repasos siguen la progresión del libro: 7 días → 5 días → 3 días → 1 día, con días de descanso entre cada uno. Puedes personalizar esta configuración al crear un macrociclo.
+	              💡 Por defecto los repasos siguen la progresión de Cycles: 10 días → 7 días → 4 días → 1 día, con descansos crecientes de 1, 3, 5 y 7 días respectivamente. Puedes personalizar esta configuración al crear un macrociclo.
 	            </p>
 	          </div>
 	
