@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 
 function SunIcon() {
@@ -13,7 +13,6 @@ function SunIcon() {
     </svg>
   )
 }
-
 function MoonIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -22,15 +21,25 @@ function MoonIcon() {
   )
 }
 
+const NAV_ITEMS = [
+  { path: '/home',        label: 'Home',      icon: '🏠' },
+  { path: '/cycles',      label: 'Ciclos',    icon: '🕊️' },
+  { path: '/solo',        label: 'Solo',      icon: '⚡' },
+  { path: '/puzzles',     label: 'Puzzles',   icon: '📚' },
+  { path: '/vision',      label: 'Visión',    icon: '👁' },
+  { path: '/history',     label: 'Historial', icon: '📋' },
+  { path: '/leaderboard', label: 'Ranking',   icon: '🏆' },
+  { path: '/blind',       label: 'Ciego',     icon: '🎲' },
+]
+
 const SECTIONS = [
   {
     path: '/cycles',
     icon: '🕊️',
-    label: 'La Paloma',
+    label: 'La Paloma · Ciclos',
     tag: 'Método principal',
-    tagColor: '#D4A017',
     headline: 'El núcleo de tu entrenamiento',
-    body: 'Aquí es donde ocurre el trabajo real. Crea un macrociclo para una categoría de puzzles y el sistema te guía a través de 4 repasos del mismo material. Cada repaso recorre los mismos ejercicios desde el principio — el objetivo no es ver más puzzles, sino resolver los mismos en menos tiempo. La Paloma aplica repetición espaciada inversa: el primer repaso es el más largo, el último el más corto. Exactamente lo contrario al método Woodpecker original, y fundamentado en la curva del olvido de Ebbinghaus.',
+    body: 'Aquí es donde ocurre el trabajo real. Crea un macrociclo para una categoría de puzzles y el sistema te guía a través de 4 repasos del mismo material. Cada repaso recorre los mismos ejercicios desde el principio — el objetivo no es ver más puzzles, sino resolver los mismos en menos tiempo cada vez.\n\nLa Paloma aplica repetición espaciada inversa: el primer repaso es el más largo (cuando el material es nuevo), el último el más corto (cuando ya está consolidado). Exactamente lo contrario al método Woodpecker original, y fundamentado en la curva del olvido de Ebbinghaus.',
     detail: '4 repasos · intervalos crecientes · sesiones cronometradas',
     primary: true,
   },
@@ -39,10 +48,9 @@ const SECTIONS = [
     icon: '⚡',
     label: 'Solo',
     tag: 'Práctica libre',
-    tagColor: null,
-    headline: 'Puzzles sin estructura',
-    body: 'Accede a cualquier puzzle de cualquier categoría y resuélvelo sin presión de tiempo ni registro de sesión. Útil cuando quieres explorar un bloque nuevo antes de comprometerte con un macrociclo, o cuando quieres repasar piezas específicas por tu cuenta.',
-    detail: 'Sin límite · sin cronómetro obligatorio · todas las categorías',
+    headline: 'Puzzles sin estructura ni presión',
+    body: 'Accede a cualquier puzzle de cualquier categoría y resuélvelo sin presión de tiempo ni registro de sesión. Útil cuando quieres explorar un bloque nuevo antes de comprometerte con un macrociclo, o simplemente practicar sin el cronómetro encima.',
+    detail: 'Sin límite · todas las categorías · sin cronómetro obligatorio',
     primary: false,
   },
   {
@@ -50,20 +58,18 @@ const SECTIONS = [
     icon: '📚',
     label: 'Puzzles',
     tag: 'Explorador',
-    tagColor: null,
     headline: 'Navega el banco completo',
-    body: 'Vista completa de todos los puzzles disponibles organizados por categoría y dificultad. Desde aquí puedes ver el material que cubre cada categoría antes de arrancar un macrociclo, o buscar puzzles específicos por posición o tema táctico.',
+    body: 'Vista completa de todos los puzzles disponibles organizados por categoría y dificultad. Desde aquí puedes ver el material que cubre cada categoría antes de arrancar un macrociclo.',
     detail: 'Filtros por categoría · vista previa de posiciones',
     primary: false,
   },
   {
     path: '/history',
-    icon: '📈',
+    icon: '📋',
     label: 'Historial',
     tag: 'Seguimiento',
-    tagColor: null,
     headline: 'Tu progreso, sesión por sesión',
-    body: 'Cada vez que terminas una sesión dentro de La Paloma, queda registrada: tiempo total, puzzles resueltos, errores cometidos y score ponderado. El historial te muestra si eres más rápido en el repaso 2 que en el 1 — esa es la métrica que importa. Si no mejoras entre repasos, el método te lo dice sin ambigüedades.',
+    body: 'Cada vez que terminas una sesión dentro de La Paloma, queda registrada: tiempo total, puzzles resueltos, errores y score. El historial te muestra si eres más rápido en el repaso 2 que en el 1 — esa es la métrica que importa.',
     detail: 'Score por sesión · comparativa entre repasos · tiempo promedio',
     primary: false,
   },
@@ -72,9 +78,8 @@ const SECTIONS = [
     icon: '🏆',
     label: 'Ranking',
     tag: 'Global',
-    tagColor: null,
     headline: 'Compite con otros jugadores',
-    body: 'Tabla de posiciones global por categoría. Se rankea por tiempo promedio por puzzle dentro de cada bloque. Una manera de calibrar si tu velocidad de solución es competitiva y de mantener la motivación cuando el entrenamiento en solitario se siente monótono.',
+    body: 'Tabla de posiciones global por categoría. Se rankea por tiempo promedio por puzzle dentro de cada bloque. Una manera de calibrar si tu velocidad es competitiva.',
     detail: 'Rankings por categoría · tiempo por puzzle · actualización en tiempo real',
     primary: false,
   },
@@ -83,9 +88,8 @@ const SECTIONS = [
     icon: '👁️',
     label: 'Visión',
     tag: 'Complemento rápido',
-    tagColor: null,
     headline: 'Entrena el tablero en 30 segundos',
-    body: 'Se muestra una coordenada del tablero y tienes que hacer clic en la casilla correcta lo más rápido posible. 30 segundos, máximos aciertos. Entrena la visión espacial del tablero y la automatización de las coordenadas — un complemento rápido para el calentamiento antes de una sesión de puzzles.',
+    body: 'Se muestra una coordenada y tienes que hacer clic en la casilla correcta lo más rápido posible. 30 segundos, máximos aciertos. Ideal como calentamiento antes de una sesión de puzzles.',
     detail: '30 segundos · máximas respuestas · ranking global',
     primary: false,
   },
@@ -94,9 +98,8 @@ const SECTIONS = [
     icon: '♟️',
     label: 'Ajedrez Ciego',
     tag: 'Avanzado',
-    tagColor: null,
     headline: 'Juega sin ver las piezas',
-    body: 'Se te muestra la posición inicial y luego el tablero desaparece. Tienes que resolver el puzzle de memoria, introduciendo los movimientos sin referencia visual. El nivel más exigente de entrenamiento táctico — requiere que hayas automatizado bien los patrones básicos antes de intentarlo.',
+    body: 'Se te muestra la posición inicial y luego el tablero desaparece. Tienes que resolver el puzzle de memoria, introduciendo los movimientos sin referencia visual. El nivel más exigente de entrenamiento táctico.',
     detail: 'Memoria de posición · movimientos a ciegas · alta dificultad',
     primary: false,
   },
@@ -105,6 +108,7 @@ const SECTIONS = [
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [dark, setDark] = useState(true)
 
   useEffect(() => {
@@ -120,25 +124,23 @@ export default function Dashboard() {
   }
 
   const t = dark ? {
-    bg: 'bg-[#0A0A0F]',
-    bg2: 'bg-[#12121A]',
-    bg3: 'bg-[#1C1C28]',
-    border: 'border-[#252535]',
-    text: 'text-[#E8E6E0]',
+    bg:    'bg-[#0A0A0F]',
+    bg2:   'bg-[#12121A]',
+    bg3:   'bg-[#1C1C28]',
+    border:'border-[#252535]',
+    borderLight: 'border-[#252535]',
+    text:  'text-[#E8E6E0]',
     text2: 'text-[#B8B5AC]',
     text3: 'text-[#7A776E]',
-    inputBg: 'bg-[#12121A]',
-    toggleBg: 'bg-[#1C1C28] border-[#252535] text-[#7A776E] hover:text-[#E8E6E0]',
   } : {
-    bg: 'bg-[#F5F0E8]',
-    bg2: 'bg-[#EDE8DF]',
-    bg3: 'bg-[#E2DBD0]',
-    border: 'border-[#D4CABF]',
-    text: 'text-[#1A1814]',
+    bg:    'bg-[#F5F0E8]',
+    bg2:   'bg-[#EDE8DF]',
+    bg3:   'bg-[#E2DBD0]',
+    border:'border-[#D4CABF]',
+    borderLight: 'border-[#D4CABF]',
+    text:  'text-[#1A1814]',
     text2: 'text-[#4A4640]',
     text3: 'text-[#8A8478]',
-    inputBg: 'bg-[#EDE8DF]',
-    toggleBg: 'bg-[#E2DBD0] border-[#D4CABF] text-[#8A8478] hover:text-[#1A1814]',
   }
 
   const accentColor = dark ? '#D4A017' : '#A07810'
@@ -149,106 +151,131 @@ export default function Dashboard() {
     <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300`}>
 
       {/* Nav */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 ${t.bg} border-b ${t.border}`} style={{ backgroundColor: dark ? '#0A0A0F' : '#F5F0E8' }}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-lg">🪃</span>
-            <span className={`font-bold text-sm tracking-widest uppercase ${t.text}`}>Woodpecker</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className={`text-xs ${t.text3}`}>{user.nickname}</span>
+      <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95 transition-colors duration-300`}>
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <p className={`text-xs uppercase tracking-[0.15em] ${t.text3} mb-1`}>Bienvenido de vuelta</p>
+              <h1 className={`text-3xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>
+                {user.nickname}
+              </h1>
+            </div>
             <button
               onClick={toggleTheme}
-              className={`p-2 border rounded-sm transition-all ${t.toggleBg} ${t.border}`}
+              className={`flex items-center justify-center w-10 h-10 rounded-lg ${t.bg3} ${t.border} border transition-all hover:scale-105 ${t.text3}`}
             >
               {dark ? <SunIcon /> : <MoonIcon />}
             </button>
-            <button
-              onClick={() => { logout(); navigate('/') }}
-              className={`px-3 py-1.5 rounded-sm border text-xs ${t.text3} ${t.border} hover:${t.text} transition-colors`}
-            >
-              Salir
-            </button>
+          </div>
+
+          <div className="flex items-center gap-0 overflow-x-auto pb-2">
+            {NAV_ITEMS.map((item, idx) => {
+              const isActive = location.pathname === item.path
+              return (
+                <div key={item.path} className="flex items-center">
+                  <button
+                    onClick={() => navigate(item.path)}
+                    className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all relative group ${isActive ? t.text : `${t.text2} hover:${t.text}`}`}
+                  >
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="whitespace-nowrap">{item.label}</span>
+                    <div
+                      className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}
+                      style={{ backgroundColor: accentColor }}
+                    />
+                  </button>
+                  {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
+                </div>
+              )
+            })}
           </div>
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 pt-28 pb-20">
+      <div className="max-w-6xl mx-auto px-6">
 
-        {/* Header */}
-        <div className="mb-16">
-          <p className={`text-xs uppercase tracking-[0.2em] ${t.text3} mb-3`}>Bienvenido</p>
-          <h1 className={`text-5xl font-bold ${t.text} mb-4`} style={{ letterSpacing: '-0.025em' }}>
-            Hola, <span style={{ color: accentColor }}>{user.nickname}</span>
-          </h1>
-          <p className={`text-base ${t.text2} max-w-xl leading-relaxed`}>
-            Aquí está todo lo que tienes disponible. Empieza por La Paloma si quieres seguir el método — el resto son complementos.
+        {/* Hero */}
+        <div className="py-24 border-b" style={{ borderColor: dark ? '#252535' : '#D4CABF' }}>
+          <p className={`text-xs uppercase tracking-[0.2em] ${t.text3} mb-5`}>Panel de inicio</p>
+          <h2 className={`text-6xl font-bold ${t.text} mb-6 leading-none`} style={{ letterSpacing: '-0.03em' }}>
+            ¿Por dónde<br />
+            <span style={{ color: accentColor }}>empezamos hoy?</span>
+          </h2>
+          <p className={`text-lg ${t.text2} max-w-xl leading-relaxed`}>
+            La Paloma es el método. Todo lo demás es un complemento. Si no sabes qué hacer, abre Ciclos y sigue donde lo dejaste.
           </p>
         </div>
 
         {/* Sección principal destacada */}
-        <div
-          className={`rounded-xl ${t.bg2} border p-8 mb-4 cursor-pointer transition-all hover:scale-[1.01]`}
-          style={{ borderColor: accentColor, borderWidth: '1.5px' }}
-          onClick={() => navigate(SECTIONS[0].path)}
-        >
-          <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-3xl">{SECTIONS[0].icon}</span>
-                <div>
-                  <span
-                    className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm"
-                    style={{ backgroundColor: `${accentColor}22`, color: accentColor }}
-                  >
-                    {SECTIONS[0].tag}
-                  </span>
-                </div>
+        <div className="py-20 border-b" style={{ borderColor: dark ? '#252535' : '#D4CABF' }}>
+          <p className={`text-xs uppercase tracking-[0.2em] ${t.text3} mb-12`}>Método principal</p>
+          <div
+            className={`rounded-2xl ${t.bg2} border-2 p-10 cursor-pointer transition-all hover:scale-[1.005]`}
+            style={{ borderColor: accentColor }}
+            onClick={() => navigate('/cycles')}
+          >
+            <div className="flex items-start gap-6 mb-8">
+              <span className="text-5xl">🕊️</span>
+              <div>
+                <span
+                  className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full"
+                  style={{ backgroundColor: `${accentColor}22`, color: accentColor }}
+                >
+                  {SECTIONS[0].tag}
+                </span>
+                <h3 className={`text-3xl font-bold ${t.text} mt-3 mb-1`} style={{ letterSpacing: '-0.02em' }}>
+                  {SECTIONS[0].label}
+                </h3>
+                <p className={`text-sm ${t.text3}`}>{SECTIONS[0].headline}</p>
               </div>
-              <h2 className={`text-2xl font-bold ${t.text} mb-1`} style={{ letterSpacing: '-0.02em' }}>
-                {SECTIONS[0].label}
-              </h2>
-              <p className={`text-sm font-semibold mb-3 ${t.text3}`}>{SECTIONS[0].headline}</p>
-              <p className={`text-sm leading-relaxed ${t.text2} max-w-2xl`}>{SECTIONS[0].body}</p>
-              <p className={`text-xs mt-4 ${t.text3}`}>{SECTIONS[0].detail}</p>
             </div>
-            <div className="flex-shrink-0 self-center">
+            {SECTIONS[0].body.split('\n\n').map((para, i) => (
+              <p key={i} className={`text-base leading-relaxed ${t.text2} mb-4 max-w-3xl`}>{para}</p>
+            ))}
+            <div className="flex items-center justify-between mt-8 pt-8 border-t" style={{ borderColor: dark ? '#252535' : '#D4CABF' }}>
+              <p className={`text-xs ${t.text3}`}>{SECTIONS[0].detail}</p>
               <button
-                className="px-6 py-3 rounded-lg font-bold text-sm tracking-widest uppercase text-black transition-all hover:opacity-90"
+                className="px-8 py-3 rounded-xl font-bold text-sm tracking-widest uppercase text-black transition-all hover:opacity-90 hover:scale-105"
                 style={{ backgroundColor: accentColor }}
               >
-                Ir a La Paloma →
+                Abrir La Paloma →
               </button>
             </div>
           </div>
         </div>
 
-        {/* Grid del resto */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-          {SECTIONS.slice(1).map(s => (
-            <div
-              key={s.path}
-              onClick={() => navigate(s.path)}
-              className={`rounded-xl ${t.bg2} border ${t.border} p-6 cursor-pointer transition-all hover:border-opacity-60 hover:scale-[1.01] flex flex-col`}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl">{s.icon}</span>
-                <div>
-                  <p className={`font-bold text-sm ${t.text}`}>{s.label}</p>
-                  <p className={`text-xs ${t.text3}`}>{s.tag}</p>
+        {/* Grid resto de secciones */}
+        <div className="py-20">
+          <p className={`text-xs uppercase tracking-[0.2em] ${t.text3} mb-12`}>Herramientas complementarias</p>
+          <div className="grid md:grid-cols-2 gap-6">
+            {SECTIONS.slice(1).map(s => (
+              <div
+                key={s.path}
+                onClick={() => navigate(s.path)}
+                className={`rounded-2xl ${t.bg2} border ${t.border} p-8 cursor-pointer transition-all hover:scale-[1.02] hover:border-opacity-80 flex flex-col`}
+              >
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="text-3xl">{s.icon}</span>
+                  <div>
+                    <p className={`font-bold text-lg ${t.text}`} style={{ letterSpacing: '-0.01em' }}>{s.label}</p>
+                    <p className={`text-xs ${t.text3} uppercase tracking-widest`}>{s.tag}</p>
+                  </div>
+                </div>
+                <p className={`text-sm font-semibold mb-3`} style={{ color: accentColor }}>{s.headline}</p>
+                <p className={`text-sm leading-relaxed ${t.text2} flex-1`}>{s.body}</p>
+                <div className="flex items-center justify-between mt-6 pt-6 border-t" style={{ borderColor: dark ? '#252535' : '#D4CABF' }}>
+                  <p className={`text-xs ${t.text3}`}>{s.detail}</p>
+                  <span className={`text-xs font-bold ${t.text3}`}>→</span>
                 </div>
               </div>
-              <p className={`text-xs font-semibold mb-2`} style={{ color: accentColor }}>{s.headline}</p>
-              <p className={`text-xs leading-relaxed ${t.text2} flex-1`}>{s.body}</p>
-              <p className={`text-xs mt-4 pt-4 border-t ${t.border} ${t.text3}`}>{s.detail}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
       </div>
 
       {/* Footer */}
-      <div className={`border-t ${t.border} py-6 px-6`}>
+      <div className={`border-t ${t.border} py-8 px-6 mt-8`}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <span className={`text-xs ${t.text3}`}>🪃 Woodpecker · Método GM Axel Smith & Hans Tikkanen</span>
           <button

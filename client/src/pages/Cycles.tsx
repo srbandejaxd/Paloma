@@ -14,7 +14,8 @@
 	
 	const NAV_ITEMS = [
 	  { path: '/home', label: 'Home', icon: '🏠' },
-	  { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
+	  { path: '/solo', label: 'Solo', icon: '⚡' },
+	  { path: '/puzzles', label: 'Puzzles', icon: '📚' },
 	  { path: '/vision', label: 'Visión', icon: '👁' },
 	  { path: '/history', label: 'Historial', icon: '📋' },
 	  { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
