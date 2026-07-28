@@ -8,7 +8,7 @@
 	  fetchCycle, fetchReview, startReviewSession,
 	  fetchSessionPuzzle, submitSessionPuzzle, endReviewSession,
 	  Macrocycle, Cycle, Review, ReviewSession, ReviewConfig,
-	  CyclePuzzle, updateMacrocycleConfig
+	  CyclePuzzle, updateMacrocycleConfig,
 	  restartReview,
 } from '../lib/api'
 	import PuzzleBoard from '../components/Board/PuzzleBoard'
