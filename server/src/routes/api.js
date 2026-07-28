@@ -498,16 +498,15 @@ router.post('/cycles/reviews/:id/restart', authMiddleware, async (req, res) => {
     const r = review.rows[0]
     if (r.status !== 'failed') return res.status(400).json({ error: 'El repaso no está cancelado' })
 
-    // Reactivar: volver a active y resetear puzzle_pointer al inicio del ciclo
+    // Borrar todas las sesiones para que el historial quede limpio
     await db.execute({
-      sql: `UPDATE reviews SET status = 'active', failed_at = NULL, puzzle_pointer = ? WHERE id = ?`,
-      args: [r.cycleStart, req.params.id]
-    })
-    // Marcar sesiones anteriores como completadas para no bloquear la ventana de 24h
-    await db.execute({
-      sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP
-            WHERE review_id = ? AND status IN ('active', 'pending')`,
+      sql: `DELETE FROM review_sessions WHERE review_id = ?`,
       args: [req.params.id]
+    })
+    // Reactivar y resetear puzzle_pointer al inicio del ciclo
+    await db.execute({
+      sql: `UPDATE reviews SET status = 'active', failed_at = NULL, completed_at = NULL, puzzle_pointer = ? WHERE id = ?`,
+      args: [r.cycleStart, req.params.id]
     })
     res.json({ ok: true })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
