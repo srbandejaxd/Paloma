@@ -908,8 +908,17 @@ function formatDate(iso: string): string {
 	
 	  // ── DETALLE DE REPASO ─────────────────────────────────────────────────────
 	  if (screen === 'review' && activeReview) {
-	    const sessionsDone = activeReview.sessions?.filter(s => s.status === 'completed').length || 0
-	    const lastSession = activeReview.sessions?.filter(s => s.status === 'completed').sort((a, b) => b.dayNumber - a.dayNumber)[0]
+	    const hoursMs = activeReview.hoursPerDay * 3600 * 1000
+	    const sessionsDone = activeReview.sessions?.filter(s => {
+	      if (s.status === 'completed') return true
+	      // sesión activa cuyo tiempo ya venció cuenta como hecha
+	      if (s.status === 'active') {
+	        const start = new Date(s.startedAt.endsWith('Z') ? s.startedAt : s.startedAt + 'Z')
+	        return Date.now() - start.getTime() >= hoursMs
+	      }
+	      return false
+	    }).length || 0
+	    const lastSession = activeReview.sessions?.filter(s => s.status === 'completed' || s.status === 'active').sort((a, b) => b.dayNumber - a.dayNumber)[0]
 	    const nextAvailable = lastSession
 	        ? new Date(new Date(lastSession.startedAt.endsWith('Z') ? lastSession.startedAt : lastSession.startedAt + 'Z').getTime() + 16 * 3600 * 1000).toISOString()
 	        : null
