@@ -427,7 +427,15 @@ router.get('/cycles/cycles/:id', authMiddleware, async (req, res) => {
       args: [req.params.id]
     })
 
-    res.json({ ...cycle.rows[0], reviews: reviews.rows })
+    const reviewsWithSessions = await Promise.all(reviews.rows.map(async (r) => {
+      const sessionCount = await db.execute({
+        sql: `SELECT COUNT(*) as cnt FROM review_sessions WHERE review_id = ? AND status = 'completed'`,
+        args: [r.id]
+      })
+      return { ...r, completedSessions: Number(sessionCount.rows[0].cnt) }
+    }))
+
+    res.json({ ...cycle.rows[0], reviews: reviewsWithSessions })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
@@ -596,15 +604,12 @@ router.post('/cycles/reviews/:id/start-session', authMiddleware, async (req, res
     const puzzles = await getCyclePuzzles(db, r.category, absoluteStart, 1)
     if (puzzles.length === 0) return res.status(404).json({ error: 'No hay más puzzles' })
 
-    const totalPuzzles = await getCyclePuzzleCount(db, r.category)
-
     res.json({
       sessionId,
       dayNumber,
       hoursPerDay: r.hoursPerDay,
       puzzle: puzzles[0],
-      puzzleIndex: absoluteStart,
-      totalPuzzles
+      puzzleIndex: absoluteStart
     })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
