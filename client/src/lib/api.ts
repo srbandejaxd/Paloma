@@ -379,3 +379,11 @@ export async function endReviewSession(sessionId: number): Promise<EndSessionRes
   if (!res.ok) throw new Error('Failed to end session')
   return res.json()
 }
+
+export async function restartReview(reviewId: number): Promise<void> {
+  const res = await fetch(`${BASE}/api/cycles/reviews/${reviewId}/restart`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error((await res.json()).error || 'Error al reiniciar repaso')
+}

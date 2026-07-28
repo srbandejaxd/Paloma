@@ -9,7 +9,8 @@
 	  fetchSessionPuzzle, submitSessionPuzzle, endReviewSession,
 	  Macrocycle, Cycle, Review, ReviewSession, ReviewConfig,
 	  CyclePuzzle, updateMacrocycleConfig
-	} from '../lib/api'
+	  restartReview,
+} from '../lib/api'
 	import PuzzleBoard from '../components/Board/PuzzleBoard'
 	
 	const NAV_ITEMS = [
@@ -284,14 +285,7 @@ function formatDate(iso: string): string {
 	    setLoading(true)
 	    setSessionError(null)
 	    try {
-	      const token = localStorage.getItem('wp_token')
-	      const API_URL = (await import('../lib/api')).API_URL
-	      const res = await fetch(`${API_URL}/cycles/reviews/${reviewId}/restart`, {
-	        method: 'POST',
-	        headers: { Authorization: `Bearer ${token}` },
-	      })
-	      if (!res.ok) throw new Error((await res.json()).error)
-	      // Refrescar los datos del repaso y luego iniciar sesión
+	      await restartReview(reviewId)
 	      const data = await fetchReview(reviewId)
 	      setActiveReview(data)
 	      await handleStartSession(reviewId)
