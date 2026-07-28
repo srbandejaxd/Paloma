@@ -8,9 +8,8 @@
 	  fetchCycle, fetchReview, startReviewSession,
 	  fetchSessionPuzzle, submitSessionPuzzle, endReviewSession,
 	  Macrocycle, Cycle, Review, ReviewSession, ReviewConfig,
-	  CyclePuzzle, updateMacrocycleConfig,
-	  restartReview,
-} from '../lib/api'
+	  CyclePuzzle, updateMacrocycleConfig
+	} from '../lib/api'
 	import PuzzleBoard from '../components/Board/PuzzleBoard'
 	
 	const NAV_ITEMS = [
@@ -279,20 +278,6 @@ function formatDate(iso: string): string {
 	      })
 	    } catch (e) { console.error(e) }
 	    finally { setLoading(false) }
-	  }
-
-	  async function handleRestartReview(reviewId: number) {
-	    setLoading(true)
-	    setSessionError(null)
-	    try {
-	      await restartReview(reviewId)
-	      const data = await fetchReview(reviewId)
-	      setActiveReview(data)
-	      await handleStartSession(reviewId)
-	    } catch (e: unknown) {
-	      setSessionError((e as Error).message || 'Error al reiniciar repaso')
-	      setLoading(false)
-	    }
 	  }
 
 	  async function handleStartSession(reviewId: number) {
@@ -926,7 +911,7 @@ function formatDate(iso: string): string {
 	    const sessionsDone = activeReview.sessions?.filter(s => s.status === 'completed').length || 0
 	    const lastSession = activeReview.sessions?.filter(s => s.status === 'completed').sort((a, b) => b.dayNumber - a.dayNumber)[0]
 	    const nextAvailable = lastSession
-	        ? new Date(new Date(lastSession.startedAt.endsWith('Z') ? lastSession.startedAt : lastSession.startedAt + 'Z').getTime() + 24 * 3600 * 1000).toISOString()
+	        ? new Date(new Date(lastSession.startedAt.endsWith('Z') ? lastSession.startedAt : lastSession.startedAt + 'Z').getTime() + 16 * 3600 * 1000).toISOString()
 	        : null
 	    const canStart = activeReview.status === 'active' && sessionsDone < activeReview.daysWork && (!nextAvailable || new Date() >= new Date(nextAvailable))
 	
@@ -1009,17 +994,7 @@ function formatDate(iso: string): string {
 	              {loading ? 'Iniciando...' : `Iniciar día ${sessionsDone + 1}`}
 	            </button>
 	          )}
-	
-	          {activeReview.status === 'failed' && (
-	            <button
-	              onClick={() => handleRestartReview(activeReview.id)}
-	              disabled={loading}
-	              className="w-full py-4 rounded-xl font-bold text-sm tracking-widest uppercase text-white transition-all hover:opacity-90 disabled:opacity-50"
-	              style={{ backgroundColor: '#E74C3C' }}
-	            >
-	              {loading ? 'Reiniciando...' : 'Reiniciar repaso'}
-	            </button>
-	          )}
+
 	
 	          {/* Historial de sesiones */}
 	          {activeReview.sessions && activeReview.sessions.length > 0 && (

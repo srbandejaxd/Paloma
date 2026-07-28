@@ -562,24 +562,13 @@ router.post('/cycles/reviews/:id/start-session', authMiddleware, async (req, res
       args: [req.params.id]
     })
     if (lastSession.rows.length > 0) {
-      const lastStart = new Date(lastSession.rows[0].startedAt)
-      const nextAvailable = new Date(lastStart.getTime() + 24 * 60 * 60 * 1000)
+      const lastStart = new Date(lastSession.rows[0].startedAt.endsWith('Z') ? lastSession.rows[0].startedAt : lastSession.rows[0].startedAt + 'Z')
+      const nextAvailable = new Date(lastStart.getTime() + 16 * 60 * 60 * 1000)
       if (new Date() < nextAvailable) {
         return res.status(425).json({
           error: 'Sesión no disponible aún',
           availableAt: nextAvailable.toISOString()
         })
-      }
-
-      // Verificar límite de 48h (gracia)
-      const graceEnd = new Date(nextAvailable.getTime() + 48 * 60 * 60 * 1000)
-      if (new Date() > graceEnd) {
-        // Cancelar el repaso
-        await db.execute({
-          sql: `UPDATE reviews SET status = 'failed', failed_at = CURRENT_TIMESTAMP WHERE id = ?`,
-          args: [req.params.id]
-        })
-        return res.status(410).json({ error: 'Repaso cancelado por inactividad' })
       }
     }
 
