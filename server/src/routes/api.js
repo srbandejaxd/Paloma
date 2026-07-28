@@ -498,7 +498,14 @@ router.post('/cycles/reviews/:id/restart', authMiddleware, async (req, res) => {
     const r = review.rows[0]
     if (r.status !== 'failed') return res.status(400).json({ error: 'El repaso no está cancelado' })
 
-    // Borrar todas las sesiones para que el historial quede limpio
+    // Borrar session_puzzles primero (FK), luego las sesiones
+    const sessions = await db.execute({
+      sql: `SELECT id FROM review_sessions WHERE review_id = ?`,
+      args: [req.params.id]
+    })
+    for (const s of sessions.rows) {
+      await db.execute({ sql: `DELETE FROM session_puzzles WHERE session_id = ?`, args: [s.id] })
+    }
     await db.execute({
       sql: `DELETE FROM review_sessions WHERE review_id = ?`,
       args: [req.params.id]
