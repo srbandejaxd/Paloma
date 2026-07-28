@@ -427,16 +427,7 @@ router.get('/cycles/cycles/:id', authMiddleware, async (req, res) => {
       args: [req.params.id]
     })
 
-    // Agregar conteo de sesiones completadas a cada repaso
-    const reviewsWithSessions = await Promise.all(reviews.rows.map(async (r) => {
-      const sessionCount = await db.execute({
-        sql: `SELECT COUNT(*) as cnt FROM review_sessions WHERE review_id = ? AND status = 'completed'`,
-        args: [r.id]
-      })
-      return { ...r, completedSessions: Number(sessionCount.rows[0].cnt) }
-    }))
-
-    res.json({ ...cycle.rows[0], reviews: reviewsWithSessions })
+    res.json({ ...cycle.rows[0], reviews: reviews.rows })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
@@ -470,6 +461,58 @@ router.get('/cycles/reviews/:id', authMiddleware, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
+// POST /cycles/reviews/:id/force-close-session — cerrar sesión abandonada
+router.post('/cycles/reviews/:id/force-close-session', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const activeSession = await db.execute({
+      sql: `SELECT rs.id FROM review_sessions rs
+            JOIN reviews r ON r.id = rs.review_id
+            JOIN cycles c ON c.id = r.cycle_id
+            JOIN macrocycles m ON m.id = c.macrocycle_id
+            WHERE rs.review_id = ? AND rs.status = 'active' AND m.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (activeSession.rows.length === 0) return res.status(404).json({ error: 'No hay sesión activa' })
+    await db.execute({
+      sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      args: [activeSession.rows[0].id]
+    })
+    res.json({ ok: true })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+// POST /cycles/reviews/:id/restart — reactivar un repaso fallido
+router.post('/cycles/reviews/:id/restart', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const review = await db.execute({
+      sql: `SELECT r.id, r.status, c.puzzle_start as cycleStart
+            FROM reviews r
+            JOIN cycles c ON c.id = r.cycle_id
+            JOIN macrocycles m ON m.id = c.macrocycle_id
+            WHERE r.id = ? AND m.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (review.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+    const r = review.rows[0]
+    if (r.status !== 'failed') return res.status(400).json({ error: 'El repaso no está cancelado' })
+
+    // Reactivar: volver a active y resetear puzzle_pointer al inicio del ciclo
+    await db.execute({
+      sql: `UPDATE reviews SET status = 'active', failed_at = NULL, puzzle_pointer = ? WHERE id = ?`,
+      args: [r.cycleStart, req.params.id]
+    })
+    // Marcar sesiones anteriores como completadas para no bloquear la ventana de 24h
+    await db.execute({
+      sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP
+            WHERE review_id = ? AND status IN ('active', 'pending')`,
+      args: [req.params.id]
+    })
+    res.json({ ok: true })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
 // POST /cycles/reviews/:id/start-session — iniciar sesión del día
 router.post('/cycles/reviews/:id/start-session', authMiddleware, async (req, res) => {
   const db = getDb()
@@ -494,29 +537,16 @@ router.post('/cycles/reviews/:id/start-session', authMiddleware, async (req, res
       args: [req.params.id]
     })
     if (activeSession.rows.length > 0) {
-      const orphan = activeSession.rows[0]
-      const startedAt = new Date(orphan.startedAt.endsWith('Z') ? orphan.startedAt : orphan.startedAt + 'Z')
-      const elapsedMs = Date.now() - startedAt.getTime()
-      const limitMs = Number(r.hoursPerDay) * 60 * 60 * 1000
-      // Si la sesión ya venció (tiempo agotado + 5 min de margen), cerrarla automáticamente
-      if (elapsedMs > limitMs + 5 * 60 * 1000) {
+      const staleSession = activeSession.rows[0]
+      const ageMs = Date.now() - new Date(staleSession.startedAt).getTime()
+      // Si lleva más de hoursPerDay + 1 hora, se considera abandonada y se cierra
+      if (ageMs > (Number(r.hoursPerDay) + 1) * 3600 * 1000) {
         await db.execute({
           sql: `UPDATE review_sessions SET status = 'completed', ended_at = CURRENT_TIMESTAMP WHERE id = ?`,
-          args: [orphan.id]
+          args: [staleSession.id]
         })
-        // No retornamos error, seguimos para crear la nueva sesión
       } else {
-        // Sesión aún vigente — devolver el sessionId para reanudar
-        const puzzles = await getCyclePuzzles(db, r.category, Number(r.cycleStart) + Number(r.puzzlePointer), 1)
-        return res.status(409).json({
-          error: 'Ya hay una sesión activa',
-          sessionId: Number(orphan.id),
-          resumable: true,
-          puzzle: puzzles[0] || null,
-          elapsedMs,
-          limitMs,
-          hoursPerDay: r.hoursPerDay,
-        })
+        return res.status(409).json({ error: 'Ya hay una sesión activa', sessionId: staleSession.id })
       }
     }
 
@@ -571,15 +601,12 @@ router.post('/cycles/reviews/:id/start-session', authMiddleware, async (req, res
     const puzzles = await getCyclePuzzles(db, r.category, absoluteStart, 1)
     if (puzzles.length === 0) return res.status(404).json({ error: 'No hay más puzzles' })
 
-    const totalPuzzles = await getCyclePuzzleCount(db, r.category)
-
     res.json({
       sessionId,
       dayNumber,
       hoursPerDay: r.hoursPerDay,
       puzzle: puzzles[0],
-      puzzleIndex: absoluteStart,
-      totalPuzzles
+      puzzleIndex: absoluteStart
     })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
@@ -617,13 +644,9 @@ router.get('/cycles/sessions/:id/puzzle', authMiddleware, async (req, res) => {
     const puzzles = await getCyclePuzzles(db, s.category, absoluteOffset, 1)
     if (puzzles.length === 0) return res.json({ finished: true })
 
-    const totalPuzzles = await getCyclePuzzleCount(db, s.category)
-
     res.json({
       puzzle: puzzles[0],
       puzzleIndex: absoluteOffset,
-      puzzlesAttempted: Number(s.puzzlesAttempted),
-      totalPuzzles,
       elapsedMs,
       limitMs,
       timeUp: false

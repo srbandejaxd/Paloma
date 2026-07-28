@@ -280,6 +280,27 @@ function formatDate(iso: string): string {
 	    finally { setLoading(false) }
 	  }
 
+	  async function handleRestartReview(reviewId: number) {
+	    setLoading(true)
+	    setSessionError(null)
+	    try {
+	      const token = localStorage.getItem('wp_token')
+	      const API_URL = (await import('../lib/api')).API_URL
+	      const res = await fetch(`${API_URL}/cycles/reviews/${reviewId}/restart`, {
+	        method: 'POST',
+	        headers: { Authorization: `Bearer ${token}` },
+	      })
+	      if (!res.ok) throw new Error((await res.json()).error)
+	      // Refrescar los datos del repaso y luego iniciar sesión
+	      const data = await fetchReview(reviewId)
+	      setActiveReview(data)
+	      await handleStartSession(reviewId)
+	    } catch (e: unknown) {
+	      setSessionError((e as Error).message || 'Error al reiniciar repaso')
+	      setLoading(false)
+	    }
+	  }
+
 	  async function handleStartSession(reviewId: number) {
 	    setLoading(true)
 	    setSessionError(null)
@@ -997,7 +1018,7 @@ function formatDate(iso: string): string {
 	
 	          {activeReview.status === 'failed' && (
 	            <button
-	              onClick={() => handleStartSession(activeReview.id)}
+	              onClick={() => handleRestartReview(activeReview.id)}
 	              disabled={loading}
 	              className="w-full py-4 rounded-xl font-bold text-sm tracking-widest uppercase text-white transition-all hover:opacity-90 disabled:opacity-50"
 	              style={{ backgroundColor: '#E74C3C' }}
