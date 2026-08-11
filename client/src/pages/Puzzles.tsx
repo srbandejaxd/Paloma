@@ -64,10 +64,13 @@ function buildPositions(puzzle: Puzzle): Position[] {
 }
 
 function buildLichessUrl(puzzle: Puzzle): string {
-  // Abre Lichess con solo la posición inicial, sin solución
-  const fen = puzzle.fen
-  const color = fen.split(' ')[1] === 'w' ? 'white' : 'black'
-  return `https://lichess.org/analysis/${fen}?color=${color}`
+  const g = new Chess()
+  try {
+    g.load(puzzle.fen)
+    for (const san of puzzle.solution) { try { g.move(san) } catch { break } }
+  } catch { /* ignore */ }
+  const pgn = g.pgn({ newline: '\n' })
+  return `https://lichess.org/analysis?pgn=${encodeURIComponent(pgn)}`
 }
 
 export default function Puzzles() {
@@ -85,6 +88,9 @@ export default function Puzzles() {
   const [currentIdx, setCurrentIdx] = useState(0)
   const [loading, setLoading] = useState(true)
   const [reviewPly, setReviewPly] = useState(0)
+  const [interactiveMode, setInteractiveMode] = useState(false)
+  const [wrongFlash, setWrongFlash] = useState(false)
+  const [opponentThinking, setOpponentThinking] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -147,6 +153,8 @@ export default function Puzzles() {
   // Reset review state when puzzle changes
   useEffect(() => {
     setReviewPly(0)
+    setWrongFlash(false)
+    setOpponentThinking(false)
   }, [currentIdx, selectedBlockId])
 
   const positions = useMemo(() => currentPuzzle ? buildPositions(currentPuzzle) : [], [currentPuzzle])
@@ -178,6 +186,33 @@ export default function Puzzles() {
   }
 
 
+
+  function handlePieceDrop(sourceSquare: string, targetSquare: string): boolean {
+    if (!currentPuzzle || !interactiveMode || opponentThinking) return false
+    const expectedSan = currentPuzzle.solution[clampedPly]
+    if (!expectedSan) return false
+    const g = new Chess()
+    try { g.load(reviewPos?.fen ?? currentPuzzle.fen) } catch { return false }
+    let parsed: ReturnType<typeof g.move> | null = null
+    try { parsed = g.move(expectedSan) } catch { return false }
+    if (!parsed) return false
+    if (parsed.from === sourceSquare && parsed.to === targetSquare) {
+      setReviewPly(p => p + 1)
+      // Auto-play opponent move if exists
+      if (clampedPly + 1 < maxPly) {
+        setOpponentThinking(true)
+        setTimeout(() => {
+          setReviewPly(p => p + 1)
+          setOpponentThinking(false)
+        }, 500)
+      }
+      return true
+    } else {
+      setWrongFlash(true)
+      setTimeout(() => setWrongFlash(false), 500)
+      return false
+    }
+  }
 
   function openInLichess() {
     if (!currentPuzzle) return
@@ -231,7 +266,9 @@ export default function Puzzles() {
 
   const reviewHighlights: Record<string, { background: string }> = {}
   const reviewPos = positions[clampedPly]
-  if (reviewPos?.from && reviewPos?.to) {
+  if (wrongFlash) {
+    // flash entire board red on wrong move
+  } else if (reviewPos?.from && reviewPos?.to) {
     reviewHighlights[reviewPos.from] = { background: 'rgba(212,160,23,0.25)' }
     reviewHighlights[reviewPos.to] = { background: 'rgba(212,160,23,0.4)' }
   }
@@ -407,9 +444,16 @@ export default function Puzzles() {
                     position={reviewPos?.fen ?? currentPuzzle.fen}
                     boardOrientation={playerColor}
                     customSquareStyles={reviewHighlights}
-                    arePiecesDraggable={false}
-                    onPieceDrop={() => false}
-                    customBoardStyle={{ borderRadius: '2px' }}
+                    arePiecesDraggable={interactiveMode}
+                    onPieceDrop={handlePieceDrop}
+                    customBoardStyle={{
+                      borderRadius: '2px',
+                      boxShadow: wrongFlash
+                        ? '0 0 0 4px rgba(239,68,68,0.7)'
+                        : interactiveMode
+                          ? `0 0 0 3px ${accentColor}55`
+                          : 'none',
+                    }}
                     customDarkSquareStyle={{ backgroundColor: '#b58863' }}
                     customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
                     animationDuration={200}
@@ -461,6 +505,18 @@ export default function Puzzles() {
 
             {/* Derecha - Controles movimiento y Lichess */}
             <div className="hidden lg:flex flex-col items-center gap-4 w-auto flex-shrink-0 justify-center h-[480px] mt-8">
+              {/* Modo interactivo toggle */}
+              <button
+                onClick={() => { setInteractiveMode(m => !m); setReviewPly(0); setWrongFlash(false) }}
+                className={`w-full px-3 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase border transition-all`}
+                style={interactiveMode
+                  ? { backgroundColor: accentColor, color: '#000', borderColor: accentColor }
+                  : { borderColor: 'currentColor', opacity: 0.7 }
+                }
+              >
+                {interactiveMode ? '⚡ Modo interactivo' : '👁 Modo revisión'}
+              </button>
+
               {/* Fila horizontal: Retroceder | Contador | Siguiente */}
               <div className="flex items-center gap-2">
                 {/* Botón Retroceder */}
