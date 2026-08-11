@@ -28,7 +28,7 @@ function MoonIcon() {
 
 const CATEGORIES = [
   { id: "checkmate_patterns", label: "Checkmate Patterns Manual" },
-  { id: "patterns_must_know", label: "Los 100 patrones que debes saber" },
+  { id: "patterns_must_know", label: "Los 100 patrones que debe saber" },
 ]
 
 const NAV_ITEMS = [
