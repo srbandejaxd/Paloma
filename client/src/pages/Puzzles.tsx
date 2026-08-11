@@ -64,13 +64,18 @@ function buildPositions(puzzle: Puzzle): Position[] {
 }
 
 function buildLichessUrl(puzzle: Puzzle): string {
+  const fen = puzzle.fen
+  const color = fen.split(' ')[1] === 'w' ? 'white' : 'black'
+  return `https://lichess.org/analysis/${encodeURIComponent(fen)}?color=${color}`
+}
+
+function buildPgnMoves(puzzle: Puzzle): string {
   const g = new Chess()
   try {
     g.load(puzzle.fen)
     for (const san of puzzle.solution) { try { g.move(san) } catch { break } }
   } catch { /* ignore */ }
-  const pgn = g.pgn({ newline: '\n' })
-  return `https://lichess.org/analysis?pgn=${encodeURIComponent(pgn)}`
+  return g.pgn()
 }
 
 export default function Puzzles() {
@@ -91,6 +96,7 @@ export default function Puzzles() {
   const [interactiveMode, setInteractiveMode] = useState(false)
   const [wrongFlash, setWrongFlash] = useState(false)
   const [opponentThinking, setOpponentThinking] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -217,6 +223,11 @@ export default function Puzzles() {
   function openInLichess() {
     if (!currentPuzzle) return
     window.open(buildLichessUrl(currentPuzzle), '_blank', 'noopener,noreferrer')
+    const pgn = buildPgnMoves(currentPuzzle)
+    navigator.clipboard.writeText(pgn).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    }).catch(() => {})
   }
 
   // ── THEME TOKENS ────────────────────────────────────────────────────────────
@@ -548,14 +559,21 @@ export default function Puzzles() {
 
 
               {/* Botón Lichess - Full width con texto */}
-              <button
-                onClick={openInLichess}
-                className="px-4 py-3 rounded-lg text-white font-bold text-sm tracking-widest uppercase transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
-                style={{ backgroundColor: lichessGreen }}
-                title="Abrir en Lichess"
-              >
-                ♞ Abrir en Lichess
-              </button>
+              <div className="flex flex-col items-center gap-1 w-full">
+                <button
+                  onClick={openInLichess}
+                  className="w-full px-4 py-3 rounded-lg text-white font-bold text-sm tracking-widest uppercase transition-all hover:opacity-90 hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
+                  style={{ backgroundColor: lichessGreen }}
+                  title="Abrir en Lichess"
+                >
+                  ♞ Abrir en Lichess
+                </button>
+                {copied && (
+                  <p className="text-xs font-semibold" style={{ color: lichessGreen }}>
+                    ✓ Solución copiada — pégala en Lichess
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
