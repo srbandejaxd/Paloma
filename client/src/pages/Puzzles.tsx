@@ -66,7 +66,8 @@ function buildPositions(puzzle: Puzzle): Position[] {
 function buildLichessUrl(puzzle: Puzzle): string {
   const fen = puzzle.fen
   const color = fen.split(' ')[1] === 'w' ? 'white' : 'black'
-  return `https://lichess.org/analysis/${encodeURIComponent(fen)}?color=${color}`
+  const fenForUrl = fen.replace(/ /g, '_')
+  return `https://lichess.org/analysis/${fenForUrl}?color=${color}`
 }
 
 function buildPgnMoves(puzzle: Puzzle): string {
