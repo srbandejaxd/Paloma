@@ -64,6 +64,9 @@ export default function History() {
   const [loading, setLoading] = useState(true)
   const [streakLoading, setStreakLoading] = useState(true)
   const [expandedAttemptId, setExpandedAttemptId] = useState<number | null>(null)
+  const [showAllBlocks, setShowAllBlocks] = useState(false)
+  const [allBlocksData, setAllBlocksData] = useState<{ block: Block; attempts: number; bestAccuracy: number }[]>([])
+  const [allBlocksLoading, setAllBlocksLoading] = useState(false)
   const [tab, setTab] = useState<Tab>('puzzles')
   const [visionSessions, setVisionSessions] = useState<VisionSession[]>([])
   const [visionLoading, setVisionLoading] = useState(false)
@@ -494,7 +497,7 @@ export default function History() {
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Categoría</label>
               <select
                 value={selectedCategory || ''}
-                onChange={(e) => { setSelectedCategory(e.target.value || null); setSelectedSubcategory(null); setSelectedBlockId(null) }}
+                onChange={(e) => { setSelectedCategory(e.target.value || null); setSelectedSubcategory(null); setSelectedBlockId(null); setShowAllBlocks(false); setAllBlocksData([]) }}
                 className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold`}
               >
                 <option value="">Elige una categoría...</option>
@@ -505,7 +508,7 @@ export default function History() {
               <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Subcategoría</label>
               <select
                 value={selectedSubcategory || ''}
-                onChange={(e) => { setSelectedSubcategory(e.target.value || null); setSelectedBlockId(null) }}
+                onChange={(e) => { setSelectedSubcategory(e.target.value || null); setSelectedBlockId(null); setShowAllBlocks(false); setAllBlocksData([]) }}
                 disabled={!selectedCategory || subcategoriesForCategory.length === 0}
                 className={`w-full px-4 py-3 rounded-lg ${t.inputBg} border ${t.border} focus:outline-none transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
               >
@@ -526,7 +529,75 @@ export default function History() {
               </select>
             </div>
           </div>
+
+          {/* Botón mostrar todos */}
+          {selectedCategory && blocksToShow.length > 0 && (
+            <div className="mt-6 flex items-center justify-between">
+              <button
+                onClick={async () => {
+                  if (showAllBlocks) { setShowAllBlocks(false); return }
+                  setAllBlocksLoading(true)
+                  setShowAllBlocks(true)
+                  try {
+                    const results = await Promise.all(
+                      blocksToShow.map(async (block) => {
+                        try {
+                          const data = await fetchAttempts(block.id)
+                          const myAttempts = data.filter((a: AttemptRecord) => a.nickname === user?.nickname)
+                          const bestAcc = myAttempts.length > 0 ? Math.max(...myAttempts.map((a: AttemptRecord) => a.accuracy)) : 0
+                          return { block, attempts: myAttempts.length, bestAccuracy: bestAcc }
+                        } catch { return { block, attempts: 0, bestAccuracy: 0 } }
+                      })
+                    )
+                    setAllBlocksData(results)
+                  } finally { setAllBlocksLoading(false) }
+                }}
+                className={`text-sm font-semibold px-4 py-2 rounded-lg ${t.bg3} ${t.border} border transition-all hover:shadow-sm`}
+                style={{ color: showAllBlocks ? accentColor : undefined }}
+              >
+                {showAllBlocks ? 'Ocultar resumen' : '↕ Mostrar todos los bloques'}
+              </button>
+              {allBlocksLoading && <p className={`text-xs ${t.text3}`}>Cargando...</p>}
+            </div>
+          )}
         </div>
+
+        {/* Vista de todos los bloques */}
+        {showAllBlocks && !allBlocksLoading && allBlocksData.length > 0 && (
+          <div className={`rounded-xl ${t.bg2} ${t.border} border mb-10 overflow-hidden`}>
+            <div className={`px-6 py-4 border-b ${t.border} flex items-center justify-between`}>
+              <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Bloques con actividad</p>
+              <p className={`text-xs ${t.text3}`}>{allBlocksData.length} bloques</p>
+            </div>
+            <div className={`divide-y ${t.border}`}>
+              {allBlocksData.map(({ block, attempts: cnt, bestAccuracy }) => (
+                <button
+                  key={block.id}
+                  onClick={() => { setSelectedBlockId(block.id); setShowAllBlocks(false) }}
+                  className={`w-full flex items-center justify-between px-6 py-3 transition-colors hover:${t.bg3} text-left`}
+                >
+                  <span className={`text-sm font-semibold ${t.text} truncate flex-1 mr-4`}>{block.name}</span>
+                  <div className="flex items-center gap-6 flex-shrink-0">
+                    <div className="text-right">
+                      <p className={`text-xs ${t.text3}`}>Intentos</p>
+                      <p className={`text-sm font-bold ${t.text}`}>{cnt}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-xs ${t.text3}`}>Mejor precisión</p>
+                      <p className={`text-sm font-bold`} style={{ color: accentColor }}>{bestAccuracy.toFixed(0)}%</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {showAllBlocks && !allBlocksLoading && allBlocksData.length === 0 && (
+          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 text-center mb-10`}>
+            <p className={`text-sm ${t.text3}`}>No has hecho intentos en ningún bloque de esta categoría aún</p>
+          </div>
+        )}
 
         {/* Lista de intentos */}
         {selectedBlockId && selectedBlock && attempts.length > 0 ? (
