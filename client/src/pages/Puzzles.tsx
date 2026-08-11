@@ -94,7 +94,7 @@ export default function Puzzles() {
   const [currentIdx, setCurrentIdx] = useState(0)
   const [loading, setLoading] = useState(true)
   const [reviewPly, setReviewPly] = useState(0)
-  const [interactiveMode, setInteractiveMode] = useState(false)
+  const interactiveMode = true
   const [wrongFlash, setWrongFlash] = useState(false)
   const [opponentThinking, setOpponentThinking] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -517,18 +517,6 @@ export default function Puzzles() {
 
             {/* Derecha - Controles movimiento y Lichess */}
             <div className="hidden lg:flex flex-col items-center gap-4 w-auto flex-shrink-0 justify-center h-[480px] mt-8">
-              {/* Modo interactivo toggle */}
-              <button
-                onClick={() => { setInteractiveMode(m => !m); setReviewPly(0); setWrongFlash(false) }}
-                className={`w-full px-3 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase border transition-all`}
-                style={interactiveMode
-                  ? { backgroundColor: accentColor, color: '#000', borderColor: accentColor }
-                  : { borderColor: 'currentColor', opacity: 0.7 }
-                }
-              >
-                {interactiveMode ? '⚡ Modo interactivo' : '👁 Modo revisión'}
-              </button>
-
               {/* Fila horizontal: Retroceder | Contador | Siguiente */}
               <div className="flex items-center gap-2">
                 {/* Botón Retroceder */}
