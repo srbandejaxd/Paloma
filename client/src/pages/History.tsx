@@ -532,7 +532,7 @@ export default function History() {
 
           {/* Botón mostrar todos */}
           {selectedCategory && blocksToShow.length > 0 && (
-            <div className="mt-6 flex items-center justify-between">
+            <div className="mt-6">
               <button
                 onClick={async () => {
                   if (showAllBlocks) { setShowAllBlocks(false); return }
@@ -552,50 +552,83 @@ export default function History() {
                     setAllBlocksData(results)
                   } finally { setAllBlocksLoading(false) }
                 }}
-                className={`text-sm font-semibold px-4 py-2 rounded-lg ${t.bg3} ${t.border} border transition-all hover:shadow-sm`}
-                style={{ color: showAllBlocks ? accentColor : undefined }}
+                className="flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all hover:shadow-md hover:scale-105"
+                style={{
+                  backgroundColor: showAllBlocks ? `${accentColor}15` : (dark ? '#1C1C28' : '#EDE8DF'),
+                  color: showAllBlocks ? accentColor : undefined,
+                  border: `1px solid ${showAllBlocks ? accentColor + '40' : (dark ? '#2A2A3A' : '#D9D2C8')}`,
+                }}
               >
-                {showAllBlocks ? 'Ocultar resumen' : '↕ Mostrar todos los bloques'}
+                <span>{showAllBlocks ? '▲' : '▼'}</span>
+                <span>{showAllBlocks ? 'Ocultar resumen' : 'Ver resumen de todos los bloques'}</span>
+                {allBlocksLoading && <span className="ml-1 opacity-60">cargando...</span>}
               </button>
-              {allBlocksLoading && <p className={`text-xs ${t.text3}`}>Cargando...</p>}
             </div>
           )}
         </div>
 
         {/* Vista de todos los bloques */}
-        {showAllBlocks && !allBlocksLoading && allBlocksData.length > 0 && (
-          <div className={`rounded-xl ${t.bg2} ${t.border} border mb-10 overflow-hidden`}>
-            <div className={`px-6 py-4 border-b ${t.border} flex items-center justify-between`}>
-              <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Bloques con actividad</p>
-              <p className={`text-xs ${t.text3}`}>{allBlocksData.length} bloques</p>
+        {showAllBlocks && !allBlocksLoading && (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <p className={`text-lg font-bold ${t.text}`} style={{ letterSpacing: '-0.02em' }}>
+                Resumen de bloques
+              </p>
+              <p className={`text-xs ${t.text3}`}>
+                {allBlocksData.filter(b => b.attempts > 0).length} de {allBlocksData.length} completados
+              </p>
             </div>
-            <div className={`divide-y ${t.border}`}>
-              {allBlocksData.map(({ block, attempts: cnt, bestAccuracy }) => (
-                <button
-                  key={block.id}
-                  onClick={() => { setSelectedBlockId(block.id); setShowAllBlocks(false) }}
-                  className={`w-full flex items-center justify-between px-6 py-3 transition-colors hover:${t.bg3} text-left`}
-                >
-                  <span className={`text-sm font-semibold ${t.text} truncate flex-1 mr-4`}>{block.name}</span>
-                  <div className="flex items-center gap-6 flex-shrink-0">
-                    <div className="text-right">
-                      <p className={`text-xs ${t.text3}`}>Intentos</p>
-                      <p className={`text-sm font-bold ${t.text}`}>{cnt}</p>
+            <div className="grid gap-2">
+              {allBlocksData.map(({ block, attempts: cnt, bestAccuracy }, idx) => {
+                const done = cnt > 0
+                return (
+                  <button
+                    key={block.id}
+                    onClick={() => { setSelectedBlockId(block.id); setShowAllBlocks(false) }}
+                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border transition-all hover:shadow-md hover:-translate-y-0.5 text-left`}
+                    style={{
+                      backgroundColor: done ? (dark ? '#12121A' : '#F3EFE7') : (dark ? '#0A0A0F' : '#FAFAF7'),
+                      borderColor: done ? accentColor + '30' : (dark ? '#1F1F2E' : '#E5DFD5'),
+                    }}
+                  >
+                    {/* Número */}
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{
+                        backgroundColor: done ? accentColor + '20' : (dark ? '#1C1C28' : '#EDE8DF'),
+                        color: done ? accentColor : (dark ? '#7A776E' : '#8A8478'),
+                      }}
+                    >
+                      {idx + 1}
                     </div>
-                    <div className="text-right">
-                      <p className={`text-xs ${t.text3}`}>Mejor precisión</p>
-                      <p className={`text-sm font-bold`} style={{ color: accentColor }}>{bestAccuracy.toFixed(0)}%</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {showAllBlocks && !allBlocksLoading && allBlocksData.length === 0 && (
-          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 text-center mb-10`}>
-            <p className={`text-sm ${t.text3}`}>No has hecho intentos en ningún bloque de esta categoría aún</p>
+                    {/* Nombre */}
+                    <span className={`text-sm font-semibold flex-1 truncate ${done ? t.text : t.text3}`}>
+                      {block.name}
+                    </span>
+
+                    {/* Stats o sin intentos */}
+                    {done ? (
+                      <div className="flex items-center gap-5 flex-shrink-0">
+                        <div className="text-right">
+                          <p className={`text-xs ${t.text3} mb-0.5`}>Intentos</p>
+                          <p className={`text-sm font-bold ${t.text}`}>{cnt}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-xs ${t.text3} mb-0.5`}>Mejor precisión</p>
+                          <p className="text-sm font-bold" style={{ color: accentColor }}>{bestAccuracy.toFixed(0)}%</p>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: accentColor, flexShrink: 0 }}>
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </div>
+                    ) : (
+                      <span className={`text-xs ${t.text3} flex-shrink-0`}>Sin intentos</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
