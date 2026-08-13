@@ -511,7 +511,7 @@ function formatDate(iso: string): string {
 	                <div>
 	                  <p className={`font-bold ${t.text} mb-1`}>El problema del método Woodpecker original</p>
 	                  <p className={`text-sm ${t.text2} leading-relaxed`}>
-	                    El Woodpecker propone 4 repasos con intervalos <strong>decrecientes</strong>: 7 → 5 → 3 → 1 días. Esto va en sentido contrario a la curva del olvido: los repasos se vuelven más frecuentes justo cuando el material ya empieza a consolidarse, lo que reduce su efectividad y desperdicia tiempo de estudio.
+	                    El Woodpecker propone 6 repasos con intervalos <strong>decrecientes</strong>. Esto va en sentido contrario a la curva del olvido: los repasos se vuelven más frecuentes justo cuando el material ya empieza a consolidarse, lo que reduce su efectividad y desperdicia tiempo de estudio.
 	                  </p>
 	                </div>
 	              </div>
@@ -522,7 +522,7 @@ function formatDate(iso: string): string {
 	                <div>
 	                  <p className={`font-bold ${t.text} mb-1`}>La contrapropuesta de La Paloma</p>
 	                  <p className={`text-sm ${t.text2} leading-relaxed`}>
-	                    La Paloma invierte la progresión: los primeros repasos son los más largos (cuando el material es nuevo y difícil) y los últimos son cortos (cuando ya está casi consolidado). Los días de descanso entre repasos también aumentan progresivamente, dejando que el olvido natural haga su trabajo antes del siguiente repaso.
+	                    La Paloma invierte la progresión: los primeros descansos son los más cortos (cuando el material es nuevo y difícil) y los últimos son largos (cuando ya está casi consolidado).
 	                  </p>
 	                  <div className={`mt-4 rounded-lg ${t.bg3} ${t.border} border overflow-hidden`}>
 	                    {/* Header fila 1: Repaso + Descanso spanning */}
@@ -537,10 +537,10 @@ function formatDate(iso: string): string {
 	                      <div className="px-4 py-2 font-bold" style={{ color: '#27ae60' }}>La Paloma</div>
 	                    </div>
 	                    {[
-	                      { r: '1°', wp: '10', cy: '1' },
+	                      { r: '1°', wp: '7', cy: '1' },
 	                      { r: '2°', wp: '7',  cy: '3' },
-	                      { r: '3°', wp: '3',  cy: '7' },
-	                      { r: '4°', wp: '1',  cy: '10' },
+	                      { r: '3°', wp: '2',  cy: '5' },
+	                      { r: '4°', wp: '1',  cy: '7' },
 	                    ].map(row => (
 	                      <div key={row.r} className={`grid grid-cols-3 gap-0 text-sm border-b last:border-0 ${t.border}`}>
 	                        <div className={`px-4 py-3 font-bold ${t.text}`}>{row.r}</div>
