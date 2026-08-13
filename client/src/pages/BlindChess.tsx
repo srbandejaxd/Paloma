@@ -15,7 +15,7 @@ function normalizeNotation(input: string): string {
     .replace(/xD/g, 'xQ').replace(/xT/g, 'xR').replace(/xA/g, 'xB').replace(/xC/g, 'xN')
 }
 
-const MEMORIZE_SECONDS = 30
+const MEMORIZE_SECONDS = 60
 
 function parseFenToPieces(fen: string): { white: string[]; black: string[] } {
   const board = fen.split(' ')[0]
