@@ -221,7 +221,7 @@ function flatAll(nodes: TreeNode[]): TreeNode[] {
 }
 
 function TrieCanvas({
-  roots, selectedId, onSelect, t, accentColor, dark
+  roots, selectedId, onSelect, t, accentColor, dark, collapsed, onToggleCollapse
 }: {
   roots: TreeNode[]
   selectedId: number | null
@@ -229,14 +229,30 @@ function TrieCanvas({
   t: Record<string, string>
   accentColor: string
   dark: boolean
+  collapsed: Set<number>
+  onToggleCollapse: (id: number) => void
 }) {
   const [offset, setOffset] = useState({ x: 60, y: 60 })
   const [scale, setScale] = useState(1)
   const [dragging, setDragging] = useState(false)
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 })
 
-  const positions = useMemo(() => computeLayout(roots), [roots])
-  const allNodes  = useMemo(() => flatAll(roots), [roots])
+  const positions = useMemo(() => {
+    // Build a filtered tree respecting collapsed state
+    function filterTree(nodes: TreeNode[]): TreeNode[] {
+      return nodes.map(n => ({
+        ...n,
+        children: collapsed.has(n.id) ? [] : filterTree(n.children)
+      }))
+    }
+    return computeLayout(filterTree(roots))
+  }, [roots, collapsed])
+  const allNodes = useMemo(() => {
+    function flatFiltered(nodes: TreeNode[]): TreeNode[] {
+      return nodes.flatMap(n => [n, ...(collapsed.has(n.id) ? [] : flatFiltered(n.children))])
+    }
+    return flatFiltered(roots)
+  }, [roots, collapsed])
 
   let maxX = 0, maxY = 0
   for (const { x, y } of positions.values()) {
@@ -322,32 +338,58 @@ function TrieCanvas({
           const p = positions.get(node.id)
           if (!p) return null
           const isSel = node.id === selectedId
+          const hasChildren = node.children.length > 0
           const piece = node.move.match(/^([KQRBN])/)?.[1]
           const sym   = piece ? PIECE_SYMBOLS[piece] : null
           const txt   = piece ? node.move.slice(1) : node.move
           return (
             <div
               key={node.id}
-              data-node="true"
-              onClick={() => onSelect(node)}
-              style={{
-                position: 'absolute', left: p.x, top: p.y,
-                width: N_W, height: N_H,
-                backgroundColor: isSel ? accentColor : chipBg,
-                border: `1.5px solid ${isSel ? accentColor : chipBorder}`,
-                borderRadius: 24, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', cursor: 'pointer',
-                boxShadow: isSel ? `0 0 0 3px ${accentColor}44, 0 2px 12px ${accentColor}55` : '0 1px 4px rgba(0,0,0,0.35)',
-                transition: 'box-shadow 0.15s',
-              }}
+              style={{ position: 'absolute', left: p.x, top: p.y, width: N_W + (hasChildren ? 18 : 0) }}
             >
-              <span style={{
-                fontFamily: 'monospace', fontWeight: 700, fontSize: 13,
-                color: isSel ? (dark ? '#000' : '#fff') : (dark ? '#C8C5BC' : '#3A3630'),
-                letterSpacing: 0.3, whiteSpace: 'nowrap',
-              }}>
-                {node.color === 'white' && `${node.moveNumber}. `}{sym}{txt}
-              </span>
+              <div
+                data-node="true"
+                onClick={() => onSelect(node)}
+                style={{
+                  width: N_W, height: N_H,
+                  backgroundColor: isSel ? accentColor : chipBg,
+                  border: `1.5px solid ${isSel ? accentColor : chipBorder}`,
+                  borderRadius: 24, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: 3, cursor: 'pointer',
+                  boxShadow: isSel ? `0 0 0 3px ${accentColor}44, 0 2px 12px ${accentColor}55` : '0 1px 4px rgba(0,0,0,0.35)',
+                  transition: 'box-shadow 0.15s',
+                }}
+              >
+                {sym && (
+                  <span style={{ fontSize: 16, lineHeight: 1, color: isSel ? (dark ? '#000' : '#fff') : (dark ? '#E0DDD4' : '#2A2620') }}>
+                    {sym}
+                  </span>
+                )}
+                <span style={{
+                  fontFamily: 'monospace', fontWeight: 700, fontSize: 13,
+                  color: isSel ? (dark ? '#000' : '#fff') : (dark ? '#C8C5BC' : '#3A3630'),
+                  letterSpacing: 0.3, whiteSpace: 'nowrap',
+                }}>
+                  {node.color === 'white' && `${node.moveNumber}. `}{txt}
+                </span>
+              </div>
+              {/* Collapse/expand button */}
+              {hasChildren && (
+                <div
+                  data-node="true"
+                  onClick={() => onToggleCollapse(node.id)}
+                  style={{
+                    position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
+                    width: 18, height: 18, borderRadius: '50%',
+                    backgroundColor: dark ? '#38385A' : '#C4BBAA',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', fontSize: 11, fontWeight: 700, color: dark ? '#E0DDD4' : '#2A2620',
+                    zIndex: 2,
+                  }}
+                >
+                  {collapsed.has(node.id) ? '+' : '−'}
+                </div>
+              )}
             </div>
           )
         })}
@@ -415,6 +457,9 @@ export default function Openings() {
   // Training state
   const [trainLine, setTrainLine] = useState<OpeningNode[]>([])
   const [trainStep, setTrainStep] = useState(0)
+  const [trainHintSquare, setTrainHintSquare] = useState<string | null>(null)
+  const [collapsedNodes, setCollapsedNodes] = useState<Set<number>>(new Set())
+  const [annotations, setAnnotations] = useState<Record<number, string>>({})
   const [trainGame, setTrainGame] = useState<Chess | null>(null)
   const [trainDone, setTrainDone] = useState(false)
   const [trainErrors, setTrainErrors] = useState(0)
@@ -441,6 +486,14 @@ export default function Openings() {
   const [loading, setLoading] = useState(false)
 
   const rivalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function toggleCollapse(id: number) {
+    setCollapsedNodes(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -595,6 +648,7 @@ export default function Openings() {
     setTrainDone(false)
     setTrainErrors(0)
     setWaitingRival(false)
+    setTrainHintSquare(null)
     setScreen('train')
   }
 
@@ -646,6 +700,16 @@ export default function Openings() {
       g.move(currentNode.move)
       setTrainGame(g)
       advanceTrainStep(trainStep, g, trainLine)
+    } catch {}
+  }
+
+  function showTrainHint() {
+    if (!trainGame || !trainLine[trainStep]) return
+    const expectedSan = trainLine[trainStep].move
+    const g = new Chess(trainGame.fen())
+    try {
+      const m = g.move(expectedSan)
+      if (m) { setTrainHintSquare(m.from); setTimeout(() => setTrainHintSquare(null), 1500) }
     } catch {}
   }
 
@@ -735,15 +799,6 @@ export default function Openings() {
       )
     }
 
-    // Crear puzzle sintético para PuzzleBoard
-    const syntheticPuzzle = currentNode ? {
-      id: currentNode.id,
-      fen: trainGame?.fen() || currentNode.fen,
-      solution: [currentNode.move],
-      blockId: 0,
-      orderInBlock: 0,
-    } : null
-
     return (
       <div className={`min-h-screen ${t.bg} flex flex-col`}>
         {/* HUD */}
@@ -776,23 +831,65 @@ export default function Openings() {
           </div>
         </div>
 
-        {/* Board */}
-        <div className="flex-1 flex items-start justify-center pt-8 px-6">
-          <div className="w-full max-w-[520px]">
-            {syntheticPuzzle && !waitingRival && (
-              <PuzzleBoard
-                key={`${currentNode.id}-${trainStep}`}
-                puzzle={syntheticPuzzle}
-                onSolved={handleTrainSolved}
-                onError={handleTrainError}
-                autoSkipAfterErrors={0}
-              />
-            )}
-            {waitingRival && trainGame && (
-              <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 text-center`}>
-                <p className={`text-sm ${t.text3}`}>Rival jugando...</p>
-              </div>
-            )}
+        {/* Board — directo con Chessboard, sin remount */}
+        <div className="flex-1 flex items-center justify-center pt-8 px-6 pb-8">
+          <div className="w-full max-w-[520px] flex flex-col items-center gap-4">
+            {trainGame && (() => {
+              const wrongFlashActive = false // handled via boxShadow state
+              const hintStyles: Record<string, React.CSSProperties> = {}
+              if (trainHintSquare) {
+                hintStyles[trainHintSquare] = { background: `radial-gradient(circle, ${accentColor}99 28%, transparent 65%)` }
+              }
+              return (
+                <div style={{ position: 'relative' }}>
+                  <Chessboard
+                    id="training-board"
+                    boardWidth={460}
+                    position={trainGame.fen()}
+                    boardOrientation={color}
+                    arePiecesDraggable={!waitingRival && !trainDone}
+                    animationDuration={waitingRival ? 400 : 150}
+                    customSquareStyles={hintStyles}
+                    customBoardStyle={{
+                      borderRadius: 8,
+                      boxShadow: waitingRival ? 'none' : 'none',
+                    }}
+                    customDarkSquareStyle={{ backgroundColor: '#b58863' }}
+                    customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
+                    onPieceDrop={(from, to) => {
+                      if (waitingRival || trainDone || !currentNode) return false
+                      const g = new Chess(trainGame.fen())
+                      let expected: ReturnType<typeof g.move> | null = null
+                      try { expected = g.move(currentNode.move) } catch { return false }
+                      if (!expected) return false
+                      if (expected.from === from && expected.to === to) {
+                        handleTrainSolved()
+                        return true
+                      } else {
+                        handleTrainError()
+                        return false
+                      }
+                    }}
+                  />
+                  {waitingRival && (
+                    <div style={{ position: 'absolute', inset: 0, borderRadius: 8, pointerEvents: 'none', backgroundColor: 'rgba(0,0,0,0.08)' }} />
+                  )}
+                </div>
+              )
+            })()}
+            {/* Pista */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={showTrainHint}
+                disabled={waitingRival || trainDone}
+                className={`px-5 py-2.5 rounded-xl border text-sm font-semibold transition-all disabled:opacity-40 hover:scale-105 ${t.bg3} ${t.border} ${t.text2}`}
+              >
+                💡 Pista
+              </button>
+              {waitingRival && (
+                <span className={`text-sm ${t.text3}`}>Rival jugando...</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -870,6 +967,8 @@ export default function Openings() {
                 t={t}
                 accentColor={accentColor}
                 dark={dark}
+                collapsed={collapsedNodes}
+                onToggleCollapse={toggleCollapse}
               />
             </div>
 
@@ -879,18 +978,34 @@ export default function Openings() {
                 <StaticBoard fen={selectedFen} size={272} dark={dark} />
               </div>
               {selectedNode ? (
-                <div className={`rounded-xl ${t.bg2} ${t.border} border p-4`}>
-                  <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Seleccionado</p>
-                  <p className={`text-base font-bold font-mono ${t.text}`}>{selectedNode.move}</p>
-                  <p className={`text-xs ${t.text3} mt-0.5 mb-3`}>Mov. {selectedNode.moveNumber} · {selectedNode.color === 'white' ? 'Blancas' : 'Negras'}</p>
-                  <button
-                    onClick={() => startTraining(selectedNode.id)}
-                    className="w-full py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    ▶ Entrenar
-                  </button>
-                </div>
+                <>
+                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-4`}>
+                    <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Seleccionado</p>
+                    <p className={`text-base font-bold font-mono ${t.text}`}>{selectedNode.move}</p>
+                    <p className={`text-xs ${t.text3} mt-0.5 mb-3`}>Mov. {selectedNode.moveNumber} · {selectedNode.color === 'white' ? 'Blancas' : 'Negras'}</p>
+                    <button
+                      onClick={() => startTraining(selectedNode.id)}
+                      className="w-full py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                      style={{ backgroundColor: accentColor }}
+                    >
+                      ▶ Entrenar
+                    </button>
+                  </div>
+                  {/* Cuadro de ideas / anotación */}
+                  <div className={`rounded-xl ${t.bg2} ${t.border} border overflow-hidden`}>
+                    <div className={`px-4 py-2.5 border-b ${t.border}`}>
+                      <p className={`text-xs uppercase tracking-widest ${t.text3}`}>Ideas de la posición</p>
+                    </div>
+                    <textarea
+                      value={annotations[selectedNode.id] ?? ''}
+                      onChange={e => setAnnotations(prev => ({ ...prev, [selectedNode.id]: e.target.value }))}
+                      placeholder="Escribe tus ideas, planes y conceptos clave..."
+                      rows={4}
+                      className={`w-full px-4 py-3 text-sm leading-relaxed resize-none focus:outline-none ${t.text2} bg-transparent`}
+                      style={{ fontFamily: 'inherit' }}
+                    />
+                  </div>
+                </>
               ) : (
                 <div className={`rounded-xl ${t.bg2} ${t.border} border p-4 text-center`}>
                   <p className={`text-xs ${t.text3}`}>Haz clic en un nodo del árbol para ver la posición</p>
