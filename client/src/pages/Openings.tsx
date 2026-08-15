@@ -12,7 +12,7 @@ import PuzzleBoard from '../components/Board/PuzzleBoard'
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { path: '/solo', label: 'Home', icon: '🏠' },
+  { path: '/home', label: 'Home', icon: '🏠' },
   { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
   { path: '/vision', label: 'Visión', icon: '👁' },
   { path: '/history', label: 'Historial', icon: '📋' },
@@ -324,6 +324,8 @@ export default function Openings() {
   const [showImport, setShowImport] = useState(false)
   const [importName, setImportName] = useState('')
   const [importPgn, setImportPgn] = useState('')
+  const [importMode, setImportMode] = useState<'manual' | 'pgn'>('pgn')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
 
@@ -893,7 +895,7 @@ export default function Openings() {
           </div>
         </div>
 
-        {/* Import modal trigger */}
+        {/* Buttons */}
         <div className="flex items-center justify-between mb-6">
           <p className={`text-lg font-bold ${t.text}`}>
             {openings.length} apertura{openings.length !== 1 ? 's' : ''}
@@ -903,7 +905,7 @@ export default function Openings() {
             className="px-5 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 hover:scale-105"
             style={{ backgroundColor: accentColor }}
           >
-            + Importar PGN
+            + Añadir apertura
           </button>
         </div>
 
@@ -914,13 +916,13 @@ export default function Openings() {
           <div className={`text-center py-20 rounded-xl ${t.bg2} ${t.border} border`}>
             <p className="text-4xl mb-4">♟</p>
             <p className={`text-lg ${t.text2} mb-2`}>Sin aperturas aún</p>
-            <p className={`text-sm ${t.text3} mb-6`}>Importa un PGN para crear tu primer repertorio</p>
+            <p className={`text-sm ${t.text3} mb-6`}>Añade tu primera apertura manualmente o importa un PGN</p>
             <button
               onClick={() => setShowImport(true)}
               className="px-6 py-3 rounded-xl font-bold text-sm text-white"
               style={{ backgroundColor: accentColor }}
             >
-              + Importar PGN
+              + Añadir apertura
             </button>
           </div>
         ) : (
@@ -993,10 +995,27 @@ export default function Openings() {
       {showImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 px-4">
           <div className={`w-full max-w-2xl rounded-2xl ${t.bg2} ${t.border} border p-8`}>
-            <h3 className={`text-2xl font-bold ${t.text} mb-2`}>Importar PGN</h3>
-            <p className={`text-sm ${t.text3} mb-6`}>Pega el PGN de tu apertura. Se importará como un árbol navegable.</p>
+            <h3 className={`text-2xl font-bold ${t.text} mb-6`}>Añadir apertura</h3>
+
+            {/* Tabs: Manual / PGN */}
+            <div className={`flex rounded-xl overflow-hidden border ${t.border} mb-6`}>
+              {(['manual', 'pgn'] as const).map(m => (
+                <button
+                  key={m}
+                  onClick={() => setImportMode(m)}
+                  className={`flex-1 py-3 text-sm font-bold transition-all`}
+                  style={importMode === m
+                    ? { backgroundColor: accentColor, color: '#000' }
+                    : {}
+                  }
+                >
+                  {m === 'manual' ? '✏️ Crear manualmente' : '📄 Importar PGN'}
+                </button>
+              ))}
+            </div>
 
             <div className="space-y-4">
+              {/* Nombre siempre visible */}
               <div>
                 <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Nombre de la apertura</label>
                 <input
@@ -1007,16 +1026,60 @@ export default function Openings() {
                   className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
                 />
               </div>
-              <div>
-                <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>PGN</label>
-                <textarea
-                  value={importPgn}
-                  onChange={e => setImportPgn(e.target.value)}
-                  placeholder="1.d4 d5 2.Bf4 Nf6 3.e3 e6 (3...c5 4.c3) *"
-                  rows={8}
-                  className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-mono text-sm resize-none ${t.inputBg} ${t.border}`}
-                />
-              </div>
+
+              {importMode === 'manual' ? (
+                <div className={`rounded-xl ${t.bg3} ${t.border} border px-5 py-4`}>
+                  <p className={`text-sm ${t.text2} leading-relaxed`}>
+                    Se creará una apertura vacía. Podrás añadir jugadas directamente desde el tablero interactivo.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Pegar PGN */}
+                  <div>
+                    <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Pegar PGN</label>
+                    <textarea
+                      value={importPgn}
+                      onChange={e => setImportPgn(e.target.value)}
+                      placeholder="1.d4 d5 2.Bf4 Nf6 3.e3 e6 (3...c5 4.c3) *"
+                      rows={6}
+                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-mono text-sm resize-none ${t.inputBg} ${t.border}`}
+                    />
+                  </div>
+                  {/* O subir archivo */}
+                  <div>
+                    <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>O cargar archivo .pgn</label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pgn,text/plain"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const reader = new FileReader()
+                        reader.onload = ev => {
+                          setImportPgn(ev.target?.result as string ?? '')
+                          if (!importName.trim()) setImportName(file.name.replace(/\.pgn$/i, ''))
+                        }
+                        reader.readAsText(file)
+                        e.target.value = ''
+                      }}
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`w-full py-3 rounded-xl border-2 border-dashed ${t.border} text-sm font-semibold ${t.text3} hover:${t.text} transition-all`}
+                    >
+                      📂 Seleccionar archivo .pgn
+                    </button>
+                    {importPgn && (
+                      <p className="text-xs mt-1" style={{ color: accentColor }}>
+                        ✓ PGN cargado ({importPgn.length} caracteres)
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             {importError && (
@@ -1027,15 +1090,24 @@ export default function Openings() {
 
             <div className="flex gap-3 mt-6">
               <button
-                onClick={handleImport}
+                onClick={importMode === 'manual' ? async () => {
+                  if (!importName.trim()) { setImportError('El nombre es requerido'); return }
+                  setImporting(true); setImportError(null)
+                  try {
+                    await createOpening({ color, name: importName.trim(), nodes: [] })
+                    setImportName(''); setShowImport(false)
+                    await loadRepertoire(color)
+                  } catch (e: unknown) { setImportError((e as Error).message) }
+                  finally { setImporting(false) }
+                } : handleImport}
                 disabled={importing}
                 className="flex-1 py-4 rounded-xl font-bold text-sm text-white disabled:opacity-50"
                 style={{ backgroundColor: accentColor }}
               >
-                {importing ? 'Importando...' : 'Importar'}
+                {importing ? 'Guardando...' : importMode === 'manual' ? 'Crear apertura' : 'Importar'}
               </button>
               <button
-                onClick={() => { setShowImport(false); setImportError(null) }}
+                onClick={() => { setShowImport(false); setImportError(null); setImportPgn(''); setImportName('') }}
                 className={`flex-1 py-4 rounded-xl font-bold text-sm ${t.bg3} ${t.border} border ${t.text}`}
               >
                 Cancelar

@@ -224,6 +224,40 @@ async function migrateDb() {
     )`)
     console.log('✓ Migration: review_config table')
   } catch {}
+
+  // Aperturas
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS repertoires (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      color TEXT NOT NULL CHECK(color IN ('white','black')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, color)
+    )`)
+    console.log('✓ Migration: repertoires table')
+  } catch {}
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS openings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      repertoire_id INTEGER NOT NULL REFERENCES repertoires(id),
+      name TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`)
+    console.log('✓ Migration: openings table')
+  } catch {}
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS opening_nodes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      opening_id INTEGER NOT NULL REFERENCES openings(id),
+      parent_id INTEGER REFERENCES opening_nodes(id),
+      move TEXT NOT NULL,
+      fen TEXT NOT NULL,
+      move_number INTEGER NOT NULL,
+      color TEXT NOT NULL,
+      order_index INTEGER NOT NULL DEFAULT 0
+    )`)
+    console.log('✓ Migration: opening_nodes table')
+  } catch {}
 }
 
 async function initDb() {
