@@ -9,6 +9,7 @@ import Puzzles from './pages/Puzzles'
 import Vision from './pages/Vision'
 import BlindChess from './pages/BlindChess'
 import Cycles from './pages/Cycles'
+import Openings from './pages/Openings'
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/vision" element={<Vision />} />
         <Route path="/blind" element={<BlindChess />} />
+        <Route path="/openings" element={<Openings />} />
       </Routes>
     </AuthProvider>
   )
