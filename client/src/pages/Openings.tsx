@@ -458,7 +458,6 @@ export default function Openings() {
   const [trainLine, setTrainLine] = useState<OpeningNode[]>([])
   const [trainStep, setTrainStep] = useState(0)
   const [trainHintSquare, setTrainHintSquare] = useState<string | null>(null)
-  const [collapsedNodes, setCollapsedNodes] = useState<Set<number>>(new Set())
   const [annotations, setAnnotations] = useState<Record<number, string>>({})
   const [trainGame, setTrainGame] = useState<Chess | null>(null)
   const [trainDone, setTrainDone] = useState(false)
@@ -486,14 +485,6 @@ export default function Openings() {
   const [loading, setLoading] = useState(false)
 
   const rivalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  function toggleCollapse(id: number) {
-    setCollapsedNodes(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }
 
   useEffect(() => {
     const saved = localStorage.getItem('wp_theme')
@@ -967,7 +958,7 @@ export default function Openings() {
                 t={t}
                 accentColor={accentColor}
                 dark={dark}
-                collapsed={collapsedNodes}
+                collapsed={collapsed}
                 onToggleCollapse={toggleCollapse}
               />
             </div>
