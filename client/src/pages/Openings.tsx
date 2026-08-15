@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Chess } from 'chess.js'
 import { useAuth } from '../lib/auth'
@@ -187,9 +187,40 @@ function MoveChip({ move, active, onClick }: { move: string; active?: boolean; o
   )
 }
 
-// ─── TRIE RENDERER ────────────────────────────────────────────────────────────
+// ─── TRIE CANVAS (interactive pan/zoom) ──────────────────────────────────────
 
-function TrieRenderer({
+const N_W = 112, N_H = 38, H_GAP = 32, V_GAP = 58
+
+function subtreeH(node: TreeNode): number {
+  if (node.children.length === 0) return N_H
+  return node.children.reduce(
+    (sum, child, i) => sum + subtreeH(child) + (i > 0 ? V_GAP : 0), 0
+  )
+}
+
+function computeLayout(roots: TreeNode[]) {
+  const pos = new Map<number, { x: number; y: number }>()
+  function place(node: TreeNode, x: number, y: number) {
+    pos.set(node.id, { x, y })
+    let cumY = y
+    for (let i = 0; i < node.children.length; i++) {
+      place(node.children[i], x + N_W + H_GAP, cumY)
+      cumY += subtreeH(node.children[i]) + V_GAP
+    }
+  }
+  let y = 0
+  for (const root of roots) {
+    place(root, 0, y)
+    y += subtreeH(root) + V_GAP * 2
+  }
+  return pos
+}
+
+function flatAll(nodes: TreeNode[]): TreeNode[] {
+  return nodes.flatMap(n => [n, ...flatAll(n.children)])
+}
+
+function TrieCanvas({
   roots, selectedId, onSelect, t, accentColor, dark
 }: {
   roots: TreeNode[]
@@ -199,91 +230,141 @@ function TrieRenderer({
   accentColor: string
   dark: boolean
 }) {
-  const borderCol = dark ? '#2A2A3A' : '#D4CABF'
-  const chipBg    = dark ? '#1C1C28' : '#E2DBD0'
+  const [offset, setOffset] = useState({ x: 60, y: 60 })
+  const [scale, setScale] = useState(1)
+  const [dragging, setDragging] = useState(false)
+  const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 })
 
-  function NodeBtn({ node, showNum }: { node: TreeNode; showNum: boolean }) {
-    const isSelected = node.id === selectedId
-    const piece = node.move.match(/^([KQRBN])/)?.[1]
-    const symbol = piece ? PIECE_SYMBOLS[piece] : null
-    const moveText = piece ? node.move.slice(1) : node.move
-    const isWhite = node.color === 'white'
-    return (
-      <span className="inline-flex items-center gap-0.5 flex-shrink-0">
-        {(isWhite || showNum) && (
-          <span className={`text-xs font-mono ${t.text3} mr-0.5 flex-shrink-0`}>
-            {node.moveNumber}{!isWhite ? '...' : '.'}
-          </span>
-        )}
-        <button
-          onClick={() => onSelect(node)}
-          className="inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-sm font-mono font-bold transition-all flex-shrink-0 hover:scale-105"
-          style={{
-            backgroundColor: isSelected ? accentColor : chipBg,
-            color: isSelected ? (dark ? '#000' : '#fff') : (dark ? '#B8B5AC' : '#4A4640'),
-            boxShadow: isSelected ? `0 2px 12px ${accentColor}55` : 'none',
-          }}
-        >
-          {symbol && <span className="text-base leading-none">{symbol}</span>}
-          <span>{moveText}</span>
-        </button>
-      </span>
-    )
+  const positions = useMemo(() => computeLayout(roots), [roots])
+  const allNodes  = useMemo(() => flatAll(roots), [roots])
+
+  let maxX = 0, maxY = 0
+  for (const { x, y } of positions.values()) {
+    maxX = Math.max(maxX, x + N_W)
+    maxY = Math.max(maxY, y + N_H)
+  }
+  const svgW = maxX + 120
+  const svgH = maxY + 120
+
+  const chipBg     = dark ? '#18182A' : '#E8E3DA'
+  const chipBorder = dark ? '#38385A' : '#C4BBAA'
+  const edgeColor  = dark ? '#38385A' : '#C4BBAA'
+
+  const edges: Array<{ from: {x:number,y:number}; to: {x:number,y:number}; isMain: boolean }> = []
+  for (const node of allNodes) {
+    const pp = positions.get(node.id)
+    if (!pp) continue
+    node.children.forEach((child, i) => {
+      const cp = positions.get(child.id)
+      if (!cp) return
+      edges.push({
+        from: { x: pp.x + N_W, y: pp.y + N_H / 2 },
+        to:   { x: cp.x,       y: cp.y + N_H / 2 },
+        isMain: i === 0,
+      })
+    })
   }
 
-  function renderNode(node: TreeNode, showNum: boolean, isVariation: boolean): React.ReactNode {
-    const mainChild = node.children[0]
-    const variations = node.children.slice(1)
-    const hasBranch = node.children.length > 1
-
-    return (
-      <span key={node.id}>
-        <NodeBtn node={node} showNum={showNum} />
-
-        {/* Main line continues inline */}
-        {mainChild && !hasBranch && (
-          <span className="inline"> {renderNode(mainChild, false, false)}</span>
-        )}
-
-        {/* Branch point — main line + variations in block */}
-        {hasBranch && (
-          <span className="inline-block w-full mt-1">
-            {/* Main line */}
-            <span className="flex flex-wrap items-center gap-0.5 mb-1">
-              <span className="text-xs mr-1" style={{ color: borderCol }}>├─</span>
-              {renderNode(mainChild, true, false)}
-            </span>
-            {/* Variations */}
-            {variations.map((v) => (
-              <span key={v.id} className="flex flex-wrap items-start gap-0.5 mb-1 pl-4" style={{ borderLeft: `2px solid ${borderCol}` }}>
-                <span className="text-xs mr-1" style={{ color: borderCol }}>╰─</span>
-                {renderNode(v, true, true)}
-              </span>
-            ))}
-          </span>
-        )}
-
-        {/* Single-child variations that still need to be shown as new block if coming from variation */}
-        {isVariation && !hasBranch && mainChild && (
-          <span className="inline"> {renderNode(mainChild, false, true)}</span>
-        )}
-      </span>
-    )
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault()
+    setScale(s => Math.min(3, Math.max(0.25, s * (e.deltaY > 0 ? 0.9 : 1.1))))
   }
+  function onMouseDown(e: React.MouseEvent) {
+    if ((e.target as HTMLElement).closest('[data-node]')) return
+    setDragging(true)
+    dragStart.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y }
+  }
+  function onMouseMove(e: React.MouseEvent) {
+    if (!dragging) return
+    setOffset({ x: dragStart.current.ox + e.clientX - dragStart.current.x, y: dragStart.current.oy + e.clientY - dragStart.current.y })
+  }
+  function onMouseUp() { setDragging(false) }
 
   if (roots.length === 0) return (
-    <div className={`text-center py-12 ${t.text3} text-sm`}>
-      Sin movimientos.<br/>Agrega una línea para comenzar.
+    <div className={`flex-1 flex items-center justify-center flex-col gap-3 ${t.text3}`}>
+      <span className="text-3xl">♟</span>
+      <p className="text-sm">Sin movimientos. Usa &quot;+ Agregar línea&quot; para empezar.</p>
     </div>
   )
 
   return (
-    <div className="p-4 space-y-3">
-      {roots.map(root => (
-        <div key={root.id} className="flex flex-wrap items-start gap-0.5 leading-8">
-          {renderNode(root, true, false)}
-        </div>
-      ))}
+    <div
+      className="flex-1 relative overflow-hidden"
+      style={{ cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', minHeight: 0 }}
+      onWheel={onWheel}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+    >
+      <div style={{ position: 'absolute', transform: `translate(${offset.x}px,${offset.y}px) scale(${scale})`, transformOrigin: '0 0', width: svgW, height: svgH }}>
+        {/* Edges */}
+        <svg style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }} width={svgW} height={svgH}>
+          {edges.map((e, i) => {
+            const cx1 = e.from.x + 24, cy1 = e.from.y
+            const cx2 = e.to.x - 24,   cy2 = e.to.y
+            return (
+              <path
+                key={i}
+                d={`M${e.from.x},${e.from.y} C${cx1},${cy1} ${cx2},${cy2} ${e.to.x},${e.to.y}`}
+                stroke={edgeColor}
+                strokeWidth={e.isMain ? 2 : 1.5}
+                fill="none"
+                strokeDasharray={e.isMain ? undefined : '5 3'}
+                opacity={e.isMain ? 0.9 : 0.6}
+              />
+            )
+          })}
+        </svg>
+
+        {/* Nodes */}
+        {allNodes.map(node => {
+          const p = positions.get(node.id)
+          if (!p) return null
+          const isSel = node.id === selectedId
+          const piece = node.move.match(/^([KQRBN])/)?.[1]
+          const sym   = piece ? PIECE_SYMBOLS[piece] : null
+          const txt   = piece ? node.move.slice(1) : node.move
+          return (
+            <div
+              key={node.id}
+              data-node="true"
+              onClick={() => onSelect(node)}
+              style={{
+                position: 'absolute', left: p.x, top: p.y,
+                width: N_W, height: N_H,
+                backgroundColor: isSel ? accentColor : chipBg,
+                border: `1.5px solid ${isSel ? accentColor : chipBorder}`,
+                borderRadius: 24, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', cursor: 'pointer',
+                boxShadow: isSel ? `0 0 0 3px ${accentColor}44, 0 2px 12px ${accentColor}55` : '0 1px 4px rgba(0,0,0,0.35)',
+                transition: 'box-shadow 0.15s',
+              }}
+            >
+              <span style={{
+                fontFamily: 'monospace', fontWeight: 700, fontSize: 13,
+                color: isSel ? (dark ? '#000' : '#fff') : (dark ? '#C8C5BC' : '#3A3630'),
+                letterSpacing: 0.3, whiteSpace: 'nowrap',
+              }}>
+                {node.color === 'white' && `${node.moveNumber}. `}{sym}{txt}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Controls */}
+      <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {[
+          { label: '+', action: () => setScale(s => Math.min(3, s * 1.2)) },
+          { label: '−', action: () => setScale(s => Math.max(0.25, s / 1.2)) },
+          { label: '⊡', action: () => { setScale(1); setOffset({ x: 60, y: 60 }) } },
+        ].map(b => (
+          <button key={b.label} onClick={b.action}
+            className={`w-8 h-8 rounded-lg ${t.bg3} ${t.border} border font-bold ${t.text2} flex items-center justify-center text-sm transition-all hover:scale-110`}
+          >{b.label}</button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -756,14 +837,15 @@ export default function Openings() {
             </div>
           </div>
 
-          {/* Layout: árbol + tablero */}
-          <div className="flex gap-6 h-[calc(100vh-280px)]">
-            {/* Trie — panel principal */}
+          {/* Layout: trie (principal) + tablero derecha */}
+          <div className="flex gap-4 h-[calc(100vh-260px)]">
+
+            {/* Trie canvas — panel principal */}
             <div className={`flex-1 rounded-xl ${t.bg2} ${t.border} border overflow-hidden flex flex-col min-w-0`}>
-              <div className={`px-5 py-4 border-b ${t.border} flex items-center justify-between flex-shrink-0`}>
+              <div className={`px-5 py-3 border-b ${t.border} flex items-center justify-between flex-shrink-0`}>
                 <div>
                   <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Árbol de variantes</p>
-                  <p className={`text-xs ${t.text3} mt-0.5`}>{activeOpening.nodes.length} movimientos</p>
+                  <p className={`text-xs ${t.text3} mt-0.5`}>{activeOpening.nodes.length} mov · arrastra para navegar · scroll para zoom</p>
                 </div>
                 <button
                   onClick={() => {
@@ -781,54 +863,41 @@ export default function Openings() {
                   + Agregar línea
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                <TrieRenderer
-                  roots={treeRoots}
-                  selectedId={selectedNodeId}
-                  onSelect={handleSelectNode}
-                  t={t}
-                  accentColor={accentColor}
-                  dark={dark}
-                />
-              </div>
+              <TrieCanvas
+                roots={treeRoots}
+                selectedId={selectedNodeId}
+                onSelect={handleSelectNode}
+                t={t}
+                accentColor={accentColor}
+                dark={dark}
+              />
             </div>
 
-            {/* Tablero + acciones */}
-            <div className="flex-1 flex flex-col gap-4">
-              {/* Tablero */}
-              <div className={`rounded-xl ${t.bg2} ${t.border} border overflow-hidden flex-shrink-0`}>
-                {/* Mini board estático */}
-                <div className="flex items-center justify-center p-4">
-                  <StaticBoard fen={selectedFen} size={480} dark={dark} />
-                </div>
+            {/* Panel derecho — tablero pequeño */}
+            <div className="w-72 flex-shrink-0 flex flex-col gap-3">
+              <div className={`rounded-xl ${t.bg2} ${t.border} border overflow-hidden`}>
+                <StaticBoard fen={selectedFen} size={272} dark={dark} />
               </div>
-
-              {/* Info del nodo seleccionado */}
-              {selectedNode && (
-                <div className={`rounded-xl ${t.bg2} ${t.border} border p-5`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Posición seleccionada</p>
-                      <p className={`text-lg font-bold font-mono ${t.text}`}>{selectedNode.move}</p>
-                      <p className={`text-xs ${t.text3} mt-1`}>Movimiento {selectedNode.moveNumber} · {selectedNode.color === 'white' ? 'Blancas' : 'Negras'}</p>
-                    </div>
-                    <button
-                      onClick={() => startTraining(selectedNode.id)}
-                      className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 hover:scale-105"
-                      style={{ backgroundColor: accentColor }}
-                    >
-                      ▶ Entrenar hasta aquí
-                    </button>
-                  </div>
+              {selectedNode ? (
+                <div className={`rounded-xl ${t.bg2} ${t.border} border p-4`}>
+                  <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Seleccionado</p>
+                  <p className={`text-base font-bold font-mono ${t.text}`}>{selectedNode.move}</p>
+                  <p className={`text-xs ${t.text3} mt-0.5 mb-3`}>Mov. {selectedNode.moveNumber} · {selectedNode.color === 'white' ? 'Blancas' : 'Negras'}</p>
+                  <button
+                    onClick={() => startTraining(selectedNode.id)}
+                    className="w-full py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    ▶ Entrenar
+                  </button>
                 </div>
-              )}
-
-              {!selectedNodeId && (
-                <div className={`rounded-xl ${t.bg2} ${t.border} border p-5 text-center`}>
-                  <p className={`text-sm ${t.text3}`}>Selecciona un movimiento del árbol para ver la posición y entrenar</p>
+              ) : (
+                <div className={`rounded-xl ${t.bg2} ${t.border} border p-4 text-center`}>
+                  <p className={`text-xs ${t.text3}`}>Haz clic en un nodo del árbol para ver la posición</p>
                 </div>
               )}
             </div>
+
           </div>
         </div>
 
