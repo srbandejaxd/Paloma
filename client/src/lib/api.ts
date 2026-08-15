@@ -387,3 +387,103 @@ export async function restartReview(reviewId: number): Promise<void> {
   })
   if (!res.ok) throw new Error((await res.json()).error || 'Error al reiniciar repaso')
 }
+
+// ─── OPENINGS ────────────────────────────────────────────────────────────────
+
+export interface Opening {
+  id: number
+  name: string
+  createdAt: string
+}
+
+export interface OpeningNode {
+  id: number
+  parentId: number | null
+  move: string
+  fen: string
+  moveNumber: number
+  color: 'white' | 'black'
+  orderIndex: number
+}
+
+export interface OpeningTree {
+  id: number
+  name: string
+  color: 'white' | 'black'
+  nodes: OpeningNode[]
+}
+
+export interface Repertoire {
+  repertoireId: number
+  color: 'white' | 'black'
+  openings: Opening[]
+}
+
+export interface ImportNode {
+  tempId: string
+  parentTempId: string | null
+  move: string
+  fen: string
+  moveNumber: number
+  color: 'white' | 'black'
+  orderIndex: number
+}
+
+// Obtener repertorio por color (crea uno si no existe)
+export async function fetchRepertoire(color: 'white' | 'black'): Promise<Repertoire> {
+  const res = await fetch(`${BASE}/api/openings/repertoires/${color}`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch repertoire')
+  return res.json()
+}
+
+// Crear apertura e importar árbol completo
+export async function createOpening(data: {
+  color: 'white' | 'black'
+  name: string
+  nodes: ImportNode[]
+}): Promise<{ openingId: number; nodeCount: number }> {
+  const res = await fetch(`${BASE}/api/openings`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error || 'Failed to create opening')
+  return json
+}
+
+// Obtener todos los nodos de una apertura
+export async function fetchOpeningTree(openingId: number): Promise<OpeningTree> {
+  const res = await fetch(`${BASE}/api/openings/${openingId}/nodes`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch opening tree')
+  return res.json()
+}
+
+// Agregar nodos a una apertura existente
+export async function addOpeningNodes(openingId: number, nodes: ImportNode[]): Promise<void> {
+  const res = await fetch(`${BASE}/api/openings/${openingId}/nodes`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ nodes }),
+  })
+  if (!res.ok) throw new Error('Failed to add nodes')
+}
+
+// Renombrar apertura
+export async function renameOpening(openingId: number, name: string): Promise<void> {
+  const res = await fetch(`${BASE}/api/openings/${openingId}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ name }),
+  })
+  if (!res.ok) throw new Error('Failed to rename opening')
+}
+
+// Eliminar apertura
+export async function deleteOpening(openingId: number): Promise<void> {
+  const res = await fetch(`${BASE}/api/openings/${openingId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to delete opening')
+}
