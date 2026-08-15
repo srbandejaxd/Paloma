@@ -950,7 +950,7 @@ router.get('/openings/repertoires/:color', authMiddleware, async (req, res) => {
 router.post('/openings', authMiddleware, async (req, res) => {
   const { color, name, nodes } = req.body
   // nodes: [{ tempId, parentTempId, move, fen, moveNumber, color, orderIndex }]
-  if (!name || !nodes?.length || !color) return res.status(400).json({ error: 'name, color y nodes requeridos' })
+  if (!name || !color || !Array.isArray(nodes)) return res.status(400).json({ error: 'name y color requeridos' })
   const db = getDb()
   try {
     // Obtener o crear repertorio

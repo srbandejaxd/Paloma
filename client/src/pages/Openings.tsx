@@ -7,19 +7,20 @@ import {
   renameOpening, deleteOpening,
   Opening, OpeningNode, OpeningTree, ImportNode
 } from '../lib/api'
-import PuzzleBoard from '../components/Board/PuzzleBoard'
+import { Chessboard } from 'react-chessboard'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { path: '/home', label: 'Home', icon: '🏠' },
-  { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
-  { path: '/vision', label: 'Visión', icon: '👁' },
-  { path: '/history', label: 'Historial', icon: '📋' },
-  { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
-  { path: '/blind', label: 'Ciego', icon: '🎲' },
-  { path: '/cycles', label: 'Ciclos', icon: '🔄' },
-  { path: '/openings', label: 'Aperturas', icon: '♟' },
+  { path: '/home',        label: 'Home',      icon: '🏠' },
+  { path: '/cycles',      label: 'Ciclos',    icon: '🕊️' },
+  { path: '/solo',        label: 'Solo',      icon: '⚡' },
+  { path: '/puzzles',     label: 'Puzzles',   icon: '📚' },
+  { path: '/vision',      label: 'Visión',    icon: '👁' },
+  { path: '/history',     label: 'Historial', icon: '📋' },
+  { path: '/leaderboard', label: 'Ranking',   icon: '🏆' },
+  { path: '/blind',       label: 'Ciego',     icon: '🎲' },
+  { path: '/openings',    label: 'Aperturas', icon: '♟' },
 ]
 
 const PIECE_SYMBOLS: Record<string, string> = {
@@ -185,86 +186,103 @@ function MoveChip({ move, active, onClick }: { move: string; active?: boolean; o
   )
 }
 
-// ─── TREE RENDERER ────────────────────────────────────────────────────────────
+// ─── TRIE RENDERER ────────────────────────────────────────────────────────────
 
-function TreeRenderer({
-  nodes, selectedId, onSelect, collapsed, onToggle, t, accentColor
+function TrieRenderer({
+  roots, selectedId, onSelect, t, accentColor, dark
 }: {
-  nodes: TreeNode[]
+  roots: TreeNode[]
   selectedId: number | null
   onSelect: (node: TreeNode) => void
-  collapsed: Set<number>
-  onToggle: (id: number) => void
   t: Record<string, string>
   accentColor: string
+  dark: boolean
 }) {
-  function renderNode(node: TreeNode, depth: number): React.ReactNode {
+  const borderCol = dark ? '#2A2A3A' : '#D4CABF'
+  const chipBg    = dark ? '#1C1C28' : '#E2DBD0'
+
+  function NodeBtn({ node, showNum }: { node: TreeNode; showNum: boolean }) {
     const isSelected = node.id === selectedId
-    const isCollapsed = collapsed.has(node.id)
-    const hasChildren = node.children.length > 0
     const piece = node.move.match(/^([KQRBN])/)?.[1]
     const symbol = piece ? PIECE_SYMBOLS[piece] : null
     const moveText = piece ? node.move.slice(1) : node.move
     const isWhite = node.color === 'white'
-
     return (
-      <div key={node.id} className="flex flex-col">
-        <div className="flex items-center gap-1 py-0.5" style={{ paddingLeft: `${depth * 16}px` }}>
-          {/* Conector visual */}
-          {depth > 0 && (
-            <div className="flex-shrink-0 w-3 h-px bg-[#2A2A3A]" />
-          )}
-
-          {/* Número de movimiento */}
-          {isWhite && (
-            <span className="text-xs text-[#7A776E] font-mono flex-shrink-0 w-6">
-              {node.moveNumber}.
-            </span>
-          )}
-
-          {/* Chip de movimiento */}
-          <button
-            onClick={() => onSelect(node)}
-            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm font-mono font-semibold transition-all flex-shrink-0 ${
-              isSelected
-                ? 'text-white shadow-lg'
-                : 'hover:bg-[#1C1C28] text-[#B8B5AC] hover:text-[#E8E6E0]'
-            }`}
-            style={isSelected ? { backgroundColor: accentColor } : {}}
-          >
-            {symbol && <span className="text-base leading-none">{symbol}</span>}
-            <span>{moveText}</span>
-          </button>
-
-          {/* Toggle colapsar */}
-          {hasChildren && (
-            <button
-              onClick={() => onToggle(node.id)}
-              className="w-5 h-5 rounded flex items-center justify-center text-[#7A776E] hover:text-[#B8B5AC] transition-colors flex-shrink-0"
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-                {isCollapsed
-                  ? <polygon points="3,1 9,5 3,9"/>
-                  : <polygon points="1,3 9,3 5,9"/>
-                }
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {/* Hijos */}
-        {!isCollapsed && hasChildren && (
-          <div>
-            {node.children.map(child => renderNode(child, depth + 1))}
-          </div>
+      <span className="inline-flex items-center gap-0.5 flex-shrink-0">
+        {(isWhite || showNum) && (
+          <span className={`text-xs font-mono ${t.text3} mr-0.5 flex-shrink-0`}>
+            {node.moveNumber}{!isWhite ? '...' : '.'}
+          </span>
         )}
-      </div>
+        <button
+          onClick={() => onSelect(node)}
+          className="inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-sm font-mono font-bold transition-all flex-shrink-0 hover:scale-105"
+          style={{
+            backgroundColor: isSelected ? accentColor : chipBg,
+            color: isSelected ? (dark ? '#000' : '#fff') : (dark ? '#B8B5AC' : '#4A4640'),
+            boxShadow: isSelected ? `0 2px 12px ${accentColor}55` : 'none',
+          }}
+        >
+          {symbol && <span className="text-base leading-none">{symbol}</span>}
+          <span>{moveText}</span>
+        </button>
+      </span>
     )
   }
 
+  function renderNode(node: TreeNode, showNum: boolean, isVariation: boolean): React.ReactNode {
+    const mainChild = node.children[0]
+    const variations = node.children.slice(1)
+    const hasBranch = node.children.length > 1
+
+    return (
+      <span key={node.id}>
+        <NodeBtn node={node} showNum={showNum} />
+
+        {/* Main line continues inline */}
+        {mainChild && !hasBranch && (
+          <span className="inline"> {renderNode(mainChild, false, false)}</span>
+        )}
+
+        {/* Branch point — main line + variations in block */}
+        {hasBranch && (
+          <span className="inline-block w-full mt-1">
+            {/* Main line */}
+            <span className="flex flex-wrap items-center gap-0.5 mb-1">
+              <span className="text-xs mr-1" style={{ color: borderCol }}>├─</span>
+              {renderNode(mainChild, true, false)}
+            </span>
+            {/* Variations */}
+            {variations.map((v) => (
+              <span key={v.id} className="flex flex-wrap items-start gap-0.5 mb-1 pl-4" style={{ borderLeft: `2px solid ${borderCol}` }}>
+                <span className="text-xs mr-1" style={{ color: borderCol }}>╰─</span>
+                {renderNode(v, true, true)}
+              </span>
+            ))}
+          </span>
+        )}
+
+        {/* Single-child variations that still need to be shown as new block if coming from variation */}
+        {isVariation && !hasBranch && mainChild && (
+          <span className="inline"> {renderNode(mainChild, false, true)}</span>
+        )}
+      </span>
+    )
+  }
+
+  if (roots.length === 0) return (
+    <div className={`text-center py-12 ${t.text3} text-sm`}>
+      Sin movimientos.<br/>Agrega una línea para comenzar.
+    </div>
+  )
+
   return (
-    <div className="flex flex-col gap-0.5">
-      {nodes.map(n => renderNode(n, 0))}
+    <div className="p-4 space-y-3">
+      {roots.map(root => (
+        <div key={root.id} className="flex flex-wrap items-start gap-0.5 leading-8">
+          {renderNode(root, true, false)}
+        </div>
+      ))}
     </div>
   )
 }
@@ -726,47 +744,51 @@ export default function Openings() {
             </div>
             <div className="flex items-center gap-2">
               {selectedNodeId && (
-                <>
-                  <button
-                    onClick={startAddLines}
-                    className={`px-4 py-2 rounded-lg ${t.bg3} ${t.border} border text-sm font-semibold ${t.text2} transition-all hover:shadow-md`}
-                  >
-                    + Agregar línea
-                  </button>
-                  <button
-                    onClick={() => startTraining(selectedNodeId)}
-                    className="px-4 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 hover:shadow-md"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    ▶ Entrenar hasta aquí
-                  </button>
-                </>
+                <button
+                  onClick={() => startTraining(selectedNodeId)}
+                  className="px-4 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 hover:shadow-md"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  ▶ Entrenar hasta aquí
+                </button>
               )}
             </div>
           </div>
 
           {/* Layout: árbol + tablero */}
           <div className="flex gap-6 h-[calc(100vh-280px)]">
-            {/* Árbol */}
-            <div className={`w-80 flex-shrink-0 rounded-xl ${t.bg2} ${t.border} border overflow-hidden flex flex-col`}>
-              <div className={`px-4 py-3 border-b ${t.border} flex items-center justify-between`}>
-                <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Variantes</p>
-                <p className={`text-xs ${t.text3}`}>{activeOpening.nodes.length} movimientos</p>
+            {/* Trie — panel principal */}
+            <div className={`flex-1 rounded-xl ${t.bg2} ${t.border} border overflow-hidden flex flex-col min-w-0`}>
+              <div className={`px-5 py-4 border-b ${t.border} flex items-center justify-between flex-shrink-0`}>
+                <div>
+                  <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Árbol de variantes</p>
+                  <p className={`text-xs ${t.text3} mt-0.5`}>{activeOpening.nodes.length} movimientos</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const game = new Chess()
+                    if (selectedNodeId) {
+                      const node = activeOpening.nodes.find(n => n.id === selectedNodeId)
+                      if (node) { game.load(node.fen); setAddParentId(selectedNodeId) }
+                      else setAddParentId(null)
+                    } else setAddParentId(null)
+                    setAddGame(game); setAddMoves([]); setAddingLines(true)
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  + Agregar línea
+                </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-3">
-                {treeRoots.length === 0 ? (
-                  <p className={`text-sm ${t.text3} text-center py-8`}>Sin movimientos. Agrega líneas.</p>
-                ) : (
-                  <TreeRenderer
-                    nodes={treeRoots}
-                    selectedId={selectedNodeId}
-                    onSelect={handleSelectNode}
-                    collapsed={collapsed}
-                    onToggle={toggleCollapse}
-                    t={t}
-                    accentColor={accentColor}
-                  />
-                )}
+              <div className="flex-1 overflow-y-auto">
+                <TrieRenderer
+                  roots={treeRoots}
+                  selectedId={selectedNodeId}
+                  onSelect={handleSelectNode}
+                  t={t}
+                  accentColor={accentColor}
+                  dark={dark}
+                />
               </div>
             </div>
 
@@ -809,56 +831,111 @@ export default function Openings() {
           </div>
         </div>
 
-        {/* Modal agregar líneas */}
+        {/* Panel agregar líneas — tablero interactivo */}
         {addingLines && addGame && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-            <div className={`w-full max-w-lg rounded-2xl ${t.bg2} ${t.border} border p-8`}>
-              <h3 className={`text-xl font-bold ${t.text} mb-2`}>Agregar línea</h3>
-              <p className={`text-sm ${t.text3} mb-6`}>Juega los movimientos desde la posición seleccionada. Se guardarán como variante.</p>
+          <div className="fixed inset-0 z-50 flex" style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}>
+            <div className="m-auto flex gap-6 items-start max-w-5xl w-full px-4">
 
-              <div className="flex items-center justify-center mb-6">
-                <StaticBoard fen={addGame.fen()} size={280} dark={dark} />
-              </div>
-
-              {addMoves.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {addMoves.map((m, i) => (
-                    <MoveChip key={i} move={m.move} />
-                  ))}
+              {/* Tablero interactivo */}
+              <div className={`rounded-2xl ${t.bg2} ${t.border} border overflow-hidden flex-shrink-0`}>
+                <div className={`px-5 py-4 border-b ${t.border}`}>
+                  <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Mueve las piezas para agregar jugadas</p>
                 </div>
-              )}
-
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  placeholder="Escribe un movimiento (ej. e4, Nf3)"
-                  className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none text-sm font-mono ${t.inputBg} ${t.border}`}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      handleAddLineMove((e.target as HTMLInputElement).value)
-                      ;(e.target as HTMLInputElement).value = ''
-                    }
-                  }}
-                  autoFocus
-                />
+                <div className="p-4">
+                  <Chessboard
+                    id="add-lines-board"
+                    boardWidth={420}
+                    position={addGame.fen()}
+                    boardOrientation={color}
+                    arePiecesDraggable={true}
+                    onPieceDrop={(from, to) => {
+                      try {
+                        const g = new Chess()
+                        g.load(addGame.fen())
+                        const result = g.move({ from, to, promotion: 'q' })
+                        if (!result) return false
+                        const tempId = `new_${Date.now()}_${Math.random()}`
+                        const lastMove = addMoves[addMoves.length - 1]
+                        const newNode: ImportNode = {
+                          tempId,
+                          parentTempId: lastMove ? lastMove.tempId : null,
+                          move: result.san,
+                          fen: g.fen(),
+                          moveNumber: Math.ceil(g.history().length / 2),
+                          color: result.color === 'w' ? 'white' : 'black',
+                          orderIndex: 0,
+                        }
+                        setAddMoves(prev => [...prev, newNode])
+                        setAddGame(g)
+                        return true
+                      } catch { return false }
+                    }}
+                    customDarkSquareStyle={{ backgroundColor: '#b58863' }}
+                    customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
+                  />
+                </div>
               </div>
 
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={saveAddedLines}
-                  disabled={addMoves.length === 0 || loading}
-                  className="flex-1 py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50"
-                  style={{ backgroundColor: accentColor }}
-                >
-                  {loading ? 'Guardando...' : 'Guardar línea'}
-                </button>
-                <button
-                  onClick={() => { setAddingLines(false); setAddMoves([]) }}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm ${t.bg3} ${t.border} border ${t.text}`}
-                >
-                  Cancelar
-                </button>
+              {/* Panel derecho: movimientos + botones */}
+              <div className={`rounded-2xl ${t.bg2} ${t.border} border flex flex-col flex-shrink-0 w-64`}>
+                <div className={`px-5 py-4 border-b ${t.border}`}>
+                  <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Línea</p>
+                </div>
+
+                <div className="p-4 flex-1 min-h-[80px]">
+                  {addMoves.length === 0 ? (
+                    <p className={`text-sm ${t.text3}`}>Mueve una pieza para empezar...</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {addMoves.map((m, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 rounded-lg text-sm font-mono font-bold"
+                          style={{ backgroundColor: dark ? '#1C1C28' : '#E2DBD0', color: dark ? '#B8B5AC' : '#4A4640' }}
+                        >
+                          {m.color === 'white' ? `${m.moveNumber}.` : ''}{m.move}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={`p-4 border-t ${t.border} flex flex-col gap-2`}>
+                  {addMoves.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (addMoves.length === 0) return
+                        const prev = addMoves[addMoves.length - 2]
+                        const fen = prev ? prev.fen : (addParentId
+                          ? activeOpening?.nodes.find(n => n.id === addParentId)?.fen ?? INITIAL_FEN
+                          : INITIAL_FEN)
+                        const g = new Chess()
+                        g.load(fen)
+                        setAddGame(g)
+                        setAddMoves(ms => ms.slice(0, -1))
+                      }}
+                      className={`w-full py-2.5 rounded-xl text-sm font-bold border ${t.border} ${t.text2} transition-all hover:${t.text}`}
+                    >
+                      ↩ Deshacer
+                    </button>
+                  )}
+                  <button
+                    onClick={saveAddedLines}
+                    disabled={addMoves.length === 0 || loading}
+                    className="w-full py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50 transition-all hover:opacity-90"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    {loading ? 'Guardando...' : '✓ Guardar línea'}
+                  </button>
+                  <button
+                    onClick={() => { setAddingLines(false); setAddMoves([]) }}
+                    className={`w-full py-2.5 rounded-xl text-sm font-bold ${t.bg3} ${t.border} border ${t.text}`}
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
+
             </div>
           </div>
         )}
@@ -1094,9 +1171,16 @@ export default function Openings() {
                   if (!importName.trim()) { setImportError('El nombre es requerido'); return }
                   setImporting(true); setImportError(null)
                   try {
-                    await createOpening({ color, name: importName.trim(), nodes: [] })
+                    const result = await createOpening({ color, name: importName.trim(), nodes: [] })
                     setImportName(''); setShowImport(false)
                     await loadRepertoire(color)
+                    // Navigate directly to opening and start adding moves
+                    await loadOpening(result.openingId)
+                    const game = new Chess()
+                    setAddParentId(null)
+                    setAddGame(game)
+                    setAddMoves([])
+                    setAddingLines(true)
                   } catch (e: unknown) { setImportError((e as Error).message) }
                   finally { setImporting(false) }
                 } : handleImport}
