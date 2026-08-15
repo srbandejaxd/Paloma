@@ -8,6 +8,7 @@ import {
   Opening, OpeningNode, OpeningTree, ImportNode
 } from '../lib/api'
 import { Chessboard } from 'react-chessboard'
+import PuzzleBoard from '../components/Board/PuzzleBoard'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
