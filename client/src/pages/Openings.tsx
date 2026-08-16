@@ -452,6 +452,16 @@ function MoonIcon() {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
+const NAV_ITEMS_DEF = [
+  { path: '/solo', label: 'Home', icon: '🏠' },
+  { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
+  { path: '/vision', label: 'Visión', icon: '👁' },
+  { path: '/history', label: 'Historial', icon: '📋' },
+  { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
+  { path: '/blind', label: 'Ciego', icon: '🎲' },
+  { path: '/cycles', label: 'Ciclos', icon: '🔄' },
+  { path: '/openings', label: 'Aperturas', icon: '♟' },
+]
 
 function NavBar({ t, dark, toggleTheme, navigate, location, accentColor, user, logout }: {
   t: Record<string, string>
@@ -463,23 +473,13 @@ function NavBar({ t, dark, toggleTheme, navigate, location, accentColor, user, l
   user: { nickname: string } | null
   logout: () => void
 }) {
-  const NAV_ITEMS = [
-    { path: '/solo', label: 'Home', icon: '🏠' },
-    { path: '/puzzles', label: 'Puzzles', icon: '⚡' },
-    { path: '/vision', label: 'Visión', icon: '👁' },
-    { path: '/history', label: 'Historial', icon: '📋' },
-    { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
-    { path: '/blind', label: 'Ciego', icon: '🎲' },
-    { path: '/cycles', label: 'Ciclos', icon: '🔄' },
-    { path: '/openings', label: 'Aperturas', icon: '♟' },
-  ]
   return (
     <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95`}>
       <div className="max-w-7xl mx-auto px-6 py-5">
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className={`text-xs uppercase tracking-[0.15em] ${t.text3} mb-1`}>Bienvenido de vuelta</p>
-            <h1 className={`text-3xl font-bold ${t.text} leading-none`} style={{ letterSpacing: \'-0.02em\' }}>{user?.nickname}</h1>
+            <h1 className={`text-3xl font-bold ${t.text} leading-none`} style={{ letterSpacing: '-0.02em' }}>{user?.nickname}</h1>
           </div>
           <button onClick={toggleTheme} className={`flex items-center justify-center w-10 h-10 rounded-lg ${t.bg3} ${t.border} border transition-all hover:scale-105 ${t.text3}`}>
             {dark ? (
@@ -498,19 +498,22 @@ function NavBar({ t, dark, toggleTheme, navigate, location, accentColor, user, l
           </button>
         </div>
         <div className="flex items-center gap-0 overflow-x-auto pb-2">
-          {NAV_ITEMS.map((item, idx) => {
+          {NAV_ITEMS_DEF.map((item, idx) => {
             const isActive = location.pathname === item.path
             return (
               <div key={item.path} className="flex items-center">
                 <button
                   onClick={() => navigate(item.path)}
-                  className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all relative group ${isActive ? t.text : `${t.text2} hover:${t.text}`}`}
+                  className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all relative group ${isActive ? t.text : t.text2}`}
                 >
                   <span className="text-lg">{item.icon}</span>
                   <span className="whitespace-nowrap">{item.label}</span>
-                  <div className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all ${isActive ? \'scale-x-100\' : \'scale-x-0 group-hover:scale-x-100\'}`} style={{ backgroundColor: accentColor }} />
+                  <div
+                    className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}
+                    style={{ backgroundColor: accentColor }}
+                  />
                 </button>
-                {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
+                {idx < NAV_ITEMS_DEF.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
               </div>
             )
           })}
@@ -519,6 +522,7 @@ function NavBar({ t, dark, toggleTheme, navigate, location, accentColor, user, l
     </nav>
   )
 }
+
 
 export default function Openings() {
   const { user, logout } = useAuth()
