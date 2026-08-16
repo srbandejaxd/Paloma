@@ -971,18 +971,43 @@ export default function Openings() {
                   customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
                   animationDuration={200}
                 />
-                {/* Symbol badge overlay */}
-                {ann.symbol && (
-                  <div style={{
-                    position: 'absolute', top: 8, right: 8,
-                    backgroundColor: accentColor, color: '#000',
-                    borderRadius: 99, width: 36, height: 36,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 16, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-                  }}>
-                    {ann.symbol}
-                  </div>
-                )}
+                {/* Symbol badge overlay — sobre la pieza movida */}
+                {ann.symbol && node && (() => {
+                  // Extraer casilla destino del movimiento SAN
+                  // SAN examples: e4, Nf3, Bxd5, O-O, O-O-O, exd5, Qh5+, Nf3#
+                  const boardWidth = 440
+                  const squareSize = boardWidth / 8
+                  const files = ['a','b','c','d','e','f','g','h']
+                  let destSquare: string | null = null
+                  const san = node.move.replace(/[+#!?]/g, '')
+                  if (san === 'O-O') destSquare = color === 'white' ? 'g1' : 'g8'
+                  else if (san === 'O-O-O') destSquare = color === 'white' ? 'c1' : 'c8'
+                  else {
+                    const m = san.match(/([a-h][1-8])$/)
+                    if (m) destSquare = m[1]
+                  }
+                  if (!destSquare) return null
+                  const file = destSquare[0]
+                  const rank = parseInt(destSquare[1])
+                  let fileIdx = files.indexOf(file)
+                  let rankIdx = 8 - rank
+                  if (color === 'black') { fileIdx = 7 - fileIdx; rankIdx = 7 - rankIdx }
+                  const left = fileIdx * squareSize + squareSize * 0.5 - 18
+                  const top = rankIdx * squareSize + squareSize * 0.1
+                  return (
+                    <div style={{
+                      position: 'absolute',
+                      left, top,
+                      backgroundColor: accentColor, color: '#000',
+                      borderRadius: 99, width: 36, height: 36,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 16, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                      pointerEvents: 'none', zIndex: 10,
+                    }}>
+                      {ann.symbol}
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Move info */}
@@ -1070,7 +1095,7 @@ export default function Openings() {
             <p className={`text-sm ${t.text3} mb-2`}>{trainLine.length} movimientos · {trainErrors} error{trainErrors !== 1 ? 'es' : ''}</p>
             <div className="flex gap-3 mt-8">
               <button
-                onClick={() => { setTrainStep(0); setTrainGame(new Chess()); setTrainDone(false); setTrainErrors(0); setScreen('train') }}
+                onClick={() => { setTrainStep(0); setTrainGame(new Chess()); setTrainDone(false); setTrainErrors(0); setTrainHintSquare(null); setWaitingRival(false); setScreen('train') }}
                 className="flex-1 py-3 rounded-xl font-bold text-sm text-white"
                 style={{ backgroundColor: accentColor }}
               >
@@ -1212,13 +1237,21 @@ export default function Openings() {
             </div>
             <div className="flex items-center gap-2">
               {selectedNodeId && (
-                <button
-                  onClick={() => startPractice(selectedNodeId)}
-                  className="px-4 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 hover:shadow-md"
-                  style={{ backgroundColor: accentColor }}
-                >
-                  ▶ Practicar
-                </button>
+                <>
+                  <button
+                    onClick={() => startTraining(selectedNodeId)}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all hover:opacity-90 hover:shadow-md ${t.bg3} ${t.border} border ${t.text}`}
+                  >
+                    🧠 De memoria
+                  </button>
+                  <button
+                    onClick={() => startPractice(selectedNodeId)}
+                    className="px-4 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 hover:shadow-md"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    ▶ Practicar
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -1273,13 +1306,21 @@ export default function Openings() {
                     <p className={`text-xs uppercase tracking-widest ${t.text3} mb-1`}>Seleccionado</p>
                     <p className={`text-base font-bold font-mono ${t.text}`}>{selectedNode.move}</p>
                     <p className={`text-xs ${t.text3} mt-0.5 mb-3`}>Mov. {selectedNode.moveNumber} · {selectedNode.color === 'white' ? 'Blancas' : 'Negras'}</p>
-                    <button
-                      onClick={() => startPractice(selectedNode.id)}
-                      className="w-full py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
-                      style={{ backgroundColor: accentColor }}
-                    >
-                      ▶ Practicar
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => startTraining(selectedNode.id)}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all hover:opacity-90 ${t.bg3} ${t.border} border ${t.text}`}
+                      >
+                        🧠 De memoria
+                      </button>
+                      <button
+                        onClick={() => startPractice(selectedNode.id)}
+                        className="flex-1 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
+                        style={{ backgroundColor: accentColor }}
+                      >
+                        ▶ Practicar
+                      </button>
+                    </div>
                   </div>
                   {/* Cuadro de ideas / anotación */}
                   <div className={`rounded-xl ${t.bg2} ${t.border} border overflow-hidden`}>
