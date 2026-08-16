@@ -31,7 +31,7 @@ const PIECE_SYMBOLS: Record<string, string> = {
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
-type Screen = 'repertoire' | 'opening' | 'train'
+type Screen = 'repertoire' | 'opening' | 'train' | 'practice'
 type Color = 'white' | 'black'
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ function flatAll(nodes: TreeNode[]): TreeNode[] {
 }
 
 function TrieCanvas({
-  roots, selectedId, onSelect, t, accentColor, dark, collapsed, onToggleCollapse
+  roots, selectedId, onSelect, t, accentColor, dark, collapsed, onToggleCollapse, annotations
 }: {
   roots: TreeNode[]
   selectedId: number | null
@@ -231,6 +231,7 @@ function TrieCanvas({
   dark: boolean
   collapsed: Set<number>
   onToggleCollapse: (id: number) => void
+  annotations: Record<number, { text: string; symbol: string }>
 }) {
   const [offset, setOffset] = useState({ x: 60, y: 60 })
   const [scale, setScale] = useState(1)
@@ -373,6 +374,22 @@ function TrieCanvas({
                   {node.color === 'white' && `${node.moveNumber}. `}{txt}
                 </span>
               </div>
+              {/* Annotation symbol badge */}
+              {(() => {
+                const annData = annotations[node.id] ?? null
+                return annData?.symbol ? (
+                  <div style={{
+                    position: 'absolute', top: -8, right: hasChildren ? 22 : 2,
+                    backgroundColor: accentColor, color: dark ? '#000' : '#fff',
+                    borderRadius: 99, minWidth: 20, height: 20, padding: '0 4px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 800, zIndex: 3,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+                  }}>
+                    {annData.symbol}
+                  </div>
+                ) : null
+              })()}
               {/* Collapse/expand button */}
               {hasChildren && (
                 <div
@@ -458,7 +475,9 @@ export default function Openings() {
   const [trainLine, setTrainLine] = useState<OpeningNode[]>([])
   const [trainStep, setTrainStep] = useState(0)
   const [trainHintSquare, setTrainHintSquare] = useState<string | null>(null)
-  const [annotations, setAnnotations] = useState<Record<number, string>>({})
+  const [annotations, setAnnotations] = useState<Record<number, { text: string; symbol: string }>>({})
+  const [practiceIdx, setPracticeIdx] = useState(0)
+  const [practiceLine, setPracticeLine] = useState<OpeningNode[]>([])
   const [trainGame, setTrainGame] = useState<Chess | null>(null)
   const [trainDone, setTrainDone] = useState(false)
   const [trainErrors, setTrainErrors] = useState(0)
@@ -643,6 +662,26 @@ export default function Openings() {
     setScreen('train')
   }
 
+  // Keyboard navigation for practice
+  useEffect(() => {
+    if (screen !== 'practice') return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight') setPracticeIdx(i => Math.min(practiceLine.length - 1, i + 1))
+      if (e.key === 'ArrowLeft')  setPracticeIdx(i => Math.max(0, i - 1))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [screen, practiceLine.length])
+
+  function startPractice(targetNodeId: number) {
+    if (!activeOpening) return
+    const line = getLineToNode(activeOpening.nodes, targetNodeId)
+    if (line.length === 0) return
+    setPracticeLine(line)
+    setPracticeIdx(0)
+    setScreen('practice')
+  }
+
   // Avanzar al siguiente paso del entrenamiento
   const advanceTrainStep = useCallback((currentStep: number, currentGame: Chess, line: OpeningNode[]) => {
     const nextStep = currentStep + 1
@@ -759,6 +798,193 @@ export default function Openings() {
   }
 
   // ── TRAIN SCREEN ─────────────────────────────────────────────────────────────
+  // ── PRACTICE SCREEN ──────────────────────────────────────────────────────
+  if (screen === 'practice') {
+    const node = practiceLine[practiceIdx] ?? null
+    const fen  = node ? node.fen : INITIAL_FEN
+    const ann  = node ? (annotations[node.id] ?? { text: '', symbol: '' }) : { text: '', symbol: '' }
+
+    const SYMBOLS = [
+      { sym: '!',  label: 'Buen movimiento' },
+      { sym: '!!', label: 'Brillante' },
+      { sym: '?',  label: 'Error' },
+      { sym: '??', label: 'Error grave' },
+      { sym: '!?', label: 'Interesante' },
+      { sym: '?!', label: 'Dudoso' },
+      { sym: '∞',  label: 'Poco claro' },
+      { sym: '=',  label: 'Igual' },
+      { sym: '±',  label: 'Blancas mejor' },
+      { sym: '∓',  label: 'Negras mejor' },
+      { sym: '⊕',  label: 'Con compensación' },
+      { sym: '□',  label: 'Único movimiento' },
+    ]
+
+    function saveSymbol(sym: string) {
+      if (!node) return
+      setAnnotations(prev => ({
+        ...prev,
+        [node.id]: { text: prev[node.id]?.text ?? '', symbol: prev[node.id]?.symbol === sym ? '' : sym }
+      }))
+    }
+
+    function saveText(text: string) {
+      if (!node) return
+      setAnnotations(prev => ({
+        ...prev,
+        [node.id]: { symbol: prev[node.id]?.symbol ?? '', text }
+      }))
+    }
+
+    return (
+      <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300 flex flex-col`}>
+        <NavBar t={t} dark={dark} toggleTheme={toggleTheme} navigate={navigate} location={location} accentColor={accentColor} user={user} logout={logout} />
+
+        <div className="flex-1 flex flex-col px-6 pt-6 pb-6 gap-4 max-w-7xl mx-auto w-full">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setScreen('opening')} className={`flex items-center gap-2 text-sm ${t.text3} hover:${t.text} transition-colors`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Volver
+              </button>
+              <div className={`w-px h-4 ${t.borderLight}`} />
+              <h2 className={`text-xl font-bold ${t.text}`}>{activeOpening?.name} · Práctica</h2>
+            </div>
+            <p className={`text-sm ${t.text3}`}>
+              {practiceIdx + 1} / {practiceLine.length}
+            </p>
+          </div>
+
+          {/* Main 3-column layout */}
+          <div className="flex gap-4 flex-1 min-h-0">
+
+            {/* LEFT — Símbolos de anotación */}
+            <div className={`w-52 flex-shrink-0 rounded-xl ${t.bg2} ${t.border} border overflow-hidden flex flex-col`}>
+              <div className={`px-4 py-3 border-b ${t.border}`}>
+                <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Símbolo</p>
+              </div>
+              <div className="p-3 flex flex-col gap-1.5 overflow-y-auto">
+                {SYMBOLS.map(({ sym, label }) => {
+                  const isActive = ann.symbol === sym
+                  return (
+                    <button
+                      key={sym}
+                      onClick={() => saveSymbol(sym)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left"
+                      style={{
+                        backgroundColor: isActive ? `${accentColor}22` : 'transparent',
+                        border: `1.5px solid ${isActive ? accentColor : 'transparent'}`,
+                        color: isActive ? accentColor : undefined,
+                      }}
+                    >
+                      <span className="text-lg font-bold w-6 text-center flex-shrink-0">{sym}</span>
+                      <span className={`text-xs ${isActive ? '' : t.text3}`}>{label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* CENTER — Tablero + navegación */}
+            <div className="flex-1 flex flex-col items-center gap-4 min-w-0">
+              {/* Board */}
+              <div style={{ position: 'relative' }}>
+                <Chessboard
+                  id="practice-board"
+                  boardWidth={440}
+                  position={fen}
+                  boardOrientation={color}
+                  arePiecesDraggable={false}
+                  customDarkSquareStyle={{ backgroundColor: '#b58863' }}
+                  customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
+                  animationDuration={200}
+                />
+                {/* Symbol badge overlay */}
+                {ann.symbol && (
+                  <div style={{
+                    position: 'absolute', top: 8, right: 8,
+                    backgroundColor: accentColor, color: '#000',
+                    borderRadius: 99, width: 36, height: 36,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                  }}>
+                    {ann.symbol}
+                  </div>
+                )}
+              </div>
+
+              {/* Move info */}
+              <div className="flex items-center gap-2">
+                {node && (
+                  <span className={`text-sm font-mono font-bold px-3 py-1.5 rounded-lg ${t.bg2} ${t.border} border`}>
+                    {node.color === 'white' ? `${node.moveNumber}. ` : `${node.moveNumber}... `}
+                    {node.move}
+                    {ann.symbol && <span className="ml-1.5 text-base" style={{ color: accentColor }}>{ann.symbol}</span>}
+                  </span>
+                )}
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setPracticeIdx(i => Math.max(0, i - 1))}
+                  disabled={practiceIdx === 0}
+                  className={`w-12 h-12 rounded-xl border ${t.border} flex items-center justify-center text-xl font-bold disabled:opacity-30 hover:scale-105 transition-all ${t.bg2} ${t.text2}`}
+                >‹</button>
+                <span className={`text-sm ${t.text3} w-24 text-center`}>
+                  {practiceIdx + 1} / {practiceLine.length}
+                </span>
+                <button
+                  onClick={() => setPracticeIdx(i => Math.min(practiceLine.length - 1, i + 1))}
+                  disabled={practiceIdx >= practiceLine.length - 1}
+                  className={`w-12 h-12 rounded-xl border ${t.border} flex items-center justify-center text-xl font-bold disabled:opacity-30 hover:scale-105 transition-all ${t.bg2} ${t.text2}`}
+                >›</button>
+              </div>
+              <p className={`text-xs ${t.text3}`}>También puedes usar ← → del teclado</p>
+            </div>
+
+            {/* RIGHT — Anotación de texto */}
+            <div className={`w-64 flex-shrink-0 rounded-xl ${t.bg2} ${t.border} border overflow-hidden flex flex-col`}>
+              <div className={`px-4 py-3 border-b ${t.border}`}>
+                <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold`}>Ideas de la posición</p>
+              </div>
+              <textarea
+                value={ann.text}
+                onChange={e => saveText(e.target.value)}
+                placeholder="Escribe tus ideas, planes, amenazas..."
+                className={`flex-1 px-4 py-3 text-sm leading-relaxed resize-none focus:outline-none bg-transparent ${t.text2}`}
+                style={{ fontFamily: 'inherit' }}
+              />
+              {/* Mini line navigator */}
+              <div className={`border-t ${t.border} px-4 py-3`}>
+                <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Línea</p>
+                <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                  {practiceLine.map((n, i) => {
+                    const a = annotations[n.id]
+                    return (
+                      <button
+                        key={n.id}
+                        onClick={() => setPracticeIdx(i)}
+                        className="px-2 py-1 rounded text-xs font-mono font-bold transition-all"
+                        style={{
+                          backgroundColor: i === practiceIdx ? accentColor : (dark ? '#1C1C28' : '#E2DBD0'),
+                          color: i === practiceIdx ? '#000' : undefined,
+                        }}
+                      >
+                        {n.color === 'white' ? `${n.moveNumber}.` : ''}{n.move}
+                        {a?.symbol && <span className="ml-0.5">{a.symbol}</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (screen === 'train') {
     const currentNode = trainLine[trainStep]
     const progress = trainLine.length > 0 ? (trainStep / trainLine.length) * 100 : 0
@@ -915,11 +1141,11 @@ export default function Openings() {
             <div className="flex items-center gap-2">
               {selectedNodeId && (
                 <button
-                  onClick={() => startTraining(selectedNodeId)}
+                  onClick={() => startPractice(selectedNodeId)}
                   className="px-4 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 hover:shadow-md"
                   style={{ backgroundColor: accentColor }}
                 >
-                  ▶ Entrenar hasta aquí
+                  ▶ Practicar
                 </button>
               )}
             </div>
@@ -960,6 +1186,7 @@ export default function Openings() {
                 dark={dark}
                 collapsed={collapsed}
                 onToggleCollapse={toggleCollapse}
+                annotations={annotations}
               />
             </div>
 
@@ -975,11 +1202,11 @@ export default function Openings() {
                     <p className={`text-base font-bold font-mono ${t.text}`}>{selectedNode.move}</p>
                     <p className={`text-xs ${t.text3} mt-0.5 mb-3`}>Mov. {selectedNode.moveNumber} · {selectedNode.color === 'white' ? 'Blancas' : 'Negras'}</p>
                     <button
-                      onClick={() => startTraining(selectedNode.id)}
+                      onClick={() => startPractice(selectedNode.id)}
                       className="w-full py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
                       style={{ backgroundColor: accentColor }}
                     >
-                      ▶ Entrenar
+                      ▶ Practicar
                     </button>
                   </div>
                   {/* Cuadro de ideas / anotación */}
@@ -988,8 +1215,8 @@ export default function Openings() {
                       <p className={`text-xs uppercase tracking-widest ${t.text3}`}>Ideas de la posición</p>
                     </div>
                     <textarea
-                      value={annotations[selectedNode.id] ?? ''}
-                      onChange={e => setAnnotations(prev => ({ ...prev, [selectedNode.id]: e.target.value }))}
+                      value={annotations[selectedNode.id]?.text ?? ''}
+                      onChange={e => setAnnotations(prev => ({ ...prev, [selectedNode.id]: { ...prev[selectedNode.id], symbol: prev[selectedNode.id]?.symbol ?? '', text: e.target.value } }))}
                       placeholder="Escribe tus ideas, planes y conceptos clave..."
                       rows={4}
                       className={`w-full px-4 py-3 text-sm leading-relaxed resize-none focus:outline-none ${t.text2} bg-transparent`}
