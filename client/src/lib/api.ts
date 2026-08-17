@@ -389,13 +389,7 @@ export async function restartReview(reviewId: number): Promise<void> {
 }
 
 // Guardar anotación de un nodo
-export async function updateNodeAnnotation(nodeId: number, text: string, symbol: string): Promise<void> {
-  const res = await fetch(`${BASE}/api/openings/nodes/${nodeId}/annotation`, {
-    method: 'PATCH',
-    headers: authHeaders(),
-    body: JSON.stringify({ text, symbol }),
-  })
-  if (!res.ok) throw new Error('Failed to save annotation')
+
 }
 
 // ─── OPENINGS ────────────────────────────────────────────────────────────────
