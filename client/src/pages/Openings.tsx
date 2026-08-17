@@ -647,7 +647,19 @@ export default function Openings() {
       setTreeRoots(roots)
       setSelectedNodeId(null)
       setSelectedFen(INITIAL_FEN)
-      setCollapsed(new Set())
+      // Colapsar nodos con moveNumber > 3 al abrir
+      const initialCollapsed = new Set<number>()
+      function collapseDeep(nodes: TreeNode[]) {
+        for (const n of nodes) {
+          if (n.moveNumber >= 3 && n.children.length > 0) {
+            initialCollapsed.add(n.id)
+          } else {
+            collapseDeep(n.children)
+          }
+        }
+      }
+      collapseDeep(roots)
+      setCollapsed(initialCollapsed)
       setScreen('opening')
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
@@ -661,8 +673,33 @@ export default function Openings() {
   function toggleCollapse(id: number) {
     setCollapsed(prev => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(id)) {
+        // Expandir: mostrar solo 2 niveles más, colapsar el resto
+        next.delete(id)
+        // Encontrar el nodo en el árbol
+        function findNode(nodes: TreeNode[]): TreeNode | null {
+          for (const n of nodes) {
+            if (n.id === id) return n
+            const found = findNode(n.children)
+            if (found) return found
+          }
+          return null
+        }
+        function collapseAfterDepth(nodes: TreeNode[], depth: number) {
+          for (const n of nodes) {
+            if (depth >= 2) {
+              if (n.children.length > 0) next.add(n.id)
+            } else {
+              next.delete(n.id)
+              collapseAfterDepth(n.children, depth + 1)
+            }
+          }
+        }
+        const node = findNode(treeRoots)
+        if (node) collapseAfterDepth(node.children, 0)
+      } else {
+        next.add(id)
+      }
       return next
     })
   }
@@ -1030,16 +1067,16 @@ export default function Openings() {
                   let fileIdx = files.indexOf(file)
                   let rankIdx = 8 - rank
                   if (color === 'black') { fileIdx = 7 - fileIdx; rankIdx = 7 - rankIdx }
-                  const left = fileIdx * squareSize + squareSize * 0.5 - 18
-                  const top = rankIdx * squareSize + squareSize * 0.1
+                  const left = fileIdx * squareSize + squareSize - 16
+                  const top = rankIdx * squareSize + 2
                   return (
                     <div style={{
                       position: 'absolute',
                       left, top,
                       backgroundColor: SYMBOL_COLORS[ann.symbol] || accentColor, color: '#fff',
-                      borderRadius: 99, width: 36, height: 36,
+                      borderRadius: 99, width: 22, height: 22,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                      fontSize: 11, fontWeight: 700, boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
                       pointerEvents: 'none', zIndex: 10,
                     }}>
                       {ann.symbol}
@@ -1247,13 +1284,13 @@ export default function Openings() {
                     return (
                       <div style={{
                         position: 'absolute',
-                        left: fileIdx * squareSize + squareSize * 0.5 - 18,
-                        top: rankIdx * squareSize + squareSize * 0.1,
+                        left: fileIdx * squareSize + squareSize - 16,
+                        top: rankIdx * squareSize + 2,
                         backgroundColor: SYMBOL_COLORS[annSymbol] || accentColor,
                         color: '#fff',
-                        borderRadius: 99, width: 36, height: 36,
+                        borderRadius: 99, width: 22, height: 22,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 16, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                        fontSize: 11, fontWeight: 700, boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
                         pointerEvents: 'none', zIndex: 10,
                       }}>
                         {annSymbol}
