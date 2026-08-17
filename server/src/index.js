@@ -13,7 +13,7 @@ const allowedOrigins = [
 ]
 
 app.use(cors({ origin: allowedOrigins }))
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 app.use('/api', apiRouter)
 
 app.listen(PORT, '0.0.0.0', () => {
