@@ -4,7 +4,7 @@ import { Chess } from 'chess.js'
 import { useAuth } from '../lib/auth'
 import {
   fetchRepertoire, createOpening, fetchOpeningTree, addOpeningNodes,
-  renameOpening, deleteOpening,
+  renameOpening, deleteOpening, updateNodeAnnotation,
   Opening, OpeningNode, OpeningTree, ImportNode
 } from '../lib/api'
 import { Chessboard } from 'react-chessboard'
@@ -647,6 +647,17 @@ export default function Openings() {
       setTreeRoots(roots)
       setSelectedNodeId(null)
       setSelectedFen(INITIAL_FEN)
+      // Cargar anotaciones desde los nodos
+      const loadedAnnotations: Record<number, { text: string; symbol: string }> = {}
+      for (const n of data.nodes) {
+        if (n.annotationText || n.annotationSymbol) {
+          loadedAnnotations[n.id] = {
+            text: n.annotationText || '',
+            symbol: n.annotationSymbol || '',
+          }
+        }
+      }
+      setAnnotations(loadedAnnotations)
       // Colapsar nodos con moveNumber > 3 al abrir
       const initialCollapsed = new Set<number>()
       function collapseDeep(nodes: TreeNode[]) {
@@ -669,6 +680,12 @@ export default function Openings() {
     setSelectedNodeId(node.id)
     setSelectedFen(node.fen)
   }
+
+  const saveAnnotationToDb = useCallback(async (nodeId: number, text: string, symbol: string) => {
+    try {
+      await updateNodeAnnotation(nodeId, text, symbol)
+    } catch (e) { console.error('Failed to save annotation', e) }
+  }, [])
 
   function toggleCollapse(id: number) {
     setCollapsed(prev => {
@@ -830,7 +847,8 @@ export default function Openings() {
   const advanceTrainStep = useCallback((currentStep: number, currentGame: Chess, line: OpeningNode[]) => {
     const nextStep = currentStep + 1
     if (nextStep >= line.length) {
-      setTrainDone(true)
+      // Esperar 3 segundos para que el usuario vea la posición final
+      setTimeout(() => setTrainDone(true), 3000)
       return
     }
     const nextNode = line[nextStep]
@@ -968,18 +986,23 @@ export default function Openings() {
 
     function saveSymbol(sym: string) {
       if (!node) return
+      const newSymbol = annotations[node.id]?.symbol === sym ? '' : sym
+      const currentText = annotations[node.id]?.text ?? ''
       setAnnotations(prev => ({
         ...prev,
-        [node.id]: { text: prev[node.id]?.text ?? '', symbol: prev[node.id]?.symbol === sym ? '' : sym }
+        [node.id]: { text: currentText, symbol: newSymbol }
       }))
+      saveAnnotationToDb(node.id, currentText, newSymbol)
     }
 
     function saveText(text: string) {
       if (!node) return
+      const currentSymbol = annotations[node.id]?.symbol ?? ''
       setAnnotations(prev => ({
         ...prev,
-        [node.id]: { symbol: prev[node.id]?.symbol ?? '', text }
+        [node.id]: { symbol: currentSymbol, text }
       }))
+      saveAnnotationToDb(node.id, text, currentSymbol)
     }
 
     return (
@@ -1438,7 +1461,11 @@ export default function Openings() {
                     </div>
                     <textarea
                       value={annotations[selectedNode.id]?.text ?? ''}
-                      onChange={e => setAnnotations(prev => ({ ...prev, [selectedNode.id]: { ...prev[selectedNode.id], symbol: prev[selectedNode.id]?.symbol ?? '', text: e.target.value } }))}
+                      onChange={e => {
+                        const newText = e.target.value
+                        setAnnotations(prev => ({ ...prev, [selectedNode.id]: { ...prev[selectedNode.id], symbol: prev[selectedNode.id]?.symbol ?? '', text: newText } }))
+                        saveAnnotationToDb(selectedNode.id, newText, annotations[selectedNode.id]?.symbol ?? '')
+                      }}
                       placeholder="Escribe tus ideas, planes y conceptos clave..."
                       rows={4}
                       className={`w-full px-4 py-3 text-sm leading-relaxed resize-none focus:outline-none ${t.text2} bg-transparent`}

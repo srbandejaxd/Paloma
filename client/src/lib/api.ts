@@ -388,6 +388,16 @@ export async function restartReview(reviewId: number): Promise<void> {
   if (!res.ok) throw new Error((await res.json()).error || 'Error al reiniciar repaso')
 }
 
+// Guardar anotación de un nodo
+export async function updateNodeAnnotation(nodeId: number, text: string, symbol: string): Promise<void> {
+  const res = await fetch(`${BASE}/api/openings/nodes/${nodeId}/annotation`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ text, symbol }),
+  })
+  if (!res.ok) throw new Error('Failed to save annotation')
+}
+
 // ─── OPENINGS ────────────────────────────────────────────────────────────────
 
 export interface Opening {
@@ -404,6 +414,8 @@ export interface OpeningNode {
   moveNumber: number
   color: 'white' | 'black'
   orderIndex: number
+  annotationText?: string
+  annotationSymbol?: string
 }
 
 export interface OpeningTree {
@@ -429,61 +441,45 @@ export interface ImportNode {
   orderIndex: number
 }
 
-// Obtener repertorio por color (crea uno si no existe)
 export async function fetchRepertoire(color: 'white' | 'black'): Promise<Repertoire> {
   const res = await fetch(`${BASE}/api/openings/repertoires/${color}`, { headers: authHeaders() })
   if (!res.ok) throw new Error('Failed to fetch repertoire')
   return res.json()
 }
 
-// Crear apertura e importar árbol completo
-export async function createOpening(data: {
-  color: 'white' | 'black'
-  name: string
-  nodes: ImportNode[]
-}): Promise<{ openingId: number; nodeCount: number }> {
-  const res = await fetch(`${BASE}/api/openings`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(data),
-  })
+export async function createOpening(data: { color: 'white' | 'black'; name: string; nodes: ImportNode[] }): Promise<{ openingId: number; nodeCount: number }> {
+  const res = await fetch(`${BASE}/api/openings`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) })
   const json = await res.json()
   if (!res.ok) throw new Error(json.error || 'Failed to create opening')
   return json
 }
 
-// Obtener todos los nodos de una apertura
 export async function fetchOpeningTree(openingId: number): Promise<OpeningTree> {
   const res = await fetch(`${BASE}/api/openings/${openingId}/nodes`, { headers: authHeaders() })
   if (!res.ok) throw new Error('Failed to fetch opening tree')
   return res.json()
 }
 
-// Agregar nodos a una apertura existente
 export async function addOpeningNodes(openingId: number, nodes: ImportNode[]): Promise<void> {
-  const res = await fetch(`${BASE}/api/openings/${openingId}/nodes`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ nodes }),
-  })
+  const res = await fetch(`${BASE}/api/openings/${openingId}/nodes`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ nodes }) })
   if (!res.ok) throw new Error('Failed to add nodes')
 }
 
-// Renombrar apertura
 export async function renameOpening(openingId: number, name: string): Promise<void> {
-  const res = await fetch(`${BASE}/api/openings/${openingId}`, {
-    method: 'PATCH',
-    headers: authHeaders(),
-    body: JSON.stringify({ name }),
-  })
+  const res = await fetch(`${BASE}/api/openings/${openingId}`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ name }) })
   if (!res.ok) throw new Error('Failed to rename opening')
 }
 
-// Eliminar apertura
 export async function deleteOpening(openingId: number): Promise<void> {
-  const res = await fetch(`${BASE}/api/openings/${openingId}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  })
+  const res = await fetch(`${BASE}/api/openings/${openingId}`, { method: 'DELETE', headers: authHeaders() })
   if (!res.ok) throw new Error('Failed to delete opening')
+}
+
+export async function updateNodeAnnotation(nodeId: number, text: string, symbol: string): Promise<void> {
+  const res = await fetch(`${BASE}/api/openings/nodes/${nodeId}/annotation`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ text, symbol }),
+  })
+  if (!res.ok) throw new Error('Failed to save annotation')
 }
