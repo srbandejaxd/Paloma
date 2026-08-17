@@ -878,50 +878,11 @@ router.put('/cycles/macrocycles/:id/config', authMiddleware, async (req, res) =>
 
 // ─── OPENINGS ─────────────────────────────────────────────────────────────────
 
-// GET /openings/repertoires — listar repertorios del usuario
-router.get('/openings/repertoires', authMiddleware, async (req, res) => {
-  const db = getDb()
-  try {
-    const result = await db.execute({
-      sql: `SELECT r.id, r.color, r.created_at as createdAt,
-                   COUNT(o.id) as openingCount
-            FROM repertoires r
-            LEFT JOIN openings o ON o.repertoire_id = r.id
-            WHERE r.user_id = ?
-            GROUP BY r.id
-            ORDER BY r.color ASC`,
-      args: [req.user.userId]
-    })
-    res.json(result.rows)
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
-})
-
-// POST /openings/repertoires — crear repertorio (blancas o negras)
-router.post('/openings/repertoires', authMiddleware, async (req, res) => {
-  const { color } = req.body
-  if (!color || !['white', 'black'].includes(color)) return res.status(400).json({ error: 'color inválido' })
-  const db = getDb()
-  try {
-    const existing = await db.execute({
-      sql: `SELECT id FROM repertoires WHERE user_id = ? AND color = ?`,
-      args: [req.user.userId, color]
-    })
-    if (existing.rows.length > 0) return res.json({ repertoireId: Number(existing.rows[0].id) })
-    const result = await db.execute({
-      sql: `INSERT INTO repertoires (user_id, color) VALUES (?, ?)`,
-      args: [req.user.userId, color]
-    })
-    res.json({ repertoireId: Number(result.lastInsertRowid) })
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
-})
-
-// GET /openings/repertoires/:color — obtener repertorio por color con aperturas
 router.get('/openings/repertoires/:color', authMiddleware, async (req, res) => {
   const { color } = req.params
   if (!['white', 'black'].includes(color)) return res.status(400).json({ error: 'color inválido' })
   const db = getDb()
   try {
-    // Obtener o crear repertorio
     let repertoire = await db.execute({
       sql: `SELECT id FROM repertoires WHERE user_id = ? AND color = ?`,
       args: [req.user.userId, color]
@@ -936,24 +897,19 @@ router.get('/openings/repertoires/:color', authMiddleware, async (req, res) => {
     } else {
       repertoireId = Number(repertoire.rows[0].id)
     }
-
     const openings = await db.execute({
       sql: `SELECT id, name, created_at as createdAt FROM openings WHERE repertoire_id = ? ORDER BY created_at ASC`,
       args: [repertoireId]
     })
-
     res.json({ repertoireId, color, openings: openings.rows })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
-// POST /openings — crear apertura e importar nodos
 router.post('/openings', authMiddleware, async (req, res) => {
   const { color, name, nodes } = req.body
-  // nodes: [{ tempId, parentTempId, move, fen, moveNumber, color, orderIndex }]
-  if (!name || !color || !Array.isArray(nodes)) return res.status(400).json({ error: 'name y color requeridos' })
+  if (!name || !nodes?.length || !color) return res.status(400).json({ error: 'name, color y nodes requeridos' })
   const db = getDb()
   try {
-    // Obtener o crear repertorio
     let repertoire = await db.execute({
       sql: `SELECT id FROM repertoires WHERE user_id = ? AND color = ?`,
       args: [req.user.userId, color]
@@ -968,62 +924,49 @@ router.post('/openings', authMiddleware, async (req, res) => {
     } else {
       repertoireId = Number(repertoire.rows[0].id)
     }
-
-    // Crear apertura
     const openingResult = await db.execute({
       sql: `INSERT INTO openings (repertoire_id, name) VALUES (?, ?)`,
       args: [repertoireId, name]
     })
     const openingId = Number(openingResult.lastInsertRowid)
-
-    // Insertar nodos respetando parent_id — mapa tempId → realId
     const tempToReal = {}
-    // Ordenar: raíces primero (parentTempId null), luego hijos
     const sorted = [...nodes].sort((a, b) => {
       if (a.parentTempId === null && b.parentTempId !== null) return -1
       if (a.parentTempId !== null && b.parentTempId === null) return 1
       return 0
     })
-
     for (const node of sorted) {
       const parentId = node.parentTempId !== null ? (tempToReal[node.parentTempId] ?? null) : null
       const result = await db.execute({
-        sql: `INSERT INTO opening_nodes (opening_id, parent_id, move, fen, move_number, color, order_index)
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO opening_nodes (opening_id, parent_id, move, fen, move_number, color, order_index) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [openingId, parentId, node.move, node.fen, node.moveNumber, node.color, node.orderIndex ?? 0]
       })
       tempToReal[node.tempId] = Number(result.lastInsertRowid)
     }
-
     res.json({ openingId, nodeCount: nodes.length })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
-// GET /openings/:id/nodes — obtener todos los nodos de una apertura
 router.get('/openings/:id/nodes', authMiddleware, async (req, res) => {
   const db = getDb()
   try {
-    // Verificar que la apertura pertenece al usuario
     const opening = await db.execute({
-      sql: `SELECT o.id, o.name, r.color FROM openings o
-            JOIN repertoires r ON r.id = o.repertoire_id
-            WHERE o.id = ? AND r.user_id = ?`,
+      sql: `SELECT o.id, o.name, r.color FROM openings o JOIN repertoires r ON r.id = o.repertoire_id WHERE o.id = ? AND r.user_id = ?`,
       args: [req.params.id, req.user.userId]
     })
     if (opening.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
-
     const nodes = await db.execute({
       sql: `SELECT id, parent_id as parentId, move, fen, move_number as moveNumber,
-                   color, order_index as orderIndex
+                   color, order_index as orderIndex,
+                   COALESCE(annotation_text, '') as annotationText,
+                   COALESCE(annotation_symbol, '') as annotationSymbol
             FROM opening_nodes WHERE opening_id = ? ORDER BY move_number ASC, order_index ASC`,
       args: [req.params.id]
     })
-
     res.json({ ...opening.rows[0], nodes: nodes.rows })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
-// POST /openings/:id/nodes — agregar nodos a una apertura existente
 router.post('/openings/:id/nodes', authMiddleware, async (req, res) => {
   const { nodes } = req.body
   if (!nodes?.length) return res.status(400).json({ error: 'nodes requerido' })
@@ -1034,47 +977,41 @@ router.post('/openings/:id/nodes', authMiddleware, async (req, res) => {
       args: [req.params.id, req.user.userId]
     })
     if (opening.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
-
     const tempToReal = {}
     const sorted = [...nodes].sort((a, b) => {
       if (a.parentTempId === null && b.parentTempId !== null) return -1
       if (a.parentTempId !== null && b.parentTempId === null) return 1
       return 0
     })
-
     for (const node of sorted) {
-      // parentTempId puede ser un ID real (nodo existente) o un tempId nuevo
-      const parentId = node.parentTempId !== null
-        ? (tempToReal[node.parentTempId] ?? node.parentTempId)
-        : null
+      const parentId = node.parentTempId !== null ? (tempToReal[node.parentTempId] ?? node.parentTempId) : null
       const result = await db.execute({
-        sql: `INSERT INTO opening_nodes (opening_id, parent_id, move, fen, move_number, color, order_index)
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO opening_nodes (opening_id, parent_id, move, fen, move_number, color, order_index) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [req.params.id, parentId, node.move, node.fen, node.moveNumber, node.color, node.orderIndex ?? 0]
       })
       tempToReal[node.tempId] = Number(result.lastInsertRowid)
     }
-
     res.json({ added: nodes.length })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
-// DELETE /openings/:id — eliminar apertura y sus nodos
-router.delete('/openings/:id', authMiddleware, async (req, res) => {
+router.patch('/openings/nodes/:id/annotation', authMiddleware, async (req, res) => {
+  const { text, symbol } = req.body
   const db = getDb()
   try {
-    const opening = await db.execute({
-      sql: `SELECT o.id FROM openings o JOIN repertoires r ON r.id = o.repertoire_id WHERE o.id = ? AND r.user_id = ?`,
+    const node = await db.execute({
+      sql: `SELECT n.id FROM opening_nodes n JOIN openings o ON o.id = n.opening_id JOIN repertoires r ON r.id = o.repertoire_id WHERE n.id = ? AND r.user_id = ?`,
       args: [req.params.id, req.user.userId]
     })
-    if (opening.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
-    await db.execute({ sql: `DELETE FROM opening_nodes WHERE opening_id = ?`, args: [req.params.id] })
-    await db.execute({ sql: `DELETE FROM openings WHERE id = ?`, args: [req.params.id] })
+    if (node.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+    await db.execute({
+      sql: `UPDATE opening_nodes SET annotation_text = ?, annotation_symbol = ? WHERE id = ?`,
+      args: [text || '', symbol || '', req.params.id]
+    })
     res.json({ ok: true })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
-// PATCH /openings/:id — renombrar apertura
 router.patch('/openings/:id', authMiddleware, async (req, res) => {
   const { name } = req.body
   if (!name) return res.status(400).json({ error: 'name requerido' })
@@ -1086,6 +1023,20 @@ router.patch('/openings/:id', authMiddleware, async (req, res) => {
     })
     if (opening.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
     await db.execute({ sql: `UPDATE openings SET name = ? WHERE id = ?`, args: [name, req.params.id] })
+    res.json({ ok: true })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
+
+router.delete('/openings/:id', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const opening = await db.execute({
+      sql: `SELECT o.id FROM openings o JOIN repertoires r ON r.id = o.repertoire_id WHERE o.id = ? AND r.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (opening.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+    await db.execute({ sql: `DELETE FROM opening_nodes WHERE opening_id = ?`, args: [req.params.id] })
+    await db.execute({ sql: `DELETE FROM openings WHERE id = ?`, args: [req.params.id] })
     res.json({ ok: true })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
