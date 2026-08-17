@@ -24,6 +24,21 @@ const NAV_ITEMS = [
   { path: '/openings',    label: 'Aperturas', icon: '♟' },
 ]
 
+const SYMBOL_COLORS: Record<string, string> = {
+  '★': '#27ae60',
+  '!!': '#00BCD4',
+  '!':  '#2196F3',
+  '!?': '#9C27B0',
+  '?!': '#FF9800',
+  '?':  '#F44336',
+  '??': '#B71C1C',
+}
+
+const errorSound = typeof Audio !== 'undefined' ? new Audio('/sounds/error.mp3') : null
+const correctSound = typeof Audio !== 'undefined' ? new Audio('/sounds/correct.mp3') : null
+if (errorSound) errorSound.preload = 'auto'
+if (correctSound) correctSound.preload = 'auto'
+
 const PIECE_SYMBOLS: Record<string, string> = {
   K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘',
   k: '♚', q: '♛', r: '♜', b: '♝', n: '♞',
@@ -37,11 +52,33 @@ type Color = 'white' | 'black'
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 // Parsear PGN con variantes en árbol de nodos
-function parsePgnToNodes(pgn: string, repertoireColor: Color): ImportNode[] {
-  const nodes: ImportNode[] = []
+function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
   let tempIdCounter = 0
-
   function nextId() { return `n${tempIdCounter++}` }
+
+  // Mapa fen+parentTempId → tempId para deduplicar nodos entre partidas
+  // clave: "parentTempId|fen"
+  const dedupeMap = new Map<string, string>()
+  const nodes: ImportNode[] = []
+
+  function tokenizeGame(text: string): string[] {
+    const tokens: string[] = []
+    let i = 0
+    let buf = ''
+    while (i < text.length) {
+      const ch = text[i]
+      if (ch === '(' || ch === ')') {
+        if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
+        buf = ''
+        tokens.push(ch)
+      } else {
+        buf += ch
+      }
+      i++
+    }
+    if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
+    return tokens
+  }
 
   function parseVariation(
     tokens: string[],
@@ -55,36 +92,40 @@ function parsePgnToNodes(pgn: string, repertoireColor: Color): ImportNode[] {
 
     while (idx < tokens.length) {
       const token = tokens[idx]
-
       if (token === ')') return { idx, lastId }
-      if (token === '(' ) {
-        // Sub-variante: clonar estado actual del juego
+      if (token === '(') {
         const savedFen = game.fen()
         const result = parseVariation(tokens, idx + 1, lastId, new Chess(savedFen), order)
         idx = result.idx + 1
         order++
         continue
       }
-      // Ignorar numeración (1., 2., 1... etc.) y resultado
       if (/^\d+\./.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
         idx++
         continue
       }
-      // Intentar hacer el movimiento
       try {
         const moveResult = game.move(token)
         if (moveResult) {
-          const id = nextId()
-          const moveColor = moveResult.color === 'w' ? 'white' : 'black'
-          nodes.push({
-            tempId: id,
-            parentTempId: lastId,
-            move: moveResult.san,
-            fen: game.fen(),
-            moveNumber: Math.ceil(game.history().length / 2),
-            color: moveColor,
-            orderIndex: order,
-          })
+          const fen = game.fen()
+          const dedupeKey = `${lastId ?? 'root'}|${fen}`
+          let id: string
+          if (dedupeMap.has(dedupeKey)) {
+            // Nodo ya existe — reusar su id sin agregar duplicado
+            id = dedupeMap.get(dedupeKey)!
+          } else {
+            id = nextId()
+            dedupeMap.set(dedupeKey, id)
+            nodes.push({
+              tempId: id,
+              parentTempId: lastId,
+              move: moveResult.san,
+              fen,
+              moveNumber: Math.ceil(game.history().length / 2),
+              color: moveResult.color === 'w' ? 'white' : 'black',
+              orderIndex: order,
+            })
+          }
           lastId = id
           order = 0
         }
@@ -94,32 +135,26 @@ function parsePgnToNodes(pgn: string, repertoireColor: Color): ImportNode[] {
     return { idx, lastId }
   }
 
-  // Tokenizar el PGN: eliminar headers y comentarios
-  const cleaned = pgn
-    .replace(/\[.*?\]/g, '')
-    .replace(/\{[^}]*\}/g, '')
-    .replace(/\([^()]*\)/g, (m) => m) // mantener variantes
-    .trim()
+  // Separar el PGN en partidas individuales por headers [...]
+  // Cada partida empieza con un bloque de headers
+  const games = pgn
+    .replace(/\r\n/g, '\n')
+    .split(/(?=\[Event )/)
+    .map(s => s.trim())
+    .filter(Boolean)
 
-  // Tokenizar respetando paréntesis
-  const tokens: string[] = []
-  let i = 0
-  let buf = ''
-  while (i < cleaned.length) {
-    const ch = cleaned[i]
-    if (ch === '(' || ch === ')') {
-      if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
-      buf = ''
-      tokens.push(ch)
-    } else {
-      buf += ch
-    }
-    i++
+  for (const gameText of games) {
+    // Quitar headers y comentarios
+    const cleaned = gameText
+      .replace(/\[[^\]]*\]/g, '')
+      .replace(/\{[^}]*\}/g, '')
+      .trim()
+    if (!cleaned || cleaned === '*') continue
+    const tokens = tokenizeGame(cleaned)
+    const game = new Chess()
+    parseVariation(tokens, 0, null, game, 0)
   }
-  if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
 
-  const game = new Chess()
-  parseVariation(tokens, 0, null, game, 0)
   return nodes
 }
 
@@ -801,6 +836,7 @@ export default function Openings() {
       const g = new Chess(trainGame.fen())
       g.move(currentNode.move)
       setTrainGame(g)
+      if (correctSound) { correctSound.currentTime = 0; correctSound.play().catch(() => {}) }
       advanceTrainStep(trainStep, g, trainLine)
     } catch {}
   }
@@ -817,6 +853,7 @@ export default function Openings() {
 
   function handleTrainError() {
     setTrainErrors(e => e + 1)
+    if (errorSound) { errorSound.currentTime = 0; errorSound.play().catch(() => {}) }
   }
 
   // THEME
@@ -877,12 +914,13 @@ export default function Openings() {
     const ann  = node ? (annotations[node.id] ?? { text: '', symbol: '' }) : { text: '', symbol: '' }
 
     const SYMBOLS = [
-      { sym: '!',  label: 'Buen movimiento' },
+      { sym: '★',  label: 'Mejor movimiento' },
       { sym: '!!', label: 'Brillante' },
-      { sym: '?',  label: 'Error' },
-      { sym: '??', label: 'Error grave' },
+      { sym: '!',  label: 'Buen movimiento' },
       { sym: '!?', label: 'Interesante' },
       { sym: '?!', label: 'Dudoso' },
+      { sym: '?',  label: 'Error' },
+      { sym: '??', label: 'Error grave' },
       { sym: '∞',  label: 'Poco claro' },
       { sym: '=',  label: 'Igual' },
       { sym: '±',  label: 'Blancas mejor' },
@@ -944,9 +982,9 @@ export default function Openings() {
                       onClick={() => saveSymbol(sym)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left"
                       style={{
-                        backgroundColor: isActive ? `${accentColor}22` : 'transparent',
-                        border: `1.5px solid ${isActive ? accentColor : 'transparent'}`,
-                        color: isActive ? accentColor : undefined,
+                        backgroundColor: isActive ? `${SYMBOL_COLORS[sym] || accentColor}22` : 'transparent',
+                        border: `1.5px solid ${isActive ? (SYMBOL_COLORS[sym] || accentColor) : 'transparent'}`,
+                        color: isActive ? (SYMBOL_COLORS[sym] || accentColor) : undefined,
                       }}
                     >
                       <span className="text-lg font-bold w-6 text-center flex-shrink-0">{sym}</span>
@@ -998,7 +1036,7 @@ export default function Openings() {
                     <div style={{
                       position: 'absolute',
                       left, top,
-                      backgroundColor: accentColor, color: '#000',
+                      backgroundColor: SYMBOL_COLORS[ann.symbol] || accentColor, color: '#fff',
                       borderRadius: 99, width: 36, height: 36,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 16, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
@@ -1016,7 +1054,7 @@ export default function Openings() {
                   <span className={`text-sm font-mono font-bold px-3 py-1.5 rounded-lg ${t.bg2} ${t.border} border`}>
                     {node.color === 'white' ? `${node.moveNumber}. ` : `${node.moveNumber}... `}
                     {node.move}
-                    {ann.symbol && <span className="ml-1.5 text-base" style={{ color: accentColor }}>{ann.symbol}</span>}
+                    {ann.symbol && <span className="ml-1.5 text-base font-bold" style={{ color: SYMBOL_COLORS[ann.symbol] || accentColor }}>{ann.symbol}</span>}
                   </span>
                 )}
               </div>
@@ -1188,6 +1226,40 @@ export default function Openings() {
                   {waitingRival && (
                     <div style={{ position: 'absolute', inset: 0, borderRadius: 8, pointerEvents: 'none', backgroundColor: 'rgba(0,0,0,0.08)' }} />
                   )}
+                  {/* Símbolo de anotación sobre la pieza movida en modo memoria */}
+                  {(() => {
+                    const prevNode = trainStep > 0 ? trainLine[trainStep - 1] : null
+                    if (!prevNode) return null
+                    const annSymbol = annotations[prevNode.id]?.symbol
+                    if (!annSymbol) return null
+                    const boardWidth = 460
+                    const squareSize = boardWidth / 8
+                    const files = ['a','b','c','d','e','f','g','h']
+                    const san = prevNode.move.replace(/[+#!?★]/g, '')
+                    let destSquare: string | null = null
+                    if (san === 'O-O') destSquare = prevNode.color === 'white' ? 'g1' : 'g8'
+                    else if (san === 'O-O-O') destSquare = prevNode.color === 'white' ? 'c1' : 'c8'
+                    else { const m = san.match(/([a-h][1-8])$/); if (m) destSquare = m[1] }
+                    if (!destSquare) return null
+                    let fileIdx = files.indexOf(destSquare[0])
+                    let rankIdx = 8 - parseInt(destSquare[1])
+                    if (color === 'black') { fileIdx = 7 - fileIdx; rankIdx = 7 - rankIdx }
+                    return (
+                      <div style={{
+                        position: 'absolute',
+                        left: fileIdx * squareSize + squareSize * 0.5 - 18,
+                        top: rankIdx * squareSize + squareSize * 0.1,
+                        backgroundColor: SYMBOL_COLORS[annSymbol] || accentColor,
+                        color: '#fff',
+                        borderRadius: 99, width: 36, height: 36,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 16, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                        pointerEvents: 'none', zIndex: 10,
+                      }}>
+                        {annSymbol}
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })()}
