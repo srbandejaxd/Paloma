@@ -1288,7 +1288,11 @@ export default function Openings() {
                   )}
                   {/* Símbolo de anotación sobre la pieza movida en modo memoria */}
                   {(() => {
-                    const prevNode = trainStep > 0 ? trainLine[trainStep - 1] : null
+                    // Mostrar el símbolo del último movimiento hecho:
+                    // - si estamos esperando rival: el movimiento que acabo de hacer (trainStep - 1 antes del avance) = trainStep actual antes de que el rival mueva
+                    // - si el rival acaba de mover: trainStep apunta al siguiente mío, el último movido fue trainStep - 1
+                    const lastMovedIdx = waitingRival ? trainStep : trainStep - 1
+                    const prevNode = lastMovedIdx >= 0 ? trainLine[lastMovedIdx] : null
                     if (!prevNode) return null
                     const annSymbol = annotations[prevNode.id]?.symbol
                     if (!annSymbol) return null
