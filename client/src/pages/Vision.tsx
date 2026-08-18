@@ -140,11 +140,11 @@ export default function Vision() {
 
   const t = dark ? {
     bg: 'bg-[#0A0A0F]', bg2: 'bg-[#12121A]', bg3: 'bg-[#1C1C28]',
-    border: 'border-[#252535]', borderRaw: '#252535',
+    border: 'border-[#252535]', borderLight: 'border-[#2A2A3A]', borderRaw: '#252535',
     text: 'text-[#E8E6E0]', text2: 'text-[#B8B5AC]', text3: 'text-[#7A776E]',
   } : {
     bg: 'bg-[#F5F0E8]', bg2: 'bg-[#EDE8DF]', bg3: 'bg-[#E2DBD0]',
-    border: 'border-[#D4CABF]', borderRaw: '#D4CABF',
+    border: 'border-[#D4CABF]', borderLight: 'border-[#D9D2C8]', borderRaw: '#D4CABF',
     text: 'text-[#1A1814]', text2: 'text-[#4A4640]', text3: 'text-[#8A8478]',
   }
 
