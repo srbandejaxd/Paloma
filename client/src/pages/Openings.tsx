@@ -375,9 +375,14 @@ function TrieCanvas({
           if (!p) return null
           const isSel = node.id === selectedId
           const hasChildren = node.children.length > 0
-          const piece = node.move.match(/^([KQRBN])/)?.[1]
-          const sym   = piece ? PIECE_SYMBOLS[piece] : null
-          const txt   = piece ? node.move.slice(1) : node.move
+          const pieceKey = node.move.match(/^([KQRBN])/)?.[1]
+          // Use white symbols for white moves, black symbols for black moves
+          const sym = pieceKey
+            ? (node.color === 'white' ? PIECE_SYMBOLS[pieceKey] : PIECE_SYMBOLS[pieceKey.toLowerCase()])
+            : null
+          const txt = pieceKey ? node.move.slice(1) : node.move
+          const numLabel = node.color === 'white' ? `${node.moveNumber}.` : `${node.moveNumber}...`
+          const textColor = isSel ? (dark ? '#000' : '#fff') : (dark ? '#C8C5BC' : '#3A3630')
           return (
             <div
               key={node.id}
@@ -391,22 +396,28 @@ function TrieCanvas({
                   backgroundColor: isSel ? accentColor : chipBg,
                   border: `1.5px solid ${isSel ? accentColor : chipBorder}`,
                   borderRadius: 24, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', gap: 3, cursor: 'pointer',
+                  justifyContent: 'center', gap: 2, cursor: 'pointer',
+                  padding: '0 10px',
                   boxShadow: isSel ? `0 0 0 3px ${accentColor}44, 0 2px 12px ${accentColor}55` : '0 1px 4px rgba(0,0,0,0.35)',
                   transition: 'box-shadow 0.15s',
                 }}
               >
+                {/* Move number first */}
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 11, color: isSel ? (dark ? '#00000088' : '#ffffff88') : (dark ? '#7A776E' : '#8A8478'), whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {numLabel}
+                </span>
+                {/* Piece symbol (same position as in standard notation: after number) */}
                 {sym && (
-                  <span style={{ fontSize: 16, lineHeight: 1, color: isSel ? (dark ? '#000' : '#fff') : (dark ? '#E0DDD4' : '#2A2620') }}>
+                  <span style={{ fontSize: 15, lineHeight: 1, color: textColor, flexShrink: 0 }}>
                     {sym}
                   </span>
                 )}
+                {/* Rest of move text */}
                 <span style={{
                   fontFamily: 'monospace', fontWeight: 700, fontSize: 13,
-                  color: isSel ? (dark ? '#000' : '#fff') : (dark ? '#C8C5BC' : '#3A3630'),
-                  letterSpacing: 0.3, whiteSpace: 'nowrap',
+                  color: textColor, letterSpacing: 0.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
-                  {node.color === 'white' && `${node.moveNumber}. `}{txt}
+                  {txt}
                 </span>
               </div>
               {/* Annotation symbol badge */}
