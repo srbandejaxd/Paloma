@@ -153,7 +153,7 @@ export default function Vision() {
   const precision = score + errors > 0 ? Math.round(score / (score + errors) * 100) : 0
 
   return (
-    <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300`}>
+    <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-300`}>
 
       {/* Nav */}
       <nav className={`sticky top-0 z-50 ${t.bg2} ${t.border} border-b backdrop-blur-xl bg-opacity-95 transition-colors duration-300`}>

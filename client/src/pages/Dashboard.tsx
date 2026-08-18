@@ -111,7 +111,7 @@ export default function Dashboard() {
   if (!user) return null
 
   return (
-    <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300`}>
+    <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-300`}>
 
       {/* Nav */}
       <nav className={`sticky top-0 z-50 ${t.bg2} border-b ${t.border} backdrop-blur-xl transition-colors duration-300`}>
