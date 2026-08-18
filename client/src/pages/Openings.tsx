@@ -121,7 +121,7 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
               parentTempId: lastId,
               move: moveResult.san,
               fen,
-              moveNumber: Math.ceil(game.history().length / 2),
+              moveNumber: parseInt(game.fen().split(' ')[5]),
               color: moveResult.color === 'w' ? 'white' : 'black',
               orderIndex: order,
             })
@@ -381,7 +381,7 @@ function TrieCanvas({
             ? (node.color === 'white' ? PIECE_SYMBOLS[pieceKey] : PIECE_SYMBOLS[pieceKey.toLowerCase()])
             : null
           const txt = pieceKey ? node.move.slice(1) : node.move
-          const numLabel = node.color === 'white' ? `${node.moveNumber}.` : `${node.moveNumber}...`
+          const numLabel = node.color === 'white' ? `${node.moveNumber}.` : null
           const textColor = isSel ? (dark ? '#000' : '#fff') : (dark ? '#C8C5BC' : '#3A3630')
           return (
             <div
@@ -402,10 +402,12 @@ function TrieCanvas({
                   transition: 'box-shadow 0.15s',
                 }}
               >
-                {/* Move number first */}
-                <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 11, color: isSel ? (dark ? '#00000088' : '#ffffff88') : (dark ? '#7A776E' : '#8A8478'), whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  {numLabel}
-                </span>
+                {/* Move number — only for white */}
+                {numLabel && (
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 11, color: isSel ? (dark ? '#00000088' : '#ffffff88') : (dark ? '#7A776E' : '#8A8478'), whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    {numLabel}
+                  </span>
+                )}
                 {/* Piece symbol (same position as in standard notation: after number) */}
                 {sym && (
                   <span style={{ fontSize: 15, lineHeight: 1, color: textColor, flexShrink: 0 }}>
@@ -787,7 +789,7 @@ export default function Openings() {
         parentTempId: lastMove ? lastMove.tempId : null,
         move: result.san,
         fen: addGame.fen(),
-        moveNumber: Math.ceil(addGame.history().length / 2),
+        moveNumber: parseInt(addGame.fen().split(' ')[5]),
         color: result.color === 'w' ? 'white' : 'black',
         orderIndex: 0,
       }
@@ -1528,7 +1530,7 @@ export default function Openings() {
                           parentTempId: lastMove ? lastMove.tempId : null,
                           move: result.san,
                           fen: g.fen(),
-                          moveNumber: Math.ceil(g.history().length / 2),
+                          moveNumber: parseInt(addGame.fen().split(' ')[5]),
                           color: result.color === 'w' ? 'white' : 'black',
                           orderIndex: 0,
                         }
