@@ -166,7 +166,7 @@ export default function Vision() {
               {dark ? <SunIcon /> : <MoonIcon />}
             </button>
           </div>
-          <div className="flex items-center overflow-x-auto pb-1">
+          <div className="flex items-center gap-0 overflow-x-auto pb-2">
             {NAV_ITEMS.map((item, idx) => {
               const isActive = location.pathname === item.path
               return (
@@ -179,7 +179,7 @@ export default function Vision() {
                     <span className="whitespace-nowrap">{item.label}</span>
                     <div className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} style={{ backgroundColor: accentColor }} />
                   </button>
-                  {idx < NAV_ITEMS.length - 1 && <div className="w-px h-4" style={{ backgroundColor: t.borderRaw }} />}
+                  {idx < NAV_ITEMS.length - 1 && <div className={`w-px h-4 ${t.borderLight}`} />}
                 </div>
               )
             })}
