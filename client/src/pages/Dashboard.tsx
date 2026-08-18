@@ -134,7 +134,7 @@ export default function Dashboard() {
                     onClick={() => navigate(item.path)}
                     className={`px-4 py-2 flex items-center gap-2 text-sm font-medium transition-all relative group ${isActive ? t.text : `${t.text2} hover:${t.text}`}`}
                   >
-                    <span className="text-base">{item.icon}</span>
+                    <span className="text-lg">{item.icon}</span>
                     <span className="whitespace-nowrap">{item.label}</span>
                     <div className={`absolute bottom-0 left-0 right-0 h-0.5 transition-all ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} style={{ backgroundColor: accentColor }} />
                   </button>
