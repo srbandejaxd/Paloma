@@ -499,6 +499,20 @@ function MoonIcon() {
   )
 }
 
+// Convierte coordenadas pixel a casilla del tablero
+function getBoardSquare(x: number, y: number, boardWidth: number, orientation: 'white' | 'black'): string | null {
+  const sq = Math.floor(boardWidth / 8)
+  const fileIdx = Math.floor(x / sq)
+  const rankIdx = Math.floor(y / sq)
+  if (fileIdx < 0 || fileIdx > 7 || rankIdx < 0 || rankIdx > 7) return null
+  const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+  if (orientation === 'white') {
+    return files[fileIdx] + (8 - rankIdx)
+  } else {
+    return files[7 - fileIdx] + (rankIdx + 1)
+  }
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 const NAV_ITEMS_DEF = [
@@ -600,6 +614,8 @@ export default function Openings() {
   // shapes: por nodeId, lista de [from, to, color] para flechas (from !== to) o casillas marcadas (from === to)
   const [shapes, setShapes] = useState<Record<number, [string, string, string][]>>({})
   const [deletingShape, setDeletingShape] = useState<{ nodeId: number; idx: number; x: number; y: number } | null>(null)
+  const [drawingArrow, setDrawingArrow] = useState<{ from: string } | null>(null)
+  const drawBoardRef = useRef<HTMLDivElement | null>(null)
   const [practiceIdx, setPracticeIdx] = useState(0)
   const [practiceLine, setPracticeLine] = useState<OpeningNode[]>([])
   const [practiceCopied, setPracticeCopied] = useState(false)
@@ -1090,7 +1106,46 @@ export default function Openings() {
             {/* CENTER — Tablero + navegación */}
             <div className="flex-1 flex flex-col items-center gap-4 min-w-0">
               {/* Board */}
-              <div style={{ position: 'relative' }}>
+              <div
+                ref={drawBoardRef}
+                style={{ position: 'relative', userSelect: 'none' }}
+                onContextMenu={e => e.preventDefault()}
+                onMouseDown={e => {
+                  if (e.button !== 2 || !node || !drawBoardRef.current) return
+                  e.preventDefault()
+                  const rect = drawBoardRef.current.getBoundingClientRect()
+                  const sq = getBoardSquare(e.clientX - rect.left, e.clientY - rect.top, 440, color)
+                  if (sq) setDrawingArrow({ from: sq })
+                }}
+                onMouseUp={e => {
+                  if (e.button !== 2 || !node || !drawBoardRef.current) return
+                  e.preventDefault()
+                  if (!drawingArrow) return
+                  const rect = drawBoardRef.current.getBoundingClientRect()
+                  const sq = getBoardSquare(e.clientX - rect.left, e.clientY - rect.top, 440, color)
+                  if (!sq) { setDrawingArrow(null); return }
+                  const existing = shapes[node.id] || []
+                  if (drawingArrow.from === sq) {
+                    // Clic derecho sin arrastrar = toggle highlight de casilla
+                    const idx = existing.findIndex(s => s[0] === s[1] && s[0] === sq)
+                    const updated = idx >= 0
+                      ? existing.filter((_, i) => i !== idx)
+                      : [...existing, [sq, sq, '#ffdd00'] as [string, string, string]]
+                    setShapes(prev => ({ ...prev, [node.id]: updated }))
+                    saveShapesToDb(node.id, updated)
+                  } else {
+                    // Arrastró = flecha
+                    const key = `${drawingArrow.from}-${sq}`
+                    const idx = existing.findIndex(s => s[0] !== s[1] && s[0] === drawingArrow.from && s[1] === sq)
+                    const updated = idx >= 0
+                      ? existing.filter((_, i) => i !== idx) // toggle off
+                      : [...existing, [drawingArrow.from, sq, '#ff4444'] as [string, string, string]]
+                    setShapes(prev => ({ ...prev, [node.id]: updated }))
+                    saveShapesToDb(node.id, updated)
+                  }
+                  setDrawingArrow(null)
+                }}
+              >
                 <Chessboard
                   id="practice-board"
                   boardWidth={440}
@@ -1100,38 +1155,18 @@ export default function Openings() {
                   customDarkSquareStyle={{ backgroundColor: '#b58863' }}
                   customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
                   animationDuration={200}
-                  areArrowsAllowed={true}
+                  areArrowsAllowed={false}
                   customArrows={(node ? shapes[node.id] || [] : []).filter(s => s[0] !== s[1]) as Arrow[]}
                   customSquareStyles={Object.fromEntries(
                     (node ? shapes[node.id] || [] : [])
                       .filter(s => s[0] === s[1])
-                      .map(s => [s[0], { background: `${s[2]}44`, borderRadius: '4px' }])
+                      .map(s => [s[0], {
+                        background: `radial-gradient(circle, ${s[2]}cc 25%, transparent 27%)`,
+                      }])
                   )}
-                  onArrowsChange={(arrows) => {
-                    if (!node) return
-                    const existingHighlights = (shapes[node.id] || []).filter(s => s[0] === s[1])
-                    const newArrows: [string, string, string][] = arrows.map(([f, t]) => [f, t, '#ff0000'])
-                    const merged = [...existingHighlights, ...newArrows]
-                    setShapes(prev => ({ ...prev, [node.id]: merged }))
-                    saveShapesToDb(node.id, merged)
-                  }}
-                  onSquareRightClick={(square: string) => {
-                    if (!node) return
-                    const existing = shapes[node.id] || []
-                    const existingIdx = existing.findIndex(s => s[0] === s[1] && s[0] === square)
-                    if (existingIdx >= 0) {
-                      // ya existe — quitar
-                      const updated = existing.filter((_, i) => i !== existingIdx)
-                      setShapes(prev => ({ ...prev, [node.id]: updated }))
-                      saveShapesToDb(node.id, updated)
-                    } else {
-                      // agregar highlight de casilla
-                      const updated: [string, string, string][] = [...existing, [square, square, '#ffff00']]
-                      setShapes(prev => ({ ...prev, [node.id]: updated }))
-                      saveShapesToDb(node.id, updated)
-                    }
-                  }}
                 />
+              </div>
+              <div style={{ position: 'relative' }}>
                 {/* Symbol badge overlay — sobre la pieza movida */}
                 {ann.symbol && node && (() => {
                   // Extraer casilla destino del movimiento SAN
