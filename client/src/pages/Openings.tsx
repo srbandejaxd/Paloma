@@ -1101,7 +1101,7 @@ export default function Openings() {
                   customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
                   animationDuration={200}
                   areArrowsAllowed={true}
-                  customArrows={(node ? shapes[node.id] || [] : []).filter(s => s[0] !== s[1])}
+                  customArrows={(node ? shapes[node.id] || [] : []).filter(s => s[0] !== s[1]) as Arrow[]}
                   customSquareStyles={Object.fromEntries(
                     (node ? shapes[node.id] || [] : [])
                       .filter(s => s[0] === s[1])
