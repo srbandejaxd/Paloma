@@ -9,6 +9,7 @@ import {
 } from '../lib/api'
 import { Chessboard } from 'react-chessboard'
 import PuzzleBoard from '../components/Board/PuzzleBoard'
+import type { Arrow } from 'react-chessboard/dist/chessboard/types'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
@@ -1106,7 +1107,7 @@ export default function Openings() {
                       .filter(s => s[0] === s[1])
                       .map(s => [s[0], { background: `${s[2]}44`, borderRadius: '4px' }])
                   )}
-                  onArrowsChange={(arrows: [string, string][]) => {
+                  onArrowsChange={(arrows) => {
                     if (!node) return
                     const existingHighlights = (shapes[node.id] || []).filter(s => s[0] === s[1])
                     const newArrows: [string, string, string][] = arrows.map(([f, t]) => [f, t, '#ff0000'])
@@ -1353,7 +1354,7 @@ export default function Openings() {
                           .map(s => [s[0], { background: `${s[2]}44`, borderRadius: '4px' }])
                       )
                     }}
-                    customArrows={(currentNode ? shapes[currentNode.id] || [] : []).filter(s => s[0] !== s[1])}
+                    customArrows={(currentNode ? shapes[currentNode.id] || [] : []).filter(s => s[0] !== s[1]) as Arrow[]}
                     customBoardStyle={{
                       borderRadius: 8,
                       boxShadow: waitingRival ? 'none' : 'none',
