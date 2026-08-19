@@ -1012,7 +1012,6 @@ const PUZZLES_PALOMITA_BLOQUE_4A = [
 ]
 
 const PUZZLES_PALOMITA_BLOQUE_1B = [
-  { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["Z0"] },
   { fen: "2k3rr/ppp1npb1/2Pp4/P7/1PBP4/2P2QBq/7P/R4RK1 b - - 0 1", solution: ["Bxd4+","Kh1","Rxg3"] },
   { fen: "r5r1/pp2kpBQ/3pn3/6q1/8/8/P4PPP/3RR1K1 w - - 0 1", solution: ["Rxe6+","Kxe6","Qe4+","Kd7","Qxb7+","Ke6","Re1+","Kf5","Qxf7+","Kg4","Qf3+","Kh4","Qh3#"] },
   { fen: "8/2R3pk/2N2r1p/1p3p2/1Pb1p2P/8/1r3PP1/R5K1 b - - 0 1", solution: ["e3","f3","Rg6","g4","fxg4","f4","Bd5","Nd4","Ra6","Rxa6","Rb1+"] },
@@ -1821,7 +1820,6 @@ const PUZZLES_PALOMITA_BLOQUE_9C = [
 ]
 
 const PUZZLES_PALOMITA_BLOQUE_1D = [
-  { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", solution: ["Z0"] },
   { fen: "r1b1k1r1/ppppnpq1/8/n3P2p/2B4N/5QB1/P4PP1/3RR1K1 w q - 0 1", solution: ["e6","dxe6","Bb5+","c6","Bc7","Bd7","Bxa5","Qg4","Qd3","Nd5","Re4"] },
   { fen: "r2q2k1/pp1b1rpp/1b1Q1p2/4N1B1/4R3/8/PP3PPP/4R1K1 b - - 0 1", solution: ["Bxf2+","Kh1","Be8","Nxf7","Bxf7","Qxd8+","Rxd8"] },
   { fen: "r1r5/pp1qnkpp/4Np2/3p4/8/8/PP2QPPP/2R1R1K1 w - - 0 1", solution: ["Qg4","g6","Ng5+","Ke8","Rxe7+","Kf8","Rf7+","Kg8","Rg7+","Kh8","Rxh7+","Kg8","Rg7+","Kh8","Qh4+","Kxg7","Qh7+","Kf8","Qh8+","Ke7","Qg7+","Ke8","Qg8+","Ke7","Qf7+","Kd8","Qf8+","Qe8","Nf7+","Kd7","Qd6#"] },

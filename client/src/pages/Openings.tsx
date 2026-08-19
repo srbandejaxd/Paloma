@@ -598,6 +598,7 @@ export default function Openings() {
   const [annotations, setAnnotations] = useState<Record<number, { text: string; symbol: string }>>({})
   const [practiceIdx, setPracticeIdx] = useState(0)
   const [practiceLine, setPracticeLine] = useState<OpeningNode[]>([])
+  const [practiceCopied, setPracticeCopied] = useState(false)
   const [trainGame, setTrainGame] = useState<Chess | null>(null)
   const [trainDone, setTrainDone] = useState(false)
   const [trainErrors, setTrainErrors] = useState(0)
@@ -1149,6 +1150,28 @@ export default function Openings() {
                 >›</button>
               </div>
               <p className={`text-xs ${t.text3}`}>También puedes usar ← → del teclado</p>
+
+              {/* Lichess button */}
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  onClick={() => {
+                    const fenUrl = (node ? node.fen : INITIAL_FEN).replace(/ /g, '_')
+                    window.open(`https://lichess.org/analysis/${fenUrl}?color=${color}`, '_blank', 'noopener,noreferrer')
+                    try {
+                      const g = new Chess()
+                      for (let i = 0; i <= practiceIdx && i < practiceLine.length; i++) g.move(practiceLine[i].move)
+                      navigator.clipboard.writeText(g.pgn()).then(() => {
+                        setPracticeCopied(true); setTimeout(() => setPracticeCopied(false), 2500)
+                      }).catch(() => {})
+                    } catch {}
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 hover:scale-105"
+                  style={{ backgroundColor: '#629924' }}
+                >
+                  ♞ Abrir en Lichess
+                </button>
+                {practiceCopied && <p className="text-xs font-semibold" style={{ color: '#629924' }}>✓ PGN copiado al portapapeles</p>}
+              </div>
             </div>
 
             {/* RIGHT — Anotación de texto */}
@@ -1447,7 +1470,7 @@ export default function Openings() {
             {/* Panel derecho — tablero pequeño */}
             <div className="w-72 flex-shrink-0 flex flex-col gap-3">
               <div className={`rounded-xl ${t.bg2} ${t.border} border overflow-hidden`}>
-                <StaticBoard fen={selectedFen} size={272} dark={dark} />
+                <StaticBoard fen={selectedFen} size={272} dark={dark} orientation={color} />
               </div>
               {selectedNode ? (
                 <>
@@ -1883,11 +1906,14 @@ export default function Openings() {
 
 // ─── STATIC BOARD ─────────────────────────────────────────────────────────────
 
-function StaticBoard({ fen, size, dark }: { fen: string; size: number; dark: boolean }) {
+function StaticBoard({ fen, size, dark, orientation = 'white' }: { fen: string; size: number; dark: boolean; orientation?: 'white' | 'black' }) {
   const squareSize = size / 8
   const game = new Chess()
   try { game.load(fen) } catch {}
-  const board = game.board()
+  let board = game.board()
+  if (orientation === 'black') {
+    board = [...board].reverse().map(row => [...row].reverse())
+  }
 
   const pieceImages: Record<string, string> = {
     wK: '/pieces/wK.svg', wQ: '/pieces/wQ.svg', wR: '/pieces/wR.svg',
