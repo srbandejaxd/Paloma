@@ -907,7 +907,7 @@ router.get('/openings/repertoires/:color', authMiddleware, async (req, res) => {
 
 router.post('/openings', authMiddleware, async (req, res) => {
   const { color, name, nodes } = req.body
-  if (!name || !nodes?.length || !color) return res.status(400).json({ error: 'name, color y nodes requeridos' })
+  if (!name || !color) return res.status(400).json({ error: 'name y color requeridos' })
   const db = getDb()
   try {
     let repertoire = await db.execute({
