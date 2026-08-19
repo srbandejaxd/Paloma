@@ -4,7 +4,7 @@ import { Chess } from 'chess.js'
 import { useAuth } from '../lib/auth'
 import {
   fetchRepertoire, createOpening, fetchOpeningTree, addOpeningNodes,
-  renameOpening, deleteOpening, updateNodeAnnotation,
+  renameOpening, deleteOpening, updateNodeAnnotation, updateNodeShapes,
   Opening, OpeningNode, OpeningTree, ImportNode
 } from '../lib/api'
 import { Chessboard } from 'react-chessboard'
@@ -596,6 +596,9 @@ export default function Openings() {
   const [trainStep, setTrainStep] = useState(0)
   const [trainHintSquare, setTrainHintSquare] = useState<string | null>(null)
   const [annotations, setAnnotations] = useState<Record<number, { text: string; symbol: string }>>({})
+  // shapes: por nodeId, lista de [from, to, color] para flechas (from !== to) o casillas marcadas (from === to)
+  const [shapes, setShapes] = useState<Record<number, [string, string, string][]>>({})
+  const [deletingShape, setDeletingShape] = useState<{ nodeId: number; idx: number; x: number; y: number } | null>(null)
   const [practiceIdx, setPracticeIdx] = useState(0)
   const [practiceLine, setPracticeLine] = useState<OpeningNode[]>([])
   const [practiceCopied, setPracticeCopied] = useState(false)
@@ -661,8 +664,9 @@ export default function Openings() {
       setTreeRoots(roots)
       setSelectedNodeId(null)
       setSelectedFen(INITIAL_FEN)
-      // Cargar anotaciones desde los nodos
+      // Cargar anotaciones y shapes desde los nodos
       const loadedAnnotations: Record<number, { text: string; symbol: string }> = {}
+      const loadedShapes: Record<number, [string, string, string][]> = {}
       for (const n of data.nodes) {
         if (n.annotationText || n.annotationSymbol) {
           loadedAnnotations[n.id] = {
@@ -670,8 +674,15 @@ export default function Openings() {
             symbol: n.annotationSymbol || '',
           }
         }
+        if (n.shapes) {
+          try {
+            const parsed = JSON.parse(n.shapes)
+            if (Array.isArray(parsed) && parsed.length > 0) loadedShapes[n.id] = parsed
+          } catch {}
+        }
       }
       setAnnotations(loadedAnnotations)
+      setShapes(loadedShapes)
       // Colapsar nodos con moveNumber > 3 al abrir
       const initialCollapsed = new Set<number>()
       function collapseDeep(nodes: TreeNode[]) {
@@ -699,6 +710,12 @@ export default function Openings() {
     try {
       await updateNodeAnnotation(nodeId, text, symbol)
     } catch (e) { console.error('Failed to save annotation', e) }
+  }, [])
+
+  const saveShapesToDb = useCallback(async (nodeId: number, newShapes: [string, string, string][]) => {
+    try {
+      await updateNodeShapes(nodeId, newShapes)
+    } catch (e) { console.error('Failed to save shapes', e) }
   }, [])
 
   function toggleCollapse(id: number) {
@@ -1082,6 +1099,37 @@ export default function Openings() {
                   customDarkSquareStyle={{ backgroundColor: '#b58863' }}
                   customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
                   animationDuration={200}
+                  areArrowsAllowed={true}
+                  customArrows={(node ? shapes[node.id] || [] : []).filter(s => s[0] !== s[1])}
+                  customSquareStyles={Object.fromEntries(
+                    (node ? shapes[node.id] || [] : [])
+                      .filter(s => s[0] === s[1])
+                      .map(s => [s[0], { background: `${s[2]}44`, borderRadius: '4px' }])
+                  )}
+                  onArrowsChange={(arrows: [string, string][]) => {
+                    if (!node) return
+                    const existingHighlights = (shapes[node.id] || []).filter(s => s[0] === s[1])
+                    const newArrows: [string, string, string][] = arrows.map(([f, t]) => [f, t, '#ff0000'])
+                    const merged = [...existingHighlights, ...newArrows]
+                    setShapes(prev => ({ ...prev, [node.id]: merged }))
+                    saveShapesToDb(node.id, merged)
+                  }}
+                  onSquareRightClick={(square: string) => {
+                    if (!node) return
+                    const existing = shapes[node.id] || []
+                    const existingIdx = existing.findIndex(s => s[0] === s[1] && s[0] === square)
+                    if (existingIdx >= 0) {
+                      // ya existe — quitar
+                      const updated = existing.filter((_, i) => i !== existingIdx)
+                      setShapes(prev => ({ ...prev, [node.id]: updated }))
+                      saveShapesToDb(node.id, updated)
+                    } else {
+                      // agregar highlight de casilla
+                      const updated: [string, string, string][] = [...existing, [square, square, '#ffff00']]
+                      setShapes(prev => ({ ...prev, [node.id]: updated }))
+                      saveShapesToDb(node.id, updated)
+                    }
+                  }}
                 />
                 {/* Symbol badge overlay — sobre la pieza movida */}
                 {ann.symbol && node && (() => {
@@ -1297,7 +1345,15 @@ export default function Openings() {
                     boardOrientation={color}
                     arePiecesDraggable={!waitingRival && !trainDone}
                     animationDuration={waitingRival ? 400 : 150}
-                    customSquareStyles={hintStyles}
+                    customSquareStyles={{
+                      ...hintStyles,
+                      ...Object.fromEntries(
+                        (currentNode ? shapes[currentNode.id] || [] : [])
+                          .filter(s => s[0] === s[1])
+                          .map(s => [s[0], { background: `${s[2]}44`, borderRadius: '4px' }])
+                      )
+                    }}
+                    customArrows={(currentNode ? shapes[currentNode.id] || [] : []).filter(s => s[0] !== s[1])}
                     customBoardStyle={{
                       borderRadius: 8,
                       boxShadow: waitingRival ? 'none' : 'none',

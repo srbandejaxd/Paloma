@@ -907,7 +907,7 @@ router.get('/openings/repertoires/:color', authMiddleware, async (req, res) => {
 
 router.post('/openings', authMiddleware, async (req, res) => {
   const { color, name, nodes } = req.body
-  if (!name || !color) return res.status(400).json({ error: 'name y color requeridos' })
+  if (!name || !nodes?.length || !color) return res.status(400).json({ error: 'name, color y nodes requeridos' })
   const db = getDb()
   try {
     let repertoire = await db.execute({
@@ -959,7 +959,8 @@ router.get('/openings/:id/nodes', authMiddleware, async (req, res) => {
       sql: `SELECT id, parent_id as parentId, move, fen, move_number as moveNumber,
                    color, order_index as orderIndex,
                    COALESCE(annotation_text, '') as annotationText,
-                   COALESCE(annotation_symbol, '') as annotationSymbol
+                   COALESCE(annotation_symbol, '') as annotationSymbol,
+                   COALESCE(shapes, '[]') as shapes
             FROM opening_nodes WHERE opening_id = ? ORDER BY move_number ASC, order_index ASC`,
       args: [req.params.id]
     })
@@ -1041,5 +1042,27 @@ router.delete('/openings/:id', authMiddleware, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
+
+
+// PATCH /openings/nodes/:id/shapes — guardar flechas y casillas marcadas
+router.patch('/openings/nodes/:id/shapes', authMiddleware, async (req, res) => {
+  const { shapes } = req.body
+  const db = getDb()
+  try {
+    const node = await db.execute({
+      sql: `SELECT n.id FROM opening_nodes n
+            JOIN openings o ON o.id = n.opening_id
+            JOIN repertoires r ON r.id = o.repertoire_id
+            WHERE n.id = ? AND r.user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (node.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+    await db.execute({
+      sql: `UPDATE opening_nodes SET shapes = ? WHERE id = ?`,
+      args: [shapes || '[]', req.params.id]
+    })
+    res.json({ ok: true })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
 
 module.exports = router
