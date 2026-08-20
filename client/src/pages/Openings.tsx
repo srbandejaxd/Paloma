@@ -102,6 +102,11 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
     return tokens
   }
 
+  // nodeMap guarda parentFen de cada nodo para poder bifurcar variantes correctamente
+  const nodeMap = new Map<string, { parentTempId: string | null; parentFen: string }>()
+
+  // orderIndex: el order del PRIMER movimiento de esta variante (0 = línea principal)
+  // Los movimientos siguientes dentro de la misma variante usan order=0
   function parseVariation(
     tokens: string[],
     idx: number,
@@ -110,16 +115,29 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
     orderIndex: number
   ): { idx: number; lastId: string | null } {
     let lastId = parentTempId
-    let order = orderIndex
+    let firstMove = true   // si el próximo movimiento es el primero de esta variante
+    let variantCount = 0   // cuántas sub-variantes se han abierto desde lastId actual
 
     while (idx < tokens.length) {
       const token = tokens[idx]
       if (token === ')') return { idx, lastId }
       if (token === '(') {
-        const savedFen = game.fen()
-        const result = parseVariation(tokens, idx + 1, lastId, new Chess(savedFen), order)
+        // La variante es alternativa a lastId:
+        // parte del mismo FEN de entrada que lastId (parentFen de lastId)
+        // y tiene el mismo padre que lastId
+        let parentOfLast: string | null
+        let fenForBranch: string
+        if (lastId !== null && nodeMap.has(lastId)) {
+          const meta = nodeMap.get(lastId)!
+          parentOfLast = meta.parentTempId
+          fenForBranch = meta.parentFen
+        } else {
+          parentOfLast = null
+          fenForBranch = game.fen()
+        }
+        variantCount++
+        const result = parseVariation(tokens, idx + 1, parentOfLast, new Chess(fenForBranch), variantCount)
         idx = result.idx + 1
-        order++
         continue
       }
       if (/^\d+\.\.?\.?/.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
@@ -127,17 +145,21 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
         continue
       }
       try {
+        const fenBeforeMove = game.fen()
         const moveResult = game.move(token)
         if (moveResult) {
           const fen = game.fen()
           const dedupeKey = `${lastId ?? 'root'}|${fen}`
           let id: string
           if (dedupeMap.has(dedupeKey)) {
-            // Nodo ya existe — reusar su id sin agregar duplicado
             id = dedupeMap.get(dedupeKey)!
           } else {
             id = nextId()
             dedupeMap.set(dedupeKey, id)
+            // Solo el primer movimiento de una variante usa el orderIndex heredado
+            // Los siguientes son continuación y usan 0
+            const thisOrder = firstMove ? orderIndex : 0
+            nodeMap.set(id, { parentTempId: lastId, parentFen: fenBeforeMove })
             nodes.push({
               tempId: id,
               parentTempId: lastId,
@@ -145,11 +167,12 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
               fen,
               moveNumber: parseInt(game.fen().split(' ')[5]),
               color: moveResult.color === 'w' ? 'white' : 'black',
-              orderIndex: order,
+              orderIndex: thisOrder,
             })
           }
           lastId = id
-          order = 0
+          firstMove = false
+          variantCount = 0
         }
       } catch {}
       idx++
