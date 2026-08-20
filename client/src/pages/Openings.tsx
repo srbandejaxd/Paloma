@@ -122,7 +122,7 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
         order++
         continue
       }
-      if (/^\d+\./.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
+      if (/^\d+\.\.?\.?/.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
         idx++
         continue
       }
