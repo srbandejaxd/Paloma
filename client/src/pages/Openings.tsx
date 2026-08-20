@@ -47,6 +47,27 @@ const PIECE_SYMBOLS: Record<string, string> = {
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
+// Estilo de casilla resaltada: anillo octagonal estilo Lichess
+// Fondo sólido del color indicado, con un octágono recortado en el centro
+function octagonHighlight(color: string): React.CSSProperties {
+  // SVG 100x100: rectángulo exterior (toda la casilla) con un octágono interior recortado
+  // usando fill-rule evenodd para crear el "hueco" central
+  const c = 50   // center
+  const r = 35   // radio del octágono (tamaño del hueco)
+  const d = r * Math.cos(Math.PI / 8) // distancia al lado plano
+  const oct = [
+    `${c - d},${c - r}`, `${c + d},${c - r}`,
+    `${c + r},${c - d}`, `${c + r},${c + d}`,
+    `${c + d},${c + r}`, `${c - d},${c + r}`,
+    `${c - r},${c + d}`, `${c - r},${c - d}`,
+  ].join(' ')
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path fill='${encodeURIComponent(color)}' fill-rule='evenodd' d='M0,0 H100 V100 H0 Z M${oct} Z'/></svg>`
+  return {
+    backgroundImage: `url("data:image/svg+xml,${svg}")`,
+    backgroundSize: '100% 100%',
+  }
+}
+
 type Screen = 'repertoire' | 'opening' | 'train' | 'practice'
 type Color = 'white' | 'black'
 
@@ -257,7 +278,7 @@ function flatAll(nodes: TreeNode[]): TreeNode[] {
 }
 
 function TrieCanvas({
-  roots, selectedId, onSelect, t, accentColor, dark, collapsed, onToggleCollapse, annotations
+  roots, selectedId, onSelect, t, accentColor, dark, collapsed, onToggleCollapse, onExpandAll, annotations
 }: {
   roots: TreeNode[]
   selectedId: number | null
@@ -267,6 +288,7 @@ function TrieCanvas({
   dark: boolean
   collapsed: Set<number>
   onToggleCollapse: (id: number) => void
+  onExpandAll: () => void
   annotations: Record<number, { text: string; symbol: string }>
 }) {
   const [offset, setOffset] = useState({ x: 60, y: 60 })
@@ -472,6 +494,15 @@ function TrieCanvas({
             className={`w-8 h-8 rounded-lg ${t.bg3} ${t.border} border font-bold ${t.text2} flex items-center justify-center text-sm transition-all hover:scale-110`}
           >{b.label}</button>
         ))}
+        {collapsed.size > 0 && (
+          <button
+            onClick={onExpandAll}
+            className={`px-2 h-8 rounded-lg ${t.bg3} ${t.border} border font-semibold ${t.text2} flex items-center justify-center text-xs transition-all hover:scale-105 whitespace-nowrap`}
+            title="Mostrar todo el árbol"
+          >
+            ⊞ Todo
+          </button>
+        )}
       </div>
     </div>
   )
@@ -1160,9 +1191,7 @@ export default function Openings() {
                   customSquareStyles={Object.fromEntries(
                     (node ? shapes[node.id] || [] : [])
                       .filter(s => s[0] === s[1])
-                      .map(s => [s[0], {
-                        background: `radial-gradient(circle, ${s[2]}cc 25%, transparent 27%)`,
-                      }])
+                      .map(s => [s[0], octagonHighlight(s[2])])
                   )}
                 />
               </div>
@@ -1370,7 +1399,7 @@ export default function Openings() {
               const wrongFlashActive = false // handled via boxShadow state
               const hintStyles: Record<string, React.CSSProperties> = {}
               if (trainHintSquare) {
-                hintStyles[trainHintSquare] = { background: `radial-gradient(circle, ${accentColor}99 28%, transparent 65%)` }
+                hintStyles[trainHintSquare] = octagonHighlight(accentColor)
               }
               return (
                 <div style={{ position: 'relative' }}>
@@ -1386,7 +1415,7 @@ export default function Openings() {
                       ...Object.fromEntries(
                         (currentNode ? shapes[currentNode.id] || [] : [])
                           .filter(s => s[0] === s[1])
-                          .map(s => [s[0], { background: `${s[2]}44`, borderRadius: '4px' }])
+                          .map(s => [s[0], octagonHighlight(s[2])])
                       )
                     }}
                     customArrows={(currentNode ? shapes[currentNode.id] || [] : []).filter(s => s[0] !== s[1]) as Arrow[]}
@@ -1555,6 +1584,7 @@ export default function Openings() {
                 dark={dark}
                 collapsed={collapsed}
                 onToggleCollapse={toggleCollapse}
+                onExpandAll={() => setCollapsed(new Set())}
                 annotations={annotations}
               />
             </div>
