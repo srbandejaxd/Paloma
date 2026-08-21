@@ -81,7 +81,6 @@ const NAG_TO_SYMBOL: Record<number, string> = {
   18: '+−', 19: '+-', 20: '-+',
 }
 
-// Resultado extendido: nodos + mapa tempId→anotación
 interface ParseResult {
   nodes: ImportNode[]
   annotationMap: Map<string, { text: string; symbol: string }>
@@ -91,11 +90,12 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
   let tempIdCounter = 0
   function nextId() { return `n${tempIdCounter++}` }
 
+  // Mapa fen+parentTempId → tempId para deduplicar nodos entre partidas
+  // clave: "parentTempId|fen"
   const dedupeMap = new Map<string, string>()
   const nodes: ImportNode[] = []
   const annotationMap = new Map<string, { text: string; symbol: string }>()
 
-  // Tokeniza preservando comentarios {…} como token especial y NAGs $N
   function tokenizeGame(text: string): string[] {
     const tokens: string[] = []
     let i = 0
@@ -115,7 +115,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
         let comment = ''
         i++
         while (i < text.length && text[i] !== '}') { comment += text[i]; i++ }
-        // Quitar directivas internas [%csl ...][%cal ...] y marcas internas de lichess
         const cleaned = comment
           .replace(/\[%csl[^\]]*\]/g, '')
           .replace(/\[%cal[^\]]*\]/g, '')
@@ -134,7 +133,7 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
     return tokens
   }
 
-  // nodeMap guarda parentFen de cada nodo para poder bifurcar variantes correctamente
+  // nodeMap guarda parentFen de cada nodo para bifurcar variantes correctamente
   const nodeMap = new Map<string, { parentTempId: string | null; parentFen: string }>()
 
   function parseVariation(
@@ -153,7 +152,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
 
       if (token === ')') return { idx, lastId }
 
-      // Variante alternativa
       if (token === '(') {
         let parentOfLast: string | null
         let fenForBranch: string
@@ -171,12 +169,10 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
         continue
       }
 
-      // Comentario: asociar al nodo lastId
       if (token.startsWith('{') && token.endsWith('}')) {
         if (lastId !== null) {
           const text = token.slice(1, -1).trim()
           const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
-          // Acumular si hay varios comentarios consecutivos
           const combined = existing.text ? `${existing.text}\n${text}` : text
           annotationMap.set(lastId, { ...existing, text: combined })
         }
@@ -184,7 +180,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
         continue
       }
 
-      // NAG ($N): asociar símbolo al nodo lastId
       if (/^\$\d+$/.test(token)) {
         if (lastId !== null) {
           const nagNum = parseInt(token.slice(1))
@@ -198,13 +193,11 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
         continue
       }
 
-      // Número de jugada o resultado: ignorar
-      if (/^\d+\.\.?\.?/.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
+      if (/^\d+\.\.\.?\.?/.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
         idx++
         continue
       }
 
-      // Movimiento SAN — extraer sufijo de anotación (!? ?? !! etc.) si lo tiene
       const sanSuffixMatch = token.match(/^(.+?)(!!|\?\?|!\?|\?!|!|\?)?$/)
       const cleanSan = sanSuffixMatch?.[1] ?? token
       const sanSuffix = sanSuffixMatch?.[2] ?? null
@@ -232,7 +225,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
               orderIndex: thisOrder,
             })
           }
-          // Guardar símbolo del sufijo SAN si existe y no hay ya uno
           if (sanSuffix) {
             const existing = annotationMap.get(id) ?? { text: '', symbol: '' }
             if (!existing.symbol) annotationMap.set(id, { ...existing, symbol: sanSuffix })
@@ -247,7 +239,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
     return { idx, lastId }
   }
 
-  // Separar el PGN en partidas individuales por headers [...]
   const games = pgn
     .replace(/\r\n/g, '\n')
     .split(/(?=\[Event )/)
@@ -255,7 +246,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
     .filter(Boolean)
 
   for (const gameText of games) {
-    // Solo quitar headers PGN [...], conservar el resto (incluye comentarios y NAGs)
     const cleaned = gameText
       .replace(/\[[^\]]*\]/g, '')
       .trim()
@@ -903,16 +893,13 @@ export default function Openings() {
         setImporting(false)
         return
       }
-      // Crear el opening con sus nodos
       const created = await createOpening({ color, name: importName.trim(), nodes })
-      // Guardar anotaciones: correlacionar por FEN entre nodos importados y reales
-      if (annotationMap.size > 0 && created?.id) {
+      // Guardar anotaciones post-import correlacionando por FEN
+      if (annotationMap.size > 0 && created?.openingId) {
         try {
-          const tree = await fetchOpeningTree(created.id)
-          // Construir mapa fen → id real
+          const tree = await fetchOpeningTree(created.openingId)
           const fenToRealId = new Map<string, number>()
           for (const realNode of tree.nodes) fenToRealId.set(realNode.fen, realNode.id)
-          // Para cada nodo con anotación, buscar su ID real por FEN
           const savePromises: Promise<void>[] = []
           for (const importedNode of nodes) {
             if (!annotationMap.has(importedNode.tempId)) continue
