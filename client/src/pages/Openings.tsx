@@ -74,39 +74,69 @@ type Color = 'white' | 'black'
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 // Parsear PGN con variantes en árbol de nodos
-function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
+// NAG → símbolo del panel de anotaciones
+const NAG_TO_SYMBOL: Record<number, string> = {
+  1: '!', 2: '?', 3: '!!', 4: '??', 5: '!?', 6: '?!',
+  10: '=', 13: '∞', 14: '±', 15: '∓', 16: '⩲', 17: '⩱',
+  18: '+−', 19: '+-', 20: '-+',
+}
+
+// Resultado extendido: nodos + mapa tempId→anotación
+interface ParseResult {
+  nodes: ImportNode[]
+  annotationMap: Map<string, { text: string; symbol: string }>
+}
+
+function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
   let tempIdCounter = 0
   function nextId() { return `n${tempIdCounter++}` }
 
-  // Mapa fen+parentTempId → tempId para deduplicar nodos entre partidas
-  // clave: "parentTempId|fen"
   const dedupeMap = new Map<string, string>()
   const nodes: ImportNode[] = []
+  const annotationMap = new Map<string, { text: string; symbol: string }>()
 
+  // Tokeniza preservando comentarios {…} como token especial y NAGs $N
   function tokenizeGame(text: string): string[] {
     const tokens: string[] = []
     let i = 0
     let buf = ''
+
+    function flushBuf() {
+      if (buf.trim()) {
+        tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
+        buf = ''
+      }
+    }
+
     while (i < text.length) {
       const ch = text[i]
-      if (ch === '(' || ch === ')') {
-        if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
-        buf = ''
+      if (ch === '{') {
+        flushBuf()
+        let comment = ''
+        i++
+        while (i < text.length && text[i] !== '}') { comment += text[i]; i++ }
+        // Quitar directivas internas [%csl ...][%cal ...] y marcas internas de lichess
+        const cleaned = comment
+          .replace(/\[%csl[^\]]*\]/g, '')
+          .replace(/\[%cal[^\]]*\]/g, '')
+          .replace(/_[JTN]/g, '')
+          .trim()
+        if (cleaned) tokens.push(`{${cleaned}}`)
+      } else if (ch === '(' || ch === ')') {
+        flushBuf()
         tokens.push(ch)
       } else {
         buf += ch
       }
       i++
     }
-    if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
+    flushBuf()
     return tokens
   }
 
   // nodeMap guarda parentFen de cada nodo para poder bifurcar variantes correctamente
   const nodeMap = new Map<string, { parentTempId: string | null; parentFen: string }>()
 
-  // orderIndex: el order del PRIMER movimiento de esta variante (0 = línea principal)
-  // Los movimientos siguientes dentro de la misma variante usan order=0
   function parseVariation(
     tokens: string[],
     idx: number,
@@ -115,16 +145,16 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
     orderIndex: number
   ): { idx: number; lastId: string | null } {
     let lastId = parentTempId
-    let firstMove = true   // si el próximo movimiento es el primero de esta variante
-    let variantCount = 0   // cuántas sub-variantes se han abierto desde lastId actual
+    let firstMove = true
+    let variantCount = 0
 
     while (idx < tokens.length) {
       const token = tokens[idx]
+
       if (token === ')') return { idx, lastId }
+
+      // Variante alternativa
       if (token === '(') {
-        // La variante es alternativa a lastId:
-        // parte del mismo FEN de entrada que lastId (parentFen de lastId)
-        // y tiene el mismo padre que lastId
         let parentOfLast: string | null
         let fenForBranch: string
         if (lastId !== null && nodeMap.has(lastId)) {
@@ -140,13 +170,47 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
         idx = result.idx + 1
         continue
       }
+
+      // Comentario: asociar al nodo lastId
+      if (token.startsWith('{') && token.endsWith('}')) {
+        if (lastId !== null) {
+          const text = token.slice(1, -1).trim()
+          const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
+          // Acumular si hay varios comentarios consecutivos
+          const combined = existing.text ? `${existing.text}\n${text}` : text
+          annotationMap.set(lastId, { ...existing, text: combined })
+        }
+        idx++
+        continue
+      }
+
+      // NAG ($N): asociar símbolo al nodo lastId
+      if (/^\$\d+$/.test(token)) {
+        if (lastId !== null) {
+          const nagNum = parseInt(token.slice(1))
+          const sym = NAG_TO_SYMBOL[nagNum]
+          if (sym) {
+            const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
+            if (!existing.symbol) annotationMap.set(lastId, { ...existing, symbol: sym })
+          }
+        }
+        idx++
+        continue
+      }
+
+      // Número de jugada o resultado: ignorar
       if (/^\d+\.\.?\.?/.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
         idx++
         continue
       }
+
+      // Movimiento SAN — extraer sufijo de anotación (!? ?? !! etc.) si lo tiene
+      const sanSuffixMatch = token.match(/^(.+?)(!!|\?\?|!\?|\?!|!|\?)?$/)
+      const cleanSan = sanSuffixMatch?.[1] ?? token
+      const sanSuffix = sanSuffixMatch?.[2] ?? null
       try {
         const fenBeforeMove = game.fen()
-        const moveResult = game.move(token)
+        const moveResult = game.move(cleanSan)
         if (moveResult) {
           const fen = game.fen()
           const dedupeKey = `${lastId ?? 'root'}|${fen}`
@@ -156,8 +220,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
           } else {
             id = nextId()
             dedupeMap.set(dedupeKey, id)
-            // Solo el primer movimiento de una variante usa el orderIndex heredado
-            // Los siguientes son continuación y usan 0
             const thisOrder = firstMove ? orderIndex : 0
             nodeMap.set(id, { parentTempId: lastId, parentFen: fenBeforeMove })
             nodes.push({
@@ -170,6 +232,11 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
               orderIndex: thisOrder,
             })
           }
+          // Guardar símbolo del sufijo SAN si existe y no hay ya uno
+          if (sanSuffix) {
+            const existing = annotationMap.get(id) ?? { text: '', symbol: '' }
+            if (!existing.symbol) annotationMap.set(id, { ...existing, symbol: sanSuffix })
+          }
           lastId = id
           firstMove = false
           variantCount = 0
@@ -181,7 +248,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
   }
 
   // Separar el PGN en partidas individuales por headers [...]
-  // Cada partida empieza con un bloque de headers
   const games = pgn
     .replace(/\r\n/g, '\n')
     .split(/(?=\[Event )/)
@@ -189,10 +255,9 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
     .filter(Boolean)
 
   for (const gameText of games) {
-    // Quitar headers y comentarios
+    // Solo quitar headers PGN [...], conservar el resto (incluye comentarios y NAGs)
     const cleaned = gameText
       .replace(/\[[^\]]*\]/g, '')
-      .replace(/\{[^}]*\}/g, '')
       .trim()
     if (!cleaned || cleaned === '*') continue
     const tokens = tokenizeGame(cleaned)
@@ -200,7 +265,7 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
     parseVariation(tokens, 0, null, game, 0)
   }
 
-  return nodes
+  return { nodes, annotationMap }
 }
 
 // Construir árbol jerárquico desde lista plana
@@ -832,13 +897,35 @@ export default function Openings() {
     setImporting(true)
     setImportError(null)
     try {
-      const nodes = parsePgnToNodes(importPgn, color)
+      const { nodes, annotationMap } = parsePgnToNodes(importPgn, color)
       if (nodes.length === 0) {
         setImportError('No se encontraron movimientos válidos en el PGN')
         setImporting(false)
         return
       }
-      await createOpening({ color, name: importName.trim(), nodes })
+      // Crear el opening con sus nodos
+      const created = await createOpening({ color, name: importName.trim(), nodes })
+      // Guardar anotaciones: correlacionar por FEN entre nodos importados y reales
+      if (annotationMap.size > 0 && created?.id) {
+        try {
+          const tree = await fetchOpeningTree(created.id)
+          // Construir mapa fen → id real
+          const fenToRealId = new Map<string, number>()
+          for (const realNode of tree.nodes) fenToRealId.set(realNode.fen, realNode.id)
+          // Para cada nodo con anotación, buscar su ID real por FEN
+          const savePromises: Promise<void>[] = []
+          for (const importedNode of nodes) {
+            if (!annotationMap.has(importedNode.tempId)) continue
+            const realId = fenToRealId.get(importedNode.fen)
+            if (realId == null) continue
+            const ann = annotationMap.get(importedNode.tempId)!
+            if (ann.text || ann.symbol) {
+              savePromises.push(updateNodeAnnotation(realId, ann.text, ann.symbol))
+            }
+          }
+          await Promise.allSettled(savePromises)
+        } catch (e) { console.error('Error guardando anotaciones del PGN', e) }
+      }
       setImportName('')
       setImportPgn('')
       setShowImport(false)
