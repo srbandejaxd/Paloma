@@ -732,6 +732,8 @@ export default function Openings() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  const [renamingFolder, setRenamingFolder] = useState<string | null>(null)
+  const [renameFolderValue, setRenameFolderValue] = useState('')
 
   // Add lines state
   const [addingLines, setAddingLines] = useState(false)
@@ -780,6 +782,29 @@ export default function Openings() {
       next.has(name) ? next.delete(name) : next.add(name)
       return next
     })
+  }
+
+  async function deleteFolder(folderName: string, items: typeof openings) {
+    if (!confirm(`¿Eliminar la carpeta "${folderName}" y sus ${items.length} apertura${items.length !== 1 ? 's' : ''}?`)) return
+    await Promise.all(items.map(op => deleteOpening(op.id)))
+    setExpandedFolders(prev => { const next = new Set(prev); next.delete(folderName); return next })
+    await loadRepertoire(color)
+  }
+
+  async function renameFolder(oldName: string, newName: string, items: typeof openings) {
+    if (!newName.trim() || newName === oldName) { setRenamingFolder(null); return }
+    await Promise.all(items.map(op => {
+      const suffix = op.name.slice(oldName.length) // " / Variante clásica"
+      return renameOpening(op.id, newName.trim() + suffix)
+    }))
+    setExpandedFolders(prev => {
+      const next = new Set(prev)
+      next.delete(oldName)
+      next.add(newName.trim())
+      return next
+    })
+    setRenamingFolder(null)
+    await loadRepertoire(color)
   }
 
   async function loadRepertoire(c: Color) {
@@ -1985,13 +2010,50 @@ export default function Openings() {
                     const isOpen = expandedFolders.has(folderName)
                     return (
                       <div key={folderName} className={`rounded-xl ${t.border} border overflow-hidden`}>
-                        <button onClick={() => toggleFolder(folderName)}
-                          className={`w-full flex items-center gap-3 px-5 py-4 ${t.bg2} hover:brightness-110 transition-all text-left`}>
-                          <span className="text-xl">{isOpen ? '📂' : '📁'}</span>
-                          <span className={`font-bold ${t.text} flex-1 text-lg`}>{folderName}</span>
-                          <span className={`text-xs ${t.text3} font-semibold`}>{items.length} apertura{items.length !== 1 ? 's' : ''}</span>
-                          <span className={`text-xs ${t.text3} ml-2`}>{isOpen ? '▲' : '▼'}</span>
-                        </button>
+                        {renamingFolder === folderName ? (
+                          <div className={`flex items-center gap-2 px-4 py-3 ${t.bg2}`}>
+                            <span className="text-xl">📂</span>
+                            <input
+                              autoFocus
+                              value={renameFolderValue}
+                              onChange={e => setRenameFolderValue(e.target.value)}
+                              onKeyDown={async e => {
+                                if (e.key === 'Enter') await renameFolder(folderName, renameFolderValue, items)
+                                if (e.key === 'Escape') setRenamingFolder(null)
+                              }}
+                              className={`flex-1 px-3 py-1.5 rounded-lg border text-sm font-bold ${t.inputBg} ${t.border} focus:outline-none`}
+                            />
+                            <button onClick={() => renameFolder(folderName, renameFolderValue, items)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ backgroundColor: accentColor }}>
+                              Guardar
+                            </button>
+                            <button onClick={() => setRenamingFolder(null)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold ${t.bg3} ${t.border} border ${t.text}`}>
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <div className={`flex items-center gap-3 px-5 py-4 ${t.bg2}`}>
+                            <button onClick={() => toggleFolder(folderName)} className="flex items-center gap-3 flex-1 text-left min-w-0">
+                              <span className="text-xl flex-shrink-0">{isOpen ? '📂' : '📁'}</span>
+                              <span className={`font-bold ${t.text} flex-1 text-lg truncate`}>{folderName}</span>
+                              <span className={`text-xs ${t.text3} font-semibold flex-shrink-0`}>{items.length} apertura{items.length !== 1 ? 's' : ''}</span>
+                              <span className={`text-xs ${t.text3} ml-1 flex-shrink-0`}>{isOpen ? '▲' : '▼'}</span>
+                            </button>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button
+                                onClick={() => { setRenamingFolder(folderName); setRenameFolderValue(folderName) }}
+                                className={`p-2 rounded-lg ${t.bg3} ${t.border} border text-xs ${t.text3} hover:${t.text} transition-colors`}
+                                title="Renombrar carpeta"
+                              >✏️</button>
+                              <button
+                                onClick={() => deleteFolder(folderName, items)}
+                                className="p-2 rounded-lg bg-red-500 bg-opacity-10 border border-red-500 border-opacity-20 text-xs text-red-400 hover:bg-opacity-20 transition-colors"
+                                title="Eliminar carpeta y todo su contenido"
+                              >🗑️</button>
+                            </div>
+                          </div>
+                        )}
                         {isOpen && (
                           <div className={`${t.bg3} space-y-2 p-3`}>
                             {items.map(op => <OpeningRow key={op.id} op={op} />)}
