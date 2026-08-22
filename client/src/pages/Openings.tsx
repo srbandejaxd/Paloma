@@ -2004,99 +2004,99 @@ export default function Openings() {
               ))}
             </div>
 
-            <div className="space-y-4">
-              {multiEvents.length > 0 ? (
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className={`text-sm font-bold ${t.text}`}>
-                      Se detectaron <span style={{ color: accentColor }}>{multiEvents.length} capítulos</span>. Edita los nombres:
-                    </p>
-                    <button onClick={() => setMultiEvents([])} className={`text-xs ${t.text3} underline`}>← Atrás</button>
-                  </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {multiEvents.map((ev, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <span className={`text-xs ${t.text3} w-5 text-right flex-shrink-0`}>{i + 1}.</span>
-                        <input type="text" value={ev.name}
-                          onChange={e => setMultiEvents(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
-                          className={`flex-1 px-3 py-2 rounded-lg border text-sm font-semibold ${t.inputBg} ${t.border} focus:outline-none`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <p className={`text-xs ${t.text3} mt-2`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar</p>
-                </div>
-              ) : (
-              <>
-              {/* Nombre */}
-              <div>
-                <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Nombre de la apertura</label>
-                <input
-                  type="text"
-                  value={importName}
-                  onChange={e => setImportName(e.target.value)}
-                  placeholder="ej. Londres / Sistema clásico"
-                  className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
-                />
-                <p className={`text-xs ${t.text3} mt-1`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar</p>
-              </div>
-
-              {importMode === 'manual' ? (
-                <div className={`rounded-xl ${t.bg3} ${t.border} border px-5 py-4`}>
-                  <p className={`text-sm ${t.text2} leading-relaxed`}>
-                    Se creará una apertura vacía. Podrás añadir jugadas directamente desde el tablero interactivo.
+            {/* Multi-event: editor de nombres por capítulo */}
+            {multiEvents.length > 0 ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className={`text-sm font-bold ${t.text}`}>
+                    Se detectaron <span style={{ color: accentColor }}>{multiEvents.length} capítulos</span>. Edita los nombres:
                   </p>
+                  <button onClick={() => setMultiEvents([])} className={`text-xs ${t.text3} underline`}>← Atrás</button>
                 </div>
-              ) : (
-                <>
-                  {/* Pegar PGN */}
-                  <div>
-                    <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Pegar PGN</label>
-                    <textarea
-                      value={importPgn}
-                      onChange={e => setImportPgn(e.target.value)}
-                      placeholder="1.d4 d5 2.Bf4 Nf6 3.e3 e6 (3...c5 4.c3) *"
-                      rows={6}
-                      className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-mono text-sm resize-none ${t.inputBg} ${t.border}`}
-                    />
-                  </div>
-                  {/* O subir archivo */}
-                  <div>
-                    <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>O cargar archivo .pgn</label>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pgn,text/plain"
-                      className="hidden"
-                      onChange={e => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        const reader = new FileReader()
-                        reader.onload = ev => {
-                          setImportPgn(ev.target?.result as string ?? '')
-                          if (!importName.trim()) setImportName(file.name.replace(/\.pgn$/i, ''))
-                        }
-                        reader.readAsText(file)
-                        e.target.value = ''
-                      }}
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`w-full py-3 rounded-xl border-2 border-dashed ${t.border} text-sm font-semibold ${t.text3} hover:${t.text} transition-all`}
-                    >
-                      📂 Seleccionar archivo .pgn
-                    </button>
-                    {importPgn && (
-                      <p className="text-xs mt-1" style={{ color: accentColor }}>
-                        ✓ PGN cargado ({importPgn.length} caracteres)
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {multiEvents.map((ev, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className={`text-xs ${t.text3} w-5 text-right flex-shrink-0`}>{i + 1}.</span>
+                      <input
+                        type="text"
+                        value={ev.name}
+                        onChange={e => setMultiEvents(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-semibold ${t.inputBg} ${t.border} focus:outline-none`}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className={`text-xs ${t.text3}`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar en una carpeta</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Nombre */}
+                <div>
+                  <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Nombre de la apertura</label>
+                  <input
+                    type="text"
+                    value={importName}
+                    onChange={e => setImportName(e.target.value)}
+                    placeholder="ej. Londres / Sistema clásico"
+                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
+                  />
+                  <p className={`text-xs ${t.text3} mt-1`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar</p>
+                </div>
 
-            {multiEvents.length === 0 && </>}
+                {importMode === 'manual' ? (
+                  <div className={`rounded-xl ${t.bg3} ${t.border} border px-5 py-4`}>
+                    <p className={`text-sm ${t.text2} leading-relaxed`}>
+                      Se creará una apertura vacía. Podrás añadir jugadas directamente desde el tablero interactivo.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Pegar PGN</label>
+                      <textarea
+                        value={importPgn}
+                        onChange={e => setImportPgn(e.target.value)}
+                        placeholder="1.d4 d5 2.Bf4 Nf6 3.e3 e6 (3...c5 4.c3) *"
+                        rows={6}
+                        className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-mono text-sm resize-none ${t.inputBg} ${t.border}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>O cargar archivo .pgn</label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pgn,text/plain"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          const reader = new FileReader()
+                          reader.onload = ev => {
+                            setImportPgn(ev.target?.result as string ?? '')
+                            if (!importName.trim()) setImportName(file.name.replace(/\.pgn$/i, ''))
+                          }
+                          reader.readAsText(file)
+                          e.target.value = ''
+                        }}
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`w-full py-3 rounded-xl border-2 border-dashed ${t.border} text-sm font-semibold ${t.text3} hover:${t.text} transition-all`}
+                      >
+                        📂 Seleccionar archivo .pgn
+                      </button>
+                      {importPgn && (
+                        <p className="text-xs mt-1" style={{ color: accentColor }}>
+                          ✓ PGN cargado ({importPgn.length} caracteres)
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {importError && (
               <div className="mt-4 px-4 py-3 rounded-xl border text-sm font-semibold" style={{ backgroundColor: 'rgba(231,76,60,0.08)', borderColor: 'rgba(231,76,60,0.3)', color: '#E74C3C' }}>
                 {importError}
@@ -2112,7 +2112,6 @@ export default function Openings() {
                     const result = await createOpening({ color, name: importName.trim(), nodes: [] })
                     setImportName(''); setShowImport(false)
                     await loadRepertoire(color)
-                    // Navigate directly to opening and start adding moves
                     await loadOpening(result.openingId)
                     const game = new Chess()
                     setAddParentId(null)
@@ -2129,7 +2128,7 @@ export default function Openings() {
                 {importing ? 'Guardando...' : importMode === 'manual' ? 'Crear apertura' : multiEvents.length > 0 ? `Importar ${multiEvents.length} aperturas` : 'Importar'}
               </button>
               <button
-                onClick={() => { setShowImport(false); setImportError(null); setImportPgn(''); setImportName('') }}
+                onClick={() => { setShowImport(false); setImportError(null); setImportPgn(''); setImportName(''); setMultiEvents([]) }}
                 className={`flex-1 py-4 rounded-xl font-bold text-sm ${t.bg3} ${t.border} border ${t.text}`}
               >
                 Cancelar
