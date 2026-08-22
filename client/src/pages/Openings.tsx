@@ -74,19 +74,7 @@ type Color = 'white' | 'black'
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 // Parsear PGN con variantes en árbol de nodos
-// NAG → símbolo del panel de anotaciones
-const NAG_TO_SYMBOL: Record<number, string> = {
-  1: '!', 2: '?', 3: '!!', 4: '??', 5: '!?', 6: '?!',
-  10: '=', 13: '∞', 14: '±', 15: '∓', 16: '⩲', 17: '⩱',
-  18: '+−', 19: '+-', 20: '-+',
-}
-
-interface ParseResult {
-  nodes: ImportNode[]
-  annotationMap: Map<string, { text: string; symbol: string }>
-}
-
-function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
+function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
   let tempIdCounter = 0
   function nextId() { return `n${tempIdCounter++}` }
 
@@ -94,47 +82,25 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
   // clave: "parentTempId|fen"
   const dedupeMap = new Map<string, string>()
   const nodes: ImportNode[] = []
-  const annotationMap = new Map<string, { text: string; symbol: string }>()
 
   function tokenizeGame(text: string): string[] {
     const tokens: string[] = []
     let i = 0
     let buf = ''
-
-    function flushBuf() {
-      if (buf.trim()) {
-        tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
-        buf = ''
-      }
-    }
-
     while (i < text.length) {
       const ch = text[i]
-      if (ch === '{') {
-        flushBuf()
-        let comment = ''
-        i++
-        while (i < text.length && text[i] !== '}') { comment += text[i]; i++ }
-        const cleaned = comment
-          .replace(/\[%csl[^\]]*\]/g, '')
-          .replace(/\[%cal[^\]]*\]/g, '')
-          .replace(/_[JTN]/g, '')
-          .trim()
-        if (cleaned) tokens.push(`{${cleaned}}`)
-      } else if (ch === '(' || ch === ')') {
-        flushBuf()
+      if (ch === '(' || ch === ')') {
+        if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
+        buf = ''
         tokens.push(ch)
       } else {
         buf += ch
       }
       i++
     }
-    flushBuf()
+    if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
     return tokens
   }
-
-  // nodeMap guarda parentFen de cada nodo para bifurcar variantes correctamente
-  const nodeMap = new Map<string, { parentTempId: string | null; parentFen: string }>()
 
   function parseVariation(
     tokens: string[],
@@ -144,77 +110,34 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
     orderIndex: number
   ): { idx: number; lastId: string | null } {
     let lastId = parentTempId
-    let firstMove = true
-    let variantCount = 0
+    let order = orderIndex
 
     while (idx < tokens.length) {
       const token = tokens[idx]
-
       if (token === ')') return { idx, lastId }
-
       if (token === '(') {
-        let parentOfLast: string | null
-        let fenForBranch: string
-        if (lastId !== null && nodeMap.has(lastId)) {
-          const meta = nodeMap.get(lastId)!
-          parentOfLast = meta.parentTempId
-          fenForBranch = meta.parentFen
-        } else {
-          parentOfLast = null
-          fenForBranch = game.fen()
-        }
-        variantCount++
-        const result = parseVariation(tokens, idx + 1, parentOfLast, new Chess(fenForBranch), variantCount)
+        const savedFen = game.fen()
+        const result = parseVariation(tokens, idx + 1, lastId, new Chess(savedFen), order)
         idx = result.idx + 1
+        order++
         continue
       }
-
-      if (token.startsWith('{') && token.endsWith('}')) {
-        if (lastId !== null) {
-          const text = token.slice(1, -1).trim()
-          const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
-          const combined = existing.text ? `${existing.text}\n${text}` : text
-          annotationMap.set(lastId, { ...existing, text: combined })
-        }
+      if (/^\d+\./.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
         idx++
         continue
       }
-
-      if (/^\$\d+$/.test(token)) {
-        if (lastId !== null) {
-          const nagNum = parseInt(token.slice(1))
-          const sym = NAG_TO_SYMBOL[nagNum]
-          if (sym) {
-            const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
-            if (!existing.symbol) annotationMap.set(lastId, { ...existing, symbol: sym })
-          }
-        }
-        idx++
-        continue
-      }
-
-      if (/^\d+\.\.\.?\.?/.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
-        idx++
-        continue
-      }
-
-      const sanSuffixMatch = token.match(/^(.+?)(!!|\?\?|!\?|\?!|!|\?)?$/)
-      const cleanSan = sanSuffixMatch?.[1] ?? token
-      const sanSuffix = sanSuffixMatch?.[2] ?? null
       try {
-        const fenBeforeMove = game.fen()
-        const moveResult = game.move(cleanSan)
+        const moveResult = game.move(token)
         if (moveResult) {
           const fen = game.fen()
           const dedupeKey = `${lastId ?? 'root'}|${fen}`
           let id: string
           if (dedupeMap.has(dedupeKey)) {
+            // Nodo ya existe — reusar su id sin agregar duplicado
             id = dedupeMap.get(dedupeKey)!
           } else {
             id = nextId()
             dedupeMap.set(dedupeKey, id)
-            const thisOrder = firstMove ? orderIndex : 0
-            nodeMap.set(id, { parentTempId: lastId, parentFen: fenBeforeMove })
             nodes.push({
               tempId: id,
               parentTempId: lastId,
@@ -222,16 +145,11 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
               fen,
               moveNumber: parseInt(game.fen().split(' ')[5]),
               color: moveResult.color === 'w' ? 'white' : 'black',
-              orderIndex: thisOrder,
+              orderIndex: order,
             })
           }
-          if (sanSuffix) {
-            const existing = annotationMap.get(id) ?? { text: '', symbol: '' }
-            if (!existing.symbol) annotationMap.set(id, { ...existing, symbol: sanSuffix })
-          }
           lastId = id
-          firstMove = false
-          variantCount = 0
+          order = 0
         }
       } catch {}
       idx++
@@ -239,6 +157,8 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
     return { idx, lastId }
   }
 
+  // Separar el PGN en partidas individuales por headers [...]
+  // Cada partida empieza con un bloque de headers
   const games = pgn
     .replace(/\r\n/g, '\n')
     .split(/(?=\[Event )/)
@@ -246,8 +166,10 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
     .filter(Boolean)
 
   for (const gameText of games) {
+    // Quitar headers y comentarios
     const cleaned = gameText
       .replace(/\[[^\]]*\]/g, '')
+      .replace(/\{[^}]*\}/g, '')
       .trim()
     if (!cleaned || cleaned === '*') continue
     const tokens = tokenizeGame(cleaned)
@@ -255,7 +177,7 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
     parseVariation(tokens, 0, null, game, 0)
   }
 
-  return { nodes, annotationMap }
+  return nodes
 }
 
 // Construir árbol jerárquico desde lista plana
@@ -741,6 +663,12 @@ export default function Openings() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
+  // Multi-event PGN
+  const [multiEvents, setMultiEvents] = useState<{ name: string; pgn: string }[]>([])
+  // Folders
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
+  const [showNewFolder, setShowNewFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
 
   // Add lines state
   const [addingLines, setAddingLines] = useState(false)
@@ -770,6 +698,26 @@ export default function Openings() {
     if (!user) { navigate('/'); return }
     loadRepertoire(color)
   }, [user, color])
+
+  function detectMultiEvent(pgn: string): { name: string; pgn: string }[] {
+    const parts = pgn.replace(/\r\n/g, '\n').split(/(?=\[Event )/).map(s => s.trim()).filter(Boolean)
+    if (parts.length <= 1) return []
+    return parts.map(part => {
+      const chapterMatch = part.match(/\[ChapterName "([^"]+)"\]/)
+      const eventMatch   = part.match(/\[Event "([^"]+)"\]/)
+      const raw = chapterMatch?.[1] ?? eventMatch?.[1] ?? 'Capítulo'
+      const name = raw.includes(': ') ? raw.split(': ').slice(1).join(': ') : raw
+      return { name, pgn: part }
+    })
+  }
+
+  function toggleFolder(name: string) {
+    setExpandedFolders(prev => {
+      const next = new Set(prev)
+      next.has(name) ? next.delete(name) : next.add(name)
+      return next
+    })
+  }
 
   async function loadRepertoire(c: Color) {
     setLoading(true)
@@ -880,42 +828,30 @@ export default function Openings() {
 
   // ── IMPORT PGN ──────────────────────────────────────────────────────────────
   async function handleImport() {
-    if (!importName.trim() || !importPgn.trim()) {
-      setImportError('Nombre y PGN son requeridos')
-      return
+    if (!importPgn.trim()) { setImportError('PGN es requerido'); return }
+    if (multiEvents.length === 0) {
+      const events = detectMultiEvent(importPgn)
+      if (events.length > 1) { setMultiEvents(events); return }
     }
-    setImporting(true)
-    setImportError(null)
+    if (!importName.trim() && multiEvents.length === 0) {
+      setImportError('Nombre de la apertura es requerido'); return
+    }
+    setImporting(true); setImportError(null)
     try {
-      const { nodes, annotationMap } = parsePgnToNodes(importPgn, color)
-      if (nodes.length === 0) {
-        setImportError('No se encontraron movimientos válidos en el PGN')
-        setImporting(false)
-        return
+      if (multiEvents.length > 0) {
+        for (const ev of multiEvents) {
+          if (!ev.name.trim()) continue
+          const nodes = parsePgnToNodes(ev.pgn, color)
+          if (nodes.length === 0) continue
+          await createOpening({ color, name: ev.name.trim(), nodes })
+        }
+        setMultiEvents([])
+      } else {
+        const nodes = parsePgnToNodes(importPgn, color)
+        if (nodes.length === 0) { setImportError('No se encontraron movimientos válidos en el PGN'); setImporting(false); return }
+        await createOpening({ color, name: importName.trim(), nodes })
       }
-      const created = await createOpening({ color, name: importName.trim(), nodes })
-      // Guardar anotaciones post-import correlacionando por FEN
-      if (annotationMap.size > 0 && created?.openingId) {
-        try {
-          const tree = await fetchOpeningTree(created.openingId)
-          const fenToRealId = new Map<string, number>()
-          for (const realNode of tree.nodes) fenToRealId.set(realNode.fen, realNode.id)
-          const savePromises: Promise<void>[] = []
-          for (const importedNode of nodes) {
-            if (!annotationMap.has(importedNode.tempId)) continue
-            const realId = fenToRealId.get(importedNode.fen)
-            if (realId == null) continue
-            const ann = annotationMap.get(importedNode.tempId)!
-            if (ann.text || ann.symbol) {
-              savePromises.push(updateNodeAnnotation(realId, ann.text, ann.symbol))
-            }
-          }
-          await Promise.allSettled(savePromises)
-        } catch (e) { console.error('Error guardando anotaciones del PGN', e) }
-      }
-      setImportName('')
-      setImportPgn('')
-      setShowImport(false)
+      setImportName(''); setImportPgn(''); setShowImport(false)
       await loadRepertoire(color)
     } catch (e: unknown) {
       setImportError((e as Error).message || 'Error al importar')
@@ -1888,13 +1824,21 @@ export default function Openings() {
           <p className={`text-lg font-bold ${t.text}`}>
             {openings.length} apertura{openings.length !== 1 ? 's' : ''}
           </p>
-          <button
-            onClick={() => setShowImport(true)}
-            className="px-5 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 hover:scale-105"
-            style={{ backgroundColor: accentColor }}
-          >
-            + Añadir apertura
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setNewFolderName(''); setShowNewFolder(true) }}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm ${t.bg3} ${t.border} border ${t.text} transition-all hover:opacity-90`}
+            >
+              📁 Nueva carpeta
+            </button>
+            <button
+              onClick={() => setShowImport(true)}
+              className="px-5 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 hover:scale-105"
+              style={{ backgroundColor: accentColor }}
+            >
+              + Añadir apertura
+            </button>
+          </div>
         </div>
 
         {/* Lista de aperturas */}
@@ -1915,69 +1859,127 @@ export default function Openings() {
           </div>
         ) : (
           <div className="space-y-3">
-            {openings.map(op => (
-              <div
-                key={op.id}
-                className={`rounded-xl ${t.bg2} ${t.border} border p-5 flex items-center justify-between transition-all hover:shadow-lg hover:-translate-y-0.5`}
-              >
-                {renamingId === op.id ? (
-                  <input
-                    autoFocus
-                    value={renameValue}
-                    onChange={e => setRenameValue(e.target.value)}
-                    onKeyDown={async e => {
-                      if (e.key === 'Enter') {
-                        await renameOpening(op.id, renameValue)
-                        setRenamingId(null)
-                        await loadRepertoire(color)
-                      }
-                      if (e.key === 'Escape') setRenamingId(null)
-                    }}
-                    className={`flex-1 px-3 py-2 rounded-lg border text-sm font-semibold mr-4 ${t.inputBg} ${t.border} focus:outline-none`}
-                  />
-                ) : (
-                  <button
-                    onClick={() => loadOpening(op.id)}
-                    className="flex-1 text-left"
-                  >
-                    <h3 className={`font-bold ${t.text} text-lg`}>{op.name}</h3>
-                    <p className={`text-xs ${t.text3} mt-1`}>Creada {new Date(op.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  </button>
-                )}
-
-                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-                  <button
-                    onClick={() => { setRenamingId(op.id); setRenameValue(op.name) }}
-                    className={`p-2 rounded-lg ${t.bg3} ${t.border} border text-xs font-semibold ${t.text3} hover:${t.text} transition-colors`}
-                    title="Renombrar"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (confirm(`¿Eliminar "${op.name}"?`)) {
-                        await deleteOpening(op.id)
-                        await loadRepertoire(color)
-                      }
-                    }}
-                    className="p-2 rounded-lg bg-red-500 bg-opacity-10 border border-red-500 border-opacity-20 text-xs text-red-400 hover:bg-opacity-20 transition-colors"
-                    title="Eliminar"
-                  >
-                    🗑️
-                  </button>
-                  <button
-                    onClick={() => loadOpening(op.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold text-white`}
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    Abrir →
-                  </button>
-                </div>
-              </div>
-            ))}
+            {(() => {
+              const folders = new Map<string, typeof openings>()
+              const standalone: typeof openings = []
+              for (const op of openings) {
+                const sep = op.name.indexOf(' / ')
+                if (sep !== -1) {
+                  const folder = op.name.slice(0, sep)
+                  if (!folders.has(folder)) folders.set(folder, [])
+                  folders.get(folder)!.push(op)
+                } else {
+                  standalone.push(op)
+                }
+              }
+              function OpeningRow({ op }: { op: typeof openings[0] }) {
+                const displayName = op.name.includes(' / ') ? op.name.split(' / ').slice(1).join(' / ') : op.name
+                return (
+                  <div className={`rounded-xl ${t.bg2} ${t.border} border p-5 flex items-center justify-between transition-all hover:shadow-lg hover:-translate-y-0.5`}>
+                    {renamingId === op.id ? (
+                      <input autoFocus value={renameValue}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onKeyDown={async e => {
+                          if (e.key === 'Enter') { await renameOpening(op.id, renameValue); setRenamingId(null); await loadRepertoire(color) }
+                          if (e.key === 'Escape') setRenamingId(null)
+                        }}
+                        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-semibold mr-4 ${t.inputBg} ${t.border} focus:outline-none`}
+                      />
+                    ) : (
+                      <button onClick={() => loadOpening(op.id)} className="flex-1 text-left">
+                        <h3 className={`font-bold ${t.text} text-lg`}>{displayName}</h3>
+                        <p className={`text-xs ${t.text3} mt-1`}>Creada {new Date(op.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      </button>
+                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                      <button onClick={() => { setRenamingId(op.id); setRenameValue(op.name) }}
+                        className={`p-2 rounded-lg ${t.bg3} ${t.border} border text-xs ${t.text3} hover:${t.text} transition-colors`} title="Renombrar">✏️</button>
+                      <button onClick={async () => { if (confirm(`¿Eliminar "${op.name}"?`)) { await deleteOpening(op.id); await loadRepertoire(color) } }}
+                        className="p-2 rounded-lg bg-red-500 bg-opacity-10 border border-red-500 border-opacity-20 text-xs text-red-400 hover:bg-opacity-20 transition-colors" title="Eliminar">🗑️</button>
+                      <button onClick={() => loadOpening(op.id)}
+                        className="px-4 py-2 rounded-lg text-sm font-bold text-white" style={{ backgroundColor: accentColor }}>Abrir →</button>
+                    </div>
+                  </div>
+                )
+              }
+              return (
+                <>
+                  {[...folders.entries()].map(([folderName, items]) => {
+                    const isOpen = expandedFolders.has(folderName)
+                    return (
+                      <div key={folderName} className={`rounded-xl ${t.border} border overflow-hidden`}>
+                        <button onClick={() => toggleFolder(folderName)}
+                          className={`w-full flex items-center gap-3 px-5 py-4 ${t.bg2} hover:brightness-110 transition-all text-left`}>
+                          <span className="text-xl">{isOpen ? '📂' : '📁'}</span>
+                          <span className={`font-bold ${t.text} flex-1 text-lg`}>{folderName}</span>
+                          <span className={`text-xs ${t.text3} font-semibold`}>{items.length} apertura{items.length !== 1 ? 's' : ''}</span>
+                          <span className={`text-xs ${t.text3} ml-2`}>{isOpen ? '▲' : '▼'}</span>
+                        </button>
+                        {isOpen && (
+                          <div className={`${t.bg3} space-y-2 p-3`}>
+                            {items.map(op => <OpeningRow key={op.id} op={op} />)}
+                            <button
+                              onClick={() => { setImportName(folderName + ' / '); setShowImport(true) }}
+                              className={`w-full py-2 rounded-lg border-2 border-dashed ${t.border} text-xs font-semibold ${t.text3} hover:${t.text} transition-all`}
+                            >+ Añadir apertura a "{folderName}"</button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                  {standalone.map(op => <OpeningRow key={op.id} op={op} />)}
+                </>
+              )
+            })()}
           </div>
         )}
       </div>
+
+      {/* Modal nueva carpeta */}
+      {showNewFolder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 px-4">
+          <div className={`w-full max-w-sm rounded-2xl ${t.bg2} ${t.border} border p-8`}>
+            <h3 className={`text-xl font-bold ${t.text} mb-2`}>Nueva carpeta</h3>
+            <p className={`text-sm ${t.text3} mb-5`}>
+              Las aperturas dentro llevarán el nombre <code className="font-mono">{newFolderName || 'Carpeta'} / Nombre</code>
+            </p>
+            <input
+              autoFocus
+              type="text"
+              value={newFolderName}
+              onChange={e => setNewFolderName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newFolderName.trim()) {
+                  setExpandedFolders(prev => new Set([...prev, newFolderName.trim()]))
+                  setShowNewFolder(false)
+                  setImportName(newFolderName.trim() + ' / ')
+                  setShowImport(true)
+                }
+                if (e.key === 'Escape') setShowNewFolder(false)
+              }}
+              placeholder="ej. Londres"
+              className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-semibold ${t.inputBg} ${t.border} mb-4`}
+            />
+            <div className="flex gap-3">
+              <button
+                disabled={!newFolderName.trim()}
+                onClick={() => {
+                  setExpandedFolders(prev => new Set([...prev, newFolderName.trim()]))
+                  setShowNewFolder(false)
+                  setImportName(newFolderName.trim() + ' / ')
+                  setShowImport(true)
+                }}
+                className="flex-1 py-3 rounded-xl font-bold text-sm text-white disabled:opacity-40"
+                style={{ backgroundColor: accentColor }}
+              >Crear y añadir apertura</button>
+              <button
+                onClick={() => setShowNewFolder(false)}
+                className={`flex-1 py-3 rounded-xl font-bold text-sm ${t.bg3} ${t.border} border ${t.text}`}
+              >Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal importar PGN */}
       {showImport && (
@@ -2003,16 +2005,40 @@ export default function Openings() {
             </div>
 
             <div className="space-y-4">
-              {/* Nombre siempre visible */}
+              {multiEvents.length > 0 ? (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className={`text-sm font-bold ${t.text}`}>
+                      Se detectaron <span style={{ color: accentColor }}>{multiEvents.length} capítulos</span>. Edita los nombres:
+                    </p>
+                    <button onClick={() => setMultiEvents([])} className={`text-xs ${t.text3} underline`}>← Atrás</button>
+                  </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {multiEvents.map((ev, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className={`text-xs ${t.text3} w-5 text-right flex-shrink-0`}>{i + 1}.</span>
+                        <input type="text" value={ev.name}
+                          onChange={e => setMultiEvents(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                          className={`flex-1 px-3 py-2 rounded-lg border text-sm font-semibold ${t.inputBg} ${t.border} focus:outline-none`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className={`text-xs ${t.text3} mt-2`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar</p>
+                </div>
+              ) : (
+              <>
+              {/* Nombre */}
               <div>
                 <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Nombre de la apertura</label>
                 <input
                   type="text"
                   value={importName}
                   onChange={e => setImportName(e.target.value)}
-                  placeholder="ej. Sistema Londres"
+                  placeholder="ej. Londres / Sistema clásico"
                   className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
                 />
+                <p className={`text-xs ${t.text3} mt-1`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar</p>
               </div>
 
               {importMode === 'manual' ? (
@@ -2070,6 +2096,7 @@ export default function Openings() {
               )}
             </div>
 
+            {multiEvents.length === 0 && </>}
             {importError && (
               <div className="mt-4 px-4 py-3 rounded-xl border text-sm font-semibold" style={{ backgroundColor: 'rgba(231,76,60,0.08)', borderColor: 'rgba(231,76,60,0.3)', color: '#E74C3C' }}>
                 {importError}
@@ -2099,7 +2126,7 @@ export default function Openings() {
                 className="flex-1 py-4 rounded-xl font-bold text-sm text-white disabled:opacity-50"
                 style={{ backgroundColor: accentColor }}
               >
-                {importing ? 'Guardando...' : importMode === 'manual' ? 'Crear apertura' : 'Importar'}
+                {importing ? 'Guardando...' : importMode === 'manual' ? 'Crear apertura' : multiEvents.length > 0 ? `Importar ${multiEvents.length} aperturas` : 'Importar'}
               </button>
               <button
                 onClick={() => { setShowImport(false); setImportError(null); setImportPgn(''); setImportName('') }}
