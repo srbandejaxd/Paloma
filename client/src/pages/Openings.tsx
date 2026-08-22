@@ -74,33 +74,57 @@ type Color = 'white' | 'black'
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 // Parsear PGN con variantes en árbol de nodos
-function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
+// NAG → símbolo del panel de anotaciones
+const NAG_TO_SYMBOL: Record<number, string> = {
+  1: '!', 2: '?', 3: '!!', 4: '??', 5: '!?', 6: '?!',
+  10: '=', 13: '∞', 14: '±', 15: '∓', 16: '⩲', 17: '⩱',
+  18: '+−', 19: '+-', 20: '-+',
+}
+
+interface ParseResult {
+  nodes: ImportNode[]
+  annotationMap: Map<string, { text: string; symbol: string }>
+}
+
+function parsePgnToNodes(pgn: string, _repertoireColor: Color): ParseResult {
   let tempIdCounter = 0
   function nextId() { return `n${tempIdCounter++}` }
 
-  // Mapa fen+parentTempId → tempId para deduplicar nodos entre partidas
-  // clave: "parentTempId|fen"
   const dedupeMap = new Map<string, string>()
   const nodes: ImportNode[] = []
+  const annotationMap = new Map<string, { text: string; symbol: string }>()
 
+  // Tokeniza preservando {comentarios} y NAGs $N como tokens especiales
   function tokenizeGame(text: string): string[] {
     const tokens: string[] = []
     let i = 0
     let buf = ''
+    function flushBuf() {
+      if (buf.trim()) { tokens.push(...buf.trim().split(/\s+/).filter(Boolean)); buf = '' }
+    }
     while (i < text.length) {
       const ch = text[i]
-      if (ch === '(' || ch === ')') {
-        if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
-        buf = ''
-        tokens.push(ch)
-      } else {
-        buf += ch
-      }
+      if (ch === '{') {
+        flushBuf()
+        let comment = ''
+        i++
+        while (i < text.length && text[i] !== '}') { comment += text[i]; i++ }
+        const cleaned = comment
+          .replace(/\[%csl[^\]]*\]/g, '')
+          .replace(/\[%cal[^\]]*\]/g, '')
+          .replace(/_[JTN]/g, '')
+          .trim()
+        if (cleaned) tokens.push(`{${cleaned}}`)
+      } else if (ch === '(' || ch === ')') {
+        flushBuf(); tokens.push(ch)
+      } else { buf += ch }
       i++
     }
-    if (buf.trim()) tokens.push(...buf.trim().split(/\s+/).filter(Boolean))
+    flushBuf()
     return tokens
   }
+
+  const nodeMap = new Map<string, { parentTempId: string | null; parentFen: string }>()
 
   function parseVariation(
     tokens: string[],
@@ -110,34 +134,74 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
     orderIndex: number
   ): { idx: number; lastId: string | null } {
     let lastId = parentTempId
-    let order = orderIndex
+    let firstMove = true
+    let variantCount = 0
 
     while (idx < tokens.length) {
       const token = tokens[idx]
       if (token === ')') return { idx, lastId }
+
       if (token === '(') {
-        const savedFen = game.fen()
-        const result = parseVariation(tokens, idx + 1, lastId, new Chess(savedFen), order)
+        let parentOfLast: string | null
+        let fenForBranch: string
+        if (lastId !== null && nodeMap.has(lastId)) {
+          const meta = nodeMap.get(lastId)!
+          parentOfLast = meta.parentTempId
+          fenForBranch = meta.parentFen
+        } else {
+          parentOfLast = null
+          fenForBranch = game.fen()
+        }
+        variantCount++
+        const result = parseVariation(tokens, idx + 1, parentOfLast, new Chess(fenForBranch), variantCount)
         idx = result.idx + 1
-        order++
         continue
       }
-      if (/^\d+\./.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
-        idx++
-        continue
+
+      // Comentario → asociar texto al nodo lastId
+      if (token.startsWith('{') && token.endsWith('}')) {
+        if (lastId !== null) {
+          const text = token.slice(1, -1).trim()
+          const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
+          annotationMap.set(lastId, { ...existing, text: existing.text ? `${existing.text}\n${text}` : text })
+        }
+        idx++; continue
       }
+
+      // NAG ($N) → símbolo
+      if (/^\$\d+$/.test(token)) {
+        if (lastId !== null) {
+          const sym = NAG_TO_SYMBOL[parseInt(token.slice(1))]
+          if (sym) {
+            const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
+            if (!existing.symbol) annotationMap.set(lastId, { ...existing, symbol: sym })
+          }
+        }
+        idx++; continue
+      }
+
+      if (/^\d+\.\.\.?\.?/.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) {
+        idx++; continue
+      }
+
+      // Movimiento SAN — extraer sufijo de anotación si lo tiene
+      const sanMatch = token.match(/^(.+?)(!!|\?\?|!\?|\?!|!|\?)?$/)
+      const cleanSan = sanMatch?.[1] ?? token
+      const sanSuffix = sanMatch?.[2] ?? null
       try {
-        const moveResult = game.move(token)
+        const fenBeforeMove = game.fen()
+        const moveResult = game.move(cleanSan)
         if (moveResult) {
           const fen = game.fen()
           const dedupeKey = `${lastId ?? 'root'}|${fen}`
           let id: string
           if (dedupeMap.has(dedupeKey)) {
-            // Nodo ya existe — reusar su id sin agregar duplicado
             id = dedupeMap.get(dedupeKey)!
           } else {
             id = nextId()
             dedupeMap.set(dedupeKey, id)
+            const thisOrder = firstMove ? orderIndex : 0
+            nodeMap.set(id, { parentTempId: lastId, parentFen: fenBeforeMove })
             nodes.push({
               tempId: id,
               parentTempId: lastId,
@@ -145,11 +209,16 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
               fen,
               moveNumber: parseInt(game.fen().split(' ')[5]),
               color: moveResult.color === 'w' ? 'white' : 'black',
-              orderIndex: order,
+              orderIndex: thisOrder,
             })
           }
+          if (sanSuffix) {
+            const existing = annotationMap.get(id) ?? { text: '', symbol: '' }
+            if (!existing.symbol) annotationMap.set(id, { ...existing, symbol: sanSuffix })
+          }
           lastId = id
-          order = 0
+          firstMove = false
+          variantCount = 0
         }
       } catch {}
       idx++
@@ -157,8 +226,6 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
     return { idx, lastId }
   }
 
-  // Separar el PGN en partidas individuales por headers [...]
-  // Cada partida empieza con un bloque de headers
   const games = pgn
     .replace(/\r\n/g, '\n')
     .split(/(?=\[Event )/)
@@ -166,18 +233,14 @@ function parsePgnToNodes(pgn: string, _repertoireColor: Color): ImportNode[] {
     .filter(Boolean)
 
   for (const gameText of games) {
-    // Quitar headers y comentarios
-    const cleaned = gameText
-      .replace(/\[[^\]]*\]/g, '')
-      .replace(/\{[^}]*\}/g, '')
-      .trim()
+    // Solo quitar headers, conservar comentarios y NAGs
+    const cleaned = gameText.replace(/\[[^\]]*\]/g, '').trim()
     if (!cleaned || cleaned === '*') continue
     const tokens = tokenizeGame(cleaned)
-    const game = new Chess()
-    parseVariation(tokens, 0, null, game, 0)
+    parseVariation(tokens, 0, null, new Chess(), 0)
   }
 
-  return nodes
+  return { nodes, annotationMap }
 }
 
 // Construir árbol jerárquico desde lista plana
@@ -838,18 +901,32 @@ export default function Openings() {
     }
     setImporting(true); setImportError(null)
     try {
-      if (multiEvents.length > 0) {
-        for (const ev of multiEvents) {
-          if (!ev.name.trim()) continue
-          const nodes = parsePgnToNodes(ev.pgn, color)
-          if (nodes.length === 0) continue
-          await createOpening({ color, name: ev.name.trim(), nodes })
+      async function importOne(name: string, pgn: string) {
+        const { nodes, annotationMap } = parsePgnToNodes(pgn, color)
+        if (nodes.length === 0) return
+        const created = await createOpening({ color, name: name.trim(), nodes })
+        if (annotationMap.size > 0 && created?.openingId) {
+          try {
+            const tree = await fetchOpeningTree(created.openingId)
+            const fenToRealId = new Map<string, number>()
+            for (const n of tree.nodes) fenToRealId.set(n.fen, n.id)
+            const saves: Promise<void>[] = []
+            for (const imp of nodes) {
+              if (!annotationMap.has(imp.tempId)) continue
+              const realId = fenToRealId.get(imp.fen)
+              if (realId == null) continue
+              const ann = annotationMap.get(imp.tempId)!
+              if (ann.text || ann.symbol) saves.push(updateNodeAnnotation(realId, ann.text, ann.symbol))
+            }
+            await Promise.allSettled(saves)
+          } catch (e) { console.error('Error guardando anotaciones', e) }
         }
+      }
+      if (multiEvents.length > 0) {
+        for (const ev of multiEvents) { if (ev.name.trim()) await importOne(ev.name, ev.pgn) }
         setMultiEvents([])
       } else {
-        const nodes = parsePgnToNodes(importPgn, color)
-        if (nodes.length === 0) { setImportError('No se encontraron movimientos válidos en el PGN'); setImporting(false); return }
-        await createOpening({ color, name: importName.trim(), nodes })
+        await importOne(importName, importPgn)
       }
       setImportName(''); setImportPgn(''); setShowImport(false)
       await loadRepertoire(color)
@@ -1943,17 +2020,12 @@ export default function Openings() {
             <p className={`text-sm ${t.text3} mb-5`}>
               Las aperturas dentro llevarán el nombre <code className="font-mono">{newFolderName || 'Carpeta'} / Nombre</code>
             </p>
-            <input
-              autoFocus
-              type="text"
-              value={newFolderName}
+            <input autoFocus type="text" value={newFolderName}
               onChange={e => setNewFolderName(e.target.value)}
               onKeyDown={e => {
                 if (e.key === 'Enter' && newFolderName.trim()) {
                   setExpandedFolders(prev => new Set([...prev, newFolderName.trim()]))
-                  setShowNewFolder(false)
-                  setImportName(newFolderName.trim() + ' / ')
-                  setShowImport(true)
+                  setShowNewFolder(false); setImportName(newFolderName.trim() + ' / '); setShowImport(true)
                 }
                 if (e.key === 'Escape') setShowNewFolder(false)
               }}
@@ -1961,19 +2033,15 @@ export default function Openings() {
               className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-semibold ${t.inputBg} ${t.border} mb-4`}
             />
             <div className="flex gap-3">
-              <button
-                disabled={!newFolderName.trim()}
+              <button disabled={!newFolderName.trim()}
                 onClick={() => {
                   setExpandedFolders(prev => new Set([...prev, newFolderName.trim()]))
-                  setShowNewFolder(false)
-                  setImportName(newFolderName.trim() + ' / ')
-                  setShowImport(true)
+                  setShowNewFolder(false); setImportName(newFolderName.trim() + ' / '); setShowImport(true)
                 }}
                 className="flex-1 py-3 rounded-xl font-bold text-sm text-white disabled:opacity-40"
                 style={{ backgroundColor: accentColor }}
               >Crear y añadir apertura</button>
-              <button
-                onClick={() => setShowNewFolder(false)}
+              <button onClick={() => setShowNewFolder(false)}
                 className={`flex-1 py-3 rounded-xl font-bold text-sm ${t.bg3} ${t.border} border ${t.text}`}
               >Cancelar</button>
             </div>
@@ -2004,7 +2072,6 @@ export default function Openings() {
               ))}
             </div>
 
-            {/* Multi-event: editor de nombres por capítulo */}
             {multiEvents.length > 0 ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -2017,80 +2084,54 @@ export default function Openings() {
                   {multiEvents.map((ev, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <span className={`text-xs ${t.text3} w-5 text-right flex-shrink-0`}>{i + 1}.</span>
-                      <input
-                        type="text"
-                        value={ev.name}
+                      <input type="text" value={ev.name}
                         onChange={e => setMultiEvents(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
                         className={`flex-1 px-3 py-2 rounded-lg border text-sm font-semibold ${t.inputBg} ${t.border} focus:outline-none`}
                       />
                     </div>
                   ))}
                 </div>
-                <p className={`text-xs ${t.text3}`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar en una carpeta</p>
+                <p className={`text-xs ${t.text3}`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Nombre */}
                 <div>
                   <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Nombre de la apertura</label>
-                  <input
-                    type="text"
-                    value={importName}
-                    onChange={e => setImportName(e.target.value)}
+                  <input type="text" value={importName} onChange={e => setImportName(e.target.value)}
                     placeholder="ej. Londres / Sistema clásico"
                     className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-semibold ${t.inputBg} ${t.border}`}
                   />
                   <p className={`text-xs ${t.text3} mt-1`}>Tip: usa <code className="font-mono">Carpeta / Nombre</code> para agrupar</p>
                 </div>
-
                 {importMode === 'manual' ? (
                   <div className={`rounded-xl ${t.bg3} ${t.border} border px-5 py-4`}>
-                    <p className={`text-sm ${t.text2} leading-relaxed`}>
-                      Se creará una apertura vacía. Podrás añadir jugadas directamente desde el tablero interactivo.
-                    </p>
+                    <p className={`text-sm ${t.text2} leading-relaxed`}>Se creará una apertura vacía. Podrás añadir jugadas directamente desde el tablero interactivo.</p>
                   </div>
                 ) : (
                   <>
                     <div>
                       <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>Pegar PGN</label>
-                      <textarea
-                        value={importPgn}
-                        onChange={e => setImportPgn(e.target.value)}
+                      <textarea value={importPgn} onChange={e => setImportPgn(e.target.value)}
                         placeholder="1.d4 d5 2.Bf4 Nf6 3.e3 e6 (3...c5 4.c3) *"
-                        rows={6}
-                        className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-mono text-sm resize-none ${t.inputBg} ${t.border}`}
+                        rows={6} className={`w-full px-4 py-3 rounded-xl border focus:outline-none font-mono text-sm resize-none ${t.inputBg} ${t.border}`}
                       />
                     </div>
                     <div>
                       <label className={`block text-xs uppercase tracking-widest ${t.text3} font-semibold mb-2`}>O cargar archivo .pgn</label>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pgn,text/plain"
-                        className="hidden"
+                      <input ref={fileInputRef} type="file" accept=".pgn,text/plain" className="hidden"
                         onChange={e => {
                           const file = e.target.files?.[0]
                           if (!file) return
                           const reader = new FileReader()
-                          reader.onload = ev => {
-                            setImportPgn(ev.target?.result as string ?? '')
-                            if (!importName.trim()) setImportName(file.name.replace(/\.pgn$/i, ''))
-                          }
-                          reader.readAsText(file)
-                          e.target.value = ''
+                          reader.onload = ev => { setImportPgn(ev.target?.result as string ?? ''); if (!importName.trim()) setImportName(file.name.replace(/\.pgn$/i, '')) }
+                          reader.readAsText(file); e.target.value = ''
                         }}
                       />
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`w-full py-3 rounded-xl border-2 border-dashed ${t.border} text-sm font-semibold ${t.text3} hover:${t.text} transition-all`}
-                      >
+                      <button onClick={() => fileInputRef.current?.click()}
+                        className={`w-full py-3 rounded-xl border-2 border-dashed ${t.border} text-sm font-semibold ${t.text3} hover:${t.text} transition-all`}>
                         📂 Seleccionar archivo .pgn
                       </button>
-                      {importPgn && (
-                        <p className="text-xs mt-1" style={{ color: accentColor }}>
-                          ✓ PGN cargado ({importPgn.length} caracteres)
-                        </p>
-                      )}
+                      {importPgn && <p className="text-xs mt-1" style={{ color: accentColor }}>✓ PGN cargado ({importPgn.length} caracteres)</p>}
                     </div>
                   </>
                 )}
@@ -2114,10 +2155,7 @@ export default function Openings() {
                     await loadRepertoire(color)
                     await loadOpening(result.openingId)
                     const game = new Chess()
-                    setAddParentId(null)
-                    setAddGame(game)
-                    setAddMoves([])
-                    setAddingLines(true)
+                    setAddParentId(null); setAddGame(game); setAddMoves([]); setAddingLines(true)
                   } catch (e: unknown) { setImportError((e as Error).message) }
                   finally { setImporting(false) }
                 } : handleImport}
@@ -2130,9 +2168,7 @@ export default function Openings() {
               <button
                 onClick={() => { setShowImport(false); setImportError(null); setImportPgn(''); setImportName(''); setMultiEvents([]) }}
                 className={`flex-1 py-4 rounded-xl font-bold text-sm ${t.bg3} ${t.border} border ${t.text}`}
-              >
-                Cancelar
-              </button>
+              >Cancelar</button>
             </div>
           </div>
         </div>
