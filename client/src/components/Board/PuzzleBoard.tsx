@@ -228,10 +228,8 @@ export default function PuzzleBoard({
         [moveResult.to]: { background: 'rgba(212,160,23,0.4)' },
       })
 
-      setTimeout(() => {
-        setDisplayFen(gameCopy.fen())
-      }, 50)
-
+      setDisplayFen(gameCopy.fen())
+      
       const nextPlayerIndex = nextIndex + 1
       setSolutionIndex(nextPlayerIndex)
       solutionIndexRef.current = nextPlayerIndex
@@ -324,7 +322,7 @@ export default function PuzzleBoard({
         setFeedback('idle')
         feedbackRef.current = 'idle'
         playOpponentMove(gameCopy, currentSolutionIndex)
-      }, isLastPlayerMove ? 600 : 0)
+      }, isLastPlayerMove ? 600 : 350)
 
       return true
     } else {
