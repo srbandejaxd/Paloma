@@ -869,11 +869,48 @@ router.put('/cycles/macrocycles/:id/config', authMiddleware, async (req, res) =>
         })
       }
     }
-
     res.json({ ok: true })
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
 })
 
+// DELETE /cycles/macrocycles/:id — eliminar un macrociclo en curso (ciclos, repasos y sesiones)
+router.delete('/cycles/macrocycles/:id', authMiddleware, async (req, res) => {
+  const db = getDb()
+  try {
+    const macro = await db.execute({
+      sql: `SELECT id FROM macrocycles WHERE id = ? AND user_id = ?`,
+      args: [req.params.id, req.user.userId]
+    })
+    if (macro.rows.length === 0) return res.status(404).json({ error: 'No encontrado' })
+
+    const id = req.params.id
+    // Sin ON DELETE CASCADE: borrar manualmente de hijos a padres
+    await db.execute({
+      sql: `DELETE FROM session_puzzles WHERE session_id IN (
+              SELECT rs.id FROM review_sessions rs
+              JOIN reviews r ON r.id = rs.review_id
+              JOIN cycles c ON c.id = r.cycle_id
+              WHERE c.macrocycle_id = ?)`,
+      args: [id]
+    })
+    await db.execute({
+      sql: `DELETE FROM review_sessions WHERE review_id IN (
+              SELECT r.id FROM reviews r
+              JOIN cycles c ON c.id = r.cycle_id
+              WHERE c.macrocycle_id = ?)`,
+      args: [id]
+    })
+    await db.execute({
+      sql: `DELETE FROM reviews WHERE cycle_id IN (SELECT id FROM cycles WHERE macrocycle_id = ?)`,
+      args: [id]
+    })
+    await db.execute({ sql: `DELETE FROM cycles WHERE macrocycle_id = ?`, args: [id] })
+    await db.execute({ sql: `DELETE FROM review_config WHERE macrocycle_id = ?`, args: [id] })
+    await db.execute({ sql: `DELETE FROM macrocycles WHERE id = ?`, args: [id] })
+
+    res.json({ ok: true })
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }) }
+})
 
 
 // ─── OPENINGS ─────────────────────────────────────────────────────────────────

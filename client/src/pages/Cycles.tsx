@@ -8,7 +8,7 @@
 	  fetchCycle, fetchReview, startReviewSession,
 	  fetchSessionPuzzle, submitSessionPuzzle, endReviewSession,
 	  Macrocycle, Cycle, Review, ReviewSession, ReviewConfig,
-	  CyclePuzzle, updateMacrocycleConfig
+	  CyclePuzzle, updateMacrocycleConfig, deleteMacrocycle
 	} from '../lib/api'
 	import PuzzleBoard from '../components/Board/PuzzleBoard'
 	
@@ -379,6 +379,17 @@ function formatDate(iso: string): string {
 	    finally { setLoading(false) }
 	  }
 	
+	  async function handleDeleteMacrocycle(id: number) {
+	    if (!confirm('¿Eliminar este macrociclo? Se borrarán todos sus ciclos, repasos y sesiones. Esta acción no se puede deshacer.')) return
+	    setLoading(true)
+	    try {
+	      await deleteMacrocycle(id)
+	      setActiveMacrocycle(null)
+	      await goToList()
+	    } catch (e) { console.error(e) }
+	    finally { setLoading(false) }
+	  }
+
 	  async function handleCreateMacrocycle() {
 	    setCreating(true)
 	    setCreateError(null)
@@ -765,24 +776,37 @@ function formatDate(iso: string): string {
 	              {macrocycles.map(m => {
 	                const catLabel = CATEGORIES.find(c => c.id === m.category)?.label || m.category
 	                return (
-	                  <button
+	                  <div
 	                    key={m.id}
-	                    onClick={() => goToMacrocycle(m.id)}
-	                    className={`w-full text-left rounded-xl ${t.bg2} ${t.border} border p-6 transition-all hover:shadow-lg hover:-translate-y-0.5`}
+	                    className={`w-full rounded-xl ${t.bg2} ${t.border} border p-6 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-4`}
 	                  >
-	                    <div className="flex items-center justify-between">
-	                      <div>
-	                        <div className="flex items-center gap-3 mb-2">
-	                          <h3 className={`text-lg font-bold ${t.text}`}>{catLabel}</h3>
-	                          <StatusBadge status={m.status} />
+	                    <button
+	                      onClick={() => goToMacrocycle(m.id)}
+	                      className="flex-1 text-left"
+	                    >
+	                      <div className="flex items-center justify-between">
+	                        <div>
+	                          <div className="flex items-center gap-3 mb-2">
+	                            <h3 className={`text-lg font-bold ${t.text}`}>{catLabel}</h3>
+	                            <StatusBadge status={m.status} />
+	                          </div>
+	                          <p className={`text-sm ${t.text3}`}>Iniciado {formatDate(m.createdAt)} · {formatDuration(Number(m.hoursPerDay))}/día · Ejercicio {m.globalPuzzlePointer} alcanzado</p>
 	                        </div>
-	                        <p className={`text-sm ${t.text3}`}>Iniciado {formatDate(m.createdAt)} · {formatDuration(Number(m.hoursPerDay))}/día · Ejercicio {m.globalPuzzlePointer} alcanzado</p>
+	                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
+	                          <polyline points="9 18 15 12 9 6"/>
+	                        </svg>
 	                      </div>
-	                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={t.text3}>
-	                        <polyline points="9 18 15 12 9 6"/>
-	                      </svg>
-	                    </div>
-	                  </button>
+	                    </button>
+	                    <button
+	                      onClick={() => handleDeleteMacrocycle(m.id)}
+	                      disabled={loading}
+	                      title="Eliminar macrociclo"
+	                      className={`flex-shrink-0 px-3 py-2 rounded-lg border text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 ${t.bg3} ${t.borderLight}`}
+	                      style={{ color: '#E74C3C' }}
+	                    >
+	                      🗑
+	                    </button>
+	                  </div>
 	                )
 	              })}
 	            </div>
@@ -804,19 +828,29 @@ function formatDate(iso: string): string {
 	            Mis macrociclos
 	          </button>
 	
-	          <div className="mb-12">
-	            <div className="flex items-center gap-3 mb-2">
-	              <p className={`text-sm uppercase tracking-[0.15em] ${t.text3}`}>{catLabel}</p>
-	              <StatusBadge status={activeMacrocycle.status} />
+	          <div className="mb-12 flex items-start justify-between gap-4">
+	            <div>
+	              <div className="flex items-center gap-3 mb-2">
+	                <p className={`text-sm uppercase tracking-[0.15em] ${t.text3}`}>{catLabel}</p>
+	                <StatusBadge status={activeMacrocycle.status} />
+	              </div>
+	              <h2 className={`text-4xl font-bold ${t.text} leading-none mb-4`} style={{ letterSpacing: '-0.02em' }}>
+	                Macrociclo
+	              </h2>
+	              <div className={`flex gap-6 text-sm ${t.text3}`}>
+	                <span>🕐 {formatDuration(Number(activeMacrocycle.hoursPerDay))} por sesión</span>
+	                <span>📍 Ejercicio {activeMacrocycle.globalPuzzlePointer} alcanzado</span>
+	                <span>📅 Iniciado {formatDate(activeMacrocycle.createdAt)}</span>
+	              </div>
 	            </div>
-	            <h2 className={`text-4xl font-bold ${t.text} leading-none mb-4`} style={{ letterSpacing: '-0.02em' }}>
-	              Macrociclo
-	            </h2>
-	            <div className={`flex gap-6 text-sm ${t.text3}`}>
-	              <span>🕐 {formatDuration(Number(activeMacrocycle.hoursPerDay))} por sesión</span>
-	              <span>📍 Ejercicio {activeMacrocycle.globalPuzzlePointer} alcanzado</span>
-	              <span>📅 Iniciado {formatDate(activeMacrocycle.createdAt)}</span>
-	            </div>
+	            <button
+	              onClick={() => handleDeleteMacrocycle(activeMacrocycle.id)}
+	              disabled={loading}
+	              className={`flex-shrink-0 px-4 py-2 rounded-lg border text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50 ${t.bg2} ${t.border}`}
+	              style={{ color: '#E74C3C' }}
+	            >
+	              🗑 Eliminar
+	            </button>
 	          </div>
 	
 	          <div className="mb-6">

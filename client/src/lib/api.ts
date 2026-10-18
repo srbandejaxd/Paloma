@@ -298,6 +298,15 @@ export async function createMacrocycle(data: {
   return json
 }
 
+// Eliminar un macrociclo (con todos sus ciclos, repasos y sesiones)
+export async function deleteMacrocycle(id: number): Promise<void> {
+  const res = await fetch(`${BASE}/api/cycles/macrocycles/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to delete macrocycle')
+}
+
 // Detalle de un macrociclo (con ciclos y config)
 export async function fetchMacrocycle(id: number): Promise<Macrocycle> {
   const res = await fetch(`${BASE}/api/cycles/macrocycles/${id}`, { headers: authHeaders() })
