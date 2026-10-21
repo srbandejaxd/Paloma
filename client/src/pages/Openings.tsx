@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { path: '/leaderboard', label: 'Ranking',   icon: '🏆' },
   { path: '/blind',       label: 'Ciego',     icon: '🎲' },
   { path: '/openings',    label: 'Aperturas', icon: '♟' },
+  { path: '/endings',    label: 'Finales',   icon: '♚' },
 ]
 
 const SYMBOL_COLORS: Record<string, string> = {
@@ -618,6 +619,7 @@ const NAV_ITEMS_DEF = [
   { path: '/blind', label: 'Ciego', icon: '🎲' },
   { path: '/cycles', label: 'Ciclos', icon: '🔄' },
   { path: '/openings', label: 'Aperturas', icon: '♟' },
+  { path: '/endings', label: 'Finales', icon: '♚' },
 ]
 
 function NavBar({ t, dark, toggleTheme, navigate, location, accentColor, user, logout }: {

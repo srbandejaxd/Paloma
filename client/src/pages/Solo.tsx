@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { path: '/leaderboard', label: 'Ranking', icon: '🏆' },
   { path: '/blind', label: 'Ciego', icon: '🎲' },
   { path: '/openings', label: 'Aperturas', icon: '♟' },
+  { path: '/endings', label: 'Finales', icon: '♚' },
 ]
 
 
