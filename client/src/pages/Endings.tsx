@@ -24,7 +24,9 @@ function parsePgnToChapters(text: string): Chapter[] {
   const order: string[] = []
   for (const p of parts) {
     const st = p.match(/\[SourceTitle "([^"]*)"\]/)?.[1] ?? 'Sin capítulo'
-    const title = p.match(/\[White "([^"]*)"\]/)?.[1] ?? p.match(/\[Event "([^"]*)"\]/)?.[1] ?? 'Final'
+    const white = p.match(/\[White "([^"]*)"\]/)?.[1] ?? ''
+    const black = p.match(/\[Black "([^"]*)"\]/)?.[1] ?? ''
+    const title = [white, black].filter(v => v && v !== '?').join(' ').trim() || p.match(/\[Event "([^"]*)"\]/)?.[1] ?? 'Final'
     if (!map.has(st)) { map.set(st, []); order.push(st) }
     map.get(st)!.push({ title, pgn: p })
   }
