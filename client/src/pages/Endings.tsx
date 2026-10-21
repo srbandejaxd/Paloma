@@ -147,10 +147,12 @@ function parsePgnToNodes(pgn: string): { nodes: { tempId: string; parentTempId: 
 
   const games = pgn.replace(/\r\n/g, '\n').split(/(?=\[Event )/).map(s => s.trim()).filter(Boolean)
   for (const gameText of games) {
+    const fenMatch = gameText.match(/\[FEN "([^"]*)"\]/)
     const cleaned = gameText.replace(/\[[^\]]*\]/g, '').trim()
     if (!cleaned || cleaned === '*') continue
     const tokens = tokenizeGame(cleaned)
-    parseVariation(tokens, 0, null, new Chess(), 0)
+    const startGame = fenMatch ? new Chess(fenMatch[1]) : new Chess()
+    parseVariation(tokens, 0, null, startGame, 0)
   }
   return { nodes, annotationMap }
 }
@@ -202,6 +204,7 @@ export default function Endings() {
   // viewer state
   const [roots, setRoots] = useState<EndNode[]>([])
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null)
+  const [startFen, setStartFen] = useState(INITIAL_FEN)
   const [selectedFen, setSelectedFen] = useState(INITIAL_FEN)
   const [nodeMap, setNodeMap] = useState<Map<number, EndNode>>(new Map())
 
@@ -212,6 +215,7 @@ export default function Endings() {
   const [practiceSelected, setPracticeSelected] = useState<EndingItem | null>(null)
   const [practiceRoots, setPracticeRoots] = useState<EndNode[]>([])
   const [practiceSelectedNodeId, setPracticeSelectedNodeId] = useState<number | null>(null)
+  const [practiceStartFen, setPracticeStartFen] = useState(INITIAL_FEN)
   const [practiceSelectedFen, setPracticeSelectedFen] = useState(INITIAL_FEN)
   const [practiceNodeMap, setPracticeNodeMap] = useState<Map<number, EndNode>>(new Map())
 
@@ -224,6 +228,8 @@ export default function Endings() {
   }, [user, navigate])
 
   function loadEnding(ending: EndingItem, practice: boolean) {
+    const fenMatch = ending.pgn.match(/\[FEN "([^"]*)"\]/)
+    const sf = fenMatch ? fenMatch[1] : INITIAL_FEN
     const { nodes: impNodes, annotationMap } = parsePgnToNodes(ending.pgn)
     const idMap = new Map<string, number>()
     let counter = 1
@@ -247,14 +253,16 @@ export default function Endings() {
       setPracticeSelected(ending)
       setPracticeRoots(r)
       setPracticeSelectedNodeId(null)
-      setPracticeSelectedFen(INITIAL_FEN)
+      setPracticeSelectedFen(sf)
       setPracticeNodeMap(nm)
+      setPracticeStartFen(sf)
     } else {
       setSelectedEnding(ending)
       setRoots(r)
       setSelectedNodeId(null)
-      setSelectedFen(INITIAL_FEN)
+      setSelectedFen(sf)
       setNodeMap(nm)
+      setStartFen(sf)
     }
   }
 
@@ -395,44 +403,36 @@ export default function Endings() {
           <button onClick={() => setTab('practica')} className={`px-4 py-2 rounded ${tab === 'practica' ? 'text-black' : t.bg3}`} style={tab === 'practica' ? { backgroundColor: accentColor } : {}}>Práctica</button>
         </div>
         {tab === 'teoria' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-1">{renderChapterList(chapters, openChapters, selectedEnding, (e) => {}, (tt) => toggleChapter(tt, false), false)}</div>
-            <div className="md:col-span-2">
-              {selectedEnding ? (
-                <Viewer
-                  roots={roots}
-                  selectedId={selectedNodeId}
-                  selectedFen={selectedFen}
-                  nodeMap={nodeMap}
-                  onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? INITIAL_FEN) : INITIAL_FEN) }}
-                  onPrev={() => prevNode(roots, selectedNodeId, nodeMap, setSelectedNodeId, setSelectedFen)}
-                  onNext={() => nextNode(roots, selectedNodeId, nodeMap, setSelectedNodeId, setSelectedFen)}
-                />
-              ) : <p className={t.text3}>Selecciona un final</p>}
+          selectedEnding ? (
+            <div>
+              <button onClick={() => { setSelectedEnding(null); setRoots([]); setSelectedNodeId(null); setSelectedFen(startFen) }} className={`mb-4 flex items-center gap-2 text-sm ${t.text3} hover:${t.text}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Volver
+              </button>
+              <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{selectedEnding.title}</h3>
+              <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrev={() => { if (selectedNodeId == null) return; const node = nodeMap.get(selectedNodeId); if (!node || node.parentId == null) { setSelectedNodeId(null); setSelectedFen(startFen) } else { setSelectedNodeId(node.parentId); setSelectedFen(nodeMap.get(node.parentId)?.fen ?? startFen) } }} onNext={() => { if (selectedNodeId == null) { if (roots.length > 0) { setSelectedNodeId(roots[0].id); setSelectedFen(roots[0].fen) } return } const node = nodeMap.get(selectedNodeId); if (node && node.children.length > 0) { setSelectedNodeId(node.children[0].id); setSelectedFen(node.children[0].fen) } }} />
             </div>
-          </div>
+          ) : (
+            <div className="max-w-2xl">{renderChapterList(chapters, openChapters, selectedEnding, (e) => {}, (tt) => toggleChapter(tt, false), false)}</div>
+          )
         )}
         {tab === 'practica' && (
-          <div>
-            <textarea value={practicePgn} onChange={e => setPracticePgn(e.target.value)} className={`w-full h-32 ${t.inputBg} border rounded p-3 text-sm`} placeholder="Pega aquí el PGN del workbook" />
-            <button onClick={parsePractice} className="mt-2 px-4 py-2 rounded text-black" style={{ backgroundColor: accentColor }}>Cargar</button>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-              <div>{renderChapterList(practiceChapters, practiceOpen, practiceSelected, (e) => {}, (tt) => toggleChapter(tt, true), true)}</div>
-              <div className="md:col-span-2">
-                {practiceSelected ? (
-                  <Viewer
-                    roots={practiceRoots}
-                    selectedId={practiceSelectedNodeId}
-                    selectedFen={practiceSelectedFen}
-                    nodeMap={practiceNodeMap}
-                    onSelect={(id) => { setPracticeSelectedNodeId(id); setPracticeSelectedFen(id != null ? (practiceNodeMap.get(id)?.fen ?? INITIAL_FEN) : INITIAL_FEN) }}
-                    onPrev={() => prevNode(practiceRoots, practiceSelectedNodeId, practiceNodeMap, setPracticeSelectedNodeId, setPracticeSelectedFen)}
-                    onNext={() => nextNode(practiceRoots, practiceSelectedNodeId, practiceNodeMap, setPracticeSelectedNodeId, setPracticeSelectedFen)}
-                  />
-                ) : <p className={t.text3}>Selecciona un final</p>}
-              </div>
+          practiceSelected ? (
+            <div>
+              <button onClick={() => { setPracticeSelected(null); setPracticeRoots([]); setPracticeSelectedNodeId(null); setPracticeSelectedFen(practiceStartFen) }} className={`mb-4 flex items-center gap-2 text-sm ${t.text3} hover:${t.text}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Volver
+              </button>
+              <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{practiceSelected.title}</h3>
+              <Viewer roots={practiceRoots} selectedId={practiceSelectedNodeId} selectedFen={practiceSelectedFen} nodeMap={practiceNodeMap} onSelect={(id) => { setPracticeSelectedNodeId(id); setPracticeSelectedFen(id != null ? (practiceNodeMap.get(id)?.fen ?? practiceStartFen) : practiceStartFen) }} onPrev={() => { if (practiceSelectedNodeId == null) return; const node = practiceNodeMap.get(practiceSelectedNodeId); if (!node || node.parentId == null) { setPracticeSelectedNodeId(null); setPracticeSelectedFen(practiceStartFen) } else { setPracticeSelectedNodeId(node.parentId); setPracticeSelectedFen(practiceNodeMap.get(node.parentId)?.fen ?? practiceStartFen) } }} onNext={() => { if (practiceSelectedNodeId == null) { if (practiceRoots.length > 0) { setPracticeSelectedNodeId(practiceRoots[0].id); setPracticeSelectedFen(practiceRoots[0].fen) } return } const node = practiceNodeMap.get(practiceSelectedNodeId); if (node && node.children.length > 0) { setPracticeSelectedNodeId(node.children[0].id); setPracticeSelectedFen(node.children[0].fen) } }} />
             </div>
-          </div>
+          ) : (
+            <div>
+              <textarea value={practicePgn} onChange={e => setPracticePgn(e.target.value)} className={`w-full h-32 ${t.inputBg} border rounded p-3 text-sm`} placeholder="Pega aquí el PGN del workbook" />
+              <button onClick={parsePractice} className="mt-2 px-4 py-2 rounded text-black" style={{ backgroundColor: accentColor }}>Cargar</button>
+              <div className="mt-4 max-w-2xl">{renderChapterList(practiceChapters, practiceOpen, practiceSelected, (e) => {}, (tt) => toggleChapter(tt, true), true)}</div>
+            </div>
+          )
         )}
       </div>
     </div>
