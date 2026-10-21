@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { Chess } from 'chess.js'
+import { Chessboard } from 'react-chessboard'
 import { useAuth } from '../lib/auth'
 
 const NAV_ITEMS = [
@@ -15,9 +17,160 @@ const NAV_ITEMS = [
   { path: '/endings',     label: 'Finales',   icon: '♚' },
 ]
 
+const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
 interface EndingItem { title: string; pgn: string }
 interface Chapter { title: string; endings: EndingItem[] }
 
+interface EndNode {
+  id: number
+  parentId: number | null
+  move: string
+  fen: string
+  moveNumber: number
+  color: 'white' | 'black'
+  orderIndex: number
+  annotationText: string
+  annotationSymbol: string
+  children: EndNode[]
+}
+
+// ─── PGN PARSER (adapted from Openings) ───────────────────────────────────────
+const NAG_TO_SYMBOL: Record<number, string> = {
+  1: '!', 2: '?', 3: '!!', 4: '??', 5: '!?', 6: '?!',
+  10: '=', 13: '∞', 14: '±', 15: '∓', 16: '⩲', 17: '⩱',
+  18: '+−', 19: '+-', 20: '-+',
+}
+
+function parsePgnToNodes(pgn: string): { nodes: { tempId: string; parentTempId: string | null; move: string; fen: string; moveNumber: number; color: 'white' | 'black'; orderIndex: number }[]; annotationMap: Map<string, { text: string; symbol: string }> } {
+  let tempIdCounter = 0
+  function nextId() { return `n${tempIdCounter++}` }
+  const dedupeMap = new Map<string, string>()
+  const nodes: any[] = []
+  const annotationMap = new Map<string, { text: string; symbol: string }>()
+  const nodeMap = new Map<string, { parentTempId: string | null; parentFen: string }>()
+
+  function tokenizeGame(text: string): string[] {
+    const tokens: string[] = []
+    let i = 0
+    let buf = ''
+    function flushBuf() { if (buf.trim()) { tokens.push(...buf.trim().split(/\s+/).filter(Boolean)); buf = '' } }
+    while (i < text.length) {
+      const ch = text[i]
+      if (ch === '{') {
+        flushBuf()
+        let comment = ''
+        i++
+        while (i < text.length && text[i] !== '}') { comment += text[i]; i++ }
+        const cleaned = comment.replace(/\[%csl[^\]]*\]/g, '').replace(/\[%cal[^\]]*\]/g, '').replace(/_[JTN]/g, '').trim()
+        if (cleaned) tokens.push(`{${cleaned}}`)
+      } else if (ch === '(' || ch === ')') {
+        flushBuf(); tokens.push(ch)
+      } else { buf += ch }
+      i++
+    }
+    flushBuf()
+    return tokens
+  }
+
+  function parseVariation(tokens: string[], idx: number, parentTempId: string | null, game: Chess, orderIndex: number): { idx: number; lastId: string | null } {
+    let lastId = parentTempId
+    let firstMove = true
+    while (idx < tokens.length) {
+      const token = tokens[idx]
+      if (token === ')') return { idx, lastId }
+      if (token === '(') {
+        let parentOfLast: string | null
+        let fenForBranch: string
+        if (lastId !== null && nodeMap.has(lastId)) {
+          const meta = nodeMap.get(lastId)!
+          parentOfLast = meta.parentTempId
+          fenForBranch = meta.parentFen
+        } else {
+          parentOfLast = null
+          fenForBranch = game.fen()
+        }
+        const result = parseVariation(tokens, idx + 1, parentOfLast, new Chess(fenForBranch), 0)
+        idx = result.idx + 1
+        continue
+      }
+      if (token.startsWith('{') && token.endsWith('}')) {
+        if (lastId !== null) {
+          const text = token.slice(1, -1).trim()
+          const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
+          annotationMap.set(lastId, { ...existing, text: existing.text ? `${existing.text}\n${text}` : text })
+        }
+        idx++; continue
+      }
+      if (/^\$\d+$/.test(token)) {
+        if (lastId !== null) {
+          const sym = NAG_TO_SYMBOL[parseInt(token.slice(1))]
+          if (sym) {
+            const existing = annotationMap.get(lastId) ?? { text: '', symbol: '' }
+            if (!existing.symbol) annotationMap.set(lastId, { ...existing, symbol: sym })
+          }
+        }
+        idx++; continue
+      }
+      if (/^\d+\.\.\.?\.?/.test(token) || ['*', '1-0', '0-1', '1/2-1/2'].includes(token)) { idx++; continue }
+      const sanMatch = token.match(/^(.+?)(!!|\?\?|!\?|\?!|!|\?)?$/)
+      const cleanSan = sanMatch?.[1] ?? token
+      const sanSuffix = sanMatch?.[2] ?? null
+      try {
+        const fenBeforeMove = game.fen()
+        const moveResult = game.move(cleanSan)
+        if (moveResult) {
+          const fen = game.fen()
+          const dedupeKey = `${lastId ?? 'root'}|${fen}`
+          let id: string
+          if (dedupeMap.has(dedupeKey)) {
+            id = dedupeMap.get(dedupeKey)!
+          } else {
+            id = nextId()
+            dedupeMap.set(dedupeKey, id)
+            const thisOrder = firstMove ? orderIndex : 0
+            nodeMap.set(id, { parentTempId: lastId, parentFen: fenBeforeMove })
+            nodes.push({ tempId: id, parentTempId: lastId, move: moveResult.san, fen, moveNumber: parseInt(game.fen().split(' ')[5]), color: moveResult.color === 'w' ? 'white' : 'black', orderIndex: thisOrder })
+          }
+          if (sanSuffix) {
+            const existing = annotationMap.get(id) ?? { text: '', symbol: '' }
+            if (!existing.symbol) annotationMap.set(id, { ...existing, symbol: sanSuffix })
+          }
+          lastId = id
+          firstMove = false
+        }
+      } catch {}
+      idx++
+    }
+    return { idx, lastId }
+  }
+
+  const games = pgn.replace(/\r\n/g, '\n').split(/(?=\[Event )/).map(s => s.trim()).filter(Boolean)
+  for (const gameText of games) {
+    const cleaned = gameText.replace(/\[[^\]]*\]/g, '').trim()
+    if (!cleaned || cleaned === '*') continue
+    const tokens = tokenizeGame(cleaned)
+    parseVariation(tokens, 0, null, new Chess(), 0)
+  }
+  return { nodes, annotationMap }
+}
+
+function buildTree(nodes: { id: number; parentId: number | null; move: string; fen: string; moveNumber: number; color: 'white' | 'black'; orderIndex: number; annotationText: string; annotationSymbol: string }[]): EndNode[] {
+  const map = new Map<number, EndNode>()
+  const roots: EndNode[] = []
+  for (const n of nodes) map.set(n.id, { ...n, children: [] })
+  for (const n of nodes) {
+    const node = map.get(n.id)!
+    if (n.parentId === null) roots.push(node)
+    else { const parent = map.get(n.parentId); if (parent) parent.children.push(node) }
+  }
+  function sortChildren(node: EndNode) { node.children.sort((a, b) => a.orderIndex - b.orderIndex); node.children.forEach(sortChildren) }
+  roots.sort((a, b) => a.orderIndex - b.orderIndex)
+  roots.forEach(sortChildren)
+  return roots
+}
+
+// ─── chapter parsing ──────────────────────────────────────────────────────────
 function parsePgnToChapters(text: string): Chapter[] {
   const parts = text.replace(/\r\n/g, '\n').split(/(?=\[Event )/).map(s => s.trim()).filter(Boolean)
   const map = new Map<string, EndingItem[]>()
@@ -45,10 +198,22 @@ export default function Endings() {
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [openChapters, setOpenChapters] = useState<Set<string>>(new Set())
   const [selectedEnding, setSelectedEnding] = useState<EndingItem | null>(null)
+
+  // viewer state
+  const [roots, setRoots] = useState<EndNode[]>([])
+  const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null)
+  const [selectedFen, setSelectedFen] = useState(INITIAL_FEN)
+  const [nodeMap, setNodeMap] = useState<Map<number, EndNode>>(new Map())
+
+  // practice
   const [practicePgn, setPracticePgn] = useState('')
   const [practiceChapters, setPracticeChapters] = useState<Chapter[]>([])
   const [practiceOpen, setPracticeOpen] = useState<Set<string>>(new Set())
   const [practiceSelected, setPracticeSelected] = useState<EndingItem | null>(null)
+  const [practiceRoots, setPracticeRoots] = useState<EndNode[]>([])
+  const [practiceSelectedNodeId, setPracticeSelectedNodeId] = useState<number | null>(null)
+  const [practiceSelectedFen, setPracticeSelectedFen] = useState(INITIAL_FEN)
+  const [practiceNodeMap, setPracticeNodeMap] = useState<Map<number, EndNode>>(new Map())
 
   useEffect(() => { const saved = localStorage.getItem('wp_theme'); if (saved) setDark(saved === 'dark') }, [])
   function toggleTheme() { const next = !dark; setDark(next); localStorage.setItem('wp_theme', next ? 'dark' : 'light') }
@@ -57,6 +222,41 @@ export default function Endings() {
     if (!user) { navigate('/'); return }
     fetch('/endings.pgn').then(r => r.text()).then(text => setChapters(parsePgnToChapters(text))).catch(() => {})
   }, [user, navigate])
+
+  function loadEnding(ending: EndingItem, practice: boolean) {
+    const { nodes: impNodes, annotationMap } = parsePgnToNodes(ending.pgn)
+    const idMap = new Map<string, number>()
+    let counter = 1
+    for (const n of impNodes) { if (!idMap.has(n.tempId)) idMap.set(n.tempId, counter++) }
+    const nodes = impNodes.map(n => ({
+      id: idMap.get(n.tempId)!,
+      parentId: n.parentTempId ? (idMap.get(n.parentTempId) ?? null) : null,
+      move: n.move,
+      fen: n.fen,
+      moveNumber: n.moveNumber,
+      color: n.color,
+      orderIndex: n.orderIndex,
+      annotationText: annotationMap.get(n.tempId)?.text ?? '',
+      annotationSymbol: annotationMap.get(n.tempId)?.symbol ?? '',
+    }))
+    const r = buildTree(nodes)
+    const nm = new Map<number, EndNode>()
+    function collect(ns: EndNode[]) { for (const n of ns) { nm.set(n.id, n); collect(n.children) } }
+    collect(r)
+    if (practice) {
+      setPracticeSelected(ending)
+      setPracticeRoots(r)
+      setPracticeSelectedNodeId(null)
+      setPracticeSelectedFen(INITIAL_FEN)
+      setPracticeNodeMap(nm)
+    } else {
+      setSelectedEnding(ending)
+      setRoots(r)
+      setSelectedNodeId(null)
+      setSelectedFen(INITIAL_FEN)
+      setNodeMap(nm)
+    }
+  }
 
   function toggleChapter(title: string, practice = false) {
     const setter = practice ? setPracticeOpen : setOpenChapters
@@ -99,7 +299,48 @@ export default function Endings() {
     )
   }
 
-  const renderChapterList = (chs: Chapter[], openSet: Set<string>, selected: EndingItem | null, onSelect: (e: EndingItem) => void, onToggle: (t: string) => void) => (
+  // render move tree recursively
+  function renderMoveTree(nodes: EndNode[], selectedId: number | null, onSelect: (id: number | null) => void, depth = 0): JSX.Element[] {
+    return nodes.map(n => (
+      <span key={n.id} style={{ marginLeft: depth * 12 }}>
+        <button
+          onClick={() => onSelect(n.id)}
+          className={`inline-block px-2 py-0.5 rounded text-sm font-mono mx-1 ${selectedId === n.id ? 'bg-[#D4A017] text-black' : `${t.text2} hover:${t.text}`}`}
+        >
+          {n.moveNumber}. {n.move}{n.annotationSymbol ? ` ${n.annotationSymbol}` : ''}
+        </button>
+        {n.children.length > 0 && renderMoveTree(n.children, selectedId, onSelect, depth + 1)}
+      </span>
+    ))
+  }
+
+  function Viewer({ roots, selectedId, selectedFen, nodeMap, onSelect, onPrev, onNext }: {
+    roots: EndNode[]; selectedId: number | null; selectedFen: string; nodeMap: Map<number, EndNode>;
+    onSelect: (id: number | null) => void; onPrev: () => void; onNext: () => void;
+  }) {
+    const node = selectedId != null ? nodeMap.get(selectedId) ?? null : null
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <div className={`${t.bg2} ${t.border} border rounded p-4`}>
+          <div className="aspect-square max-w-[420px] mx-auto">
+            <Chessboard position={selectedFen} boardOrientation="white" />
+          </div>
+          <div className="flex gap-2 mt-3 justify-center">
+            <button onClick={onPrev} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>◀</button>
+            <button onClick={() => onSelect(null)} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>Inicio</button>
+            <button onClick={onNext} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>▶</button>
+          </div>
+        </div>
+        <div className={`${t.bg2} ${t.border} border rounded p-4`}>
+          <h3 className={`font-bold mb-2 ${t.text}`}>{node ? `${node.moveNumber}. ${node.move} ${node.annotationSymbol}` : 'Posición inicial'}</h3>
+          <div className={`text-sm ${t.text2} whitespace-pre-wrap mb-4`}>{node ? (node.annotationText || 'Sin comentario') : ''}</div>
+          <div className="flex flex-wrap gap-1">{renderMoveTree(roots, selectedId, onSelect)}</div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderChapterList = (chs: Chapter[], openSet: Set<string>, selected: EndingItem | null, onSelectEnding: (e: EndingItem) => void, onToggle: (t: string) => void, practice: boolean) => (
     <div className="space-y-2">
       {chs.map(ch => (
         <div key={ch.title} className={`${t.bg2} ${t.border} border rounded`}>
@@ -109,7 +350,7 @@ export default function Endings() {
           {openSet.has(ch.title) && (
             <div className="px-4 pb-3 space-y-1">
               {ch.endings.map((e, i) => (
-                <button key={i} onClick={() => onSelect(e)} className={`block w-full text-left text-sm px-3 py-1.5 rounded ${selected?.title === e.title && selected?.pgn === e.pgn ? t.bg3 : ''} ${t.text2} hover:${t.text}`}>
+                <button key={i} onClick={() => { onSelectEnding(e); loadEnding(e, practice) }} className={`block w-full text-left text-sm px-3 py-1.5 rounded ${selected?.title === e.title && selected?.pgn === e.pgn ? t.bg3 : ''} ${t.text2} hover:${t.text}`}>
                   {e.title}
                 </button>
               ))}
@@ -119,6 +360,30 @@ export default function Endings() {
       ))}
     </div>
   )
+
+  // navigation helpers
+  function prevNode(roots: EndNode[], selectedId: number | null, nodeMap: Map<number, EndNode>, setSelectedId: (id: number | null) => void, setSelectedFen: (f: string) => void) {
+    if (selectedId == null) return
+    const node = nodeMap.get(selectedId)
+    if (!node) return
+    if (node.parentId == null) { setSelectedId(null); setSelectedFen(INITIAL_FEN) }
+    else {
+      const parent = nodeMap.get(node.parentId)
+      setSelectedId(node.parentId)
+      setSelectedFen(parent ? parent.fen : INITIAL_FEN)
+    }
+  }
+  function nextNode(roots: EndNode[], selectedId: number | null, nodeMap: Map<number, EndNode>, setSelectedId: (id: number | null) => void, setSelectedFen: (f: string) => void) {
+    if (selectedId == null) {
+      if (roots.length > 0) { setSelectedId(roots[0].id); setSelectedFen(roots[0].fen) }
+      return
+    }
+    const node = nodeMap.get(selectedId)
+    if (node && node.children.length > 0) {
+      setSelectedId(node.children[0].id)
+      setSelectedFen(node.children[0].fen)
+    }
+  }
 
   return (
     <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300 flex flex-col`}>
@@ -130,14 +395,19 @@ export default function Endings() {
           <button onClick={() => setTab('practica')} className={`px-4 py-2 rounded ${tab === 'practica' ? 'text-black' : t.bg3}`} style={tab === 'practica' ? { backgroundColor: accentColor } : {}}>Práctica</button>
         </div>
         {tab === 'teoria' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>{renderChapterList(chapters, openChapters, selectedEnding, setSelectedEnding, (tt) => toggleChapter(tt, false))}</div>
-            <div className={`${t.bg2} ${t.border} border rounded p-4 min-h-[300px]`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1">{renderChapterList(chapters, openChapters, selectedEnding, (e) => {}, (tt) => toggleChapter(tt, false), false)}</div>
+            <div className="md:col-span-2">
               {selectedEnding ? (
-                <>
-                  <h3 className={`font-bold mb-2 ${t.text}`}>{selectedEnding.title}</h3>
-                  <pre className={`whitespace-pre-wrap text-sm ${t.text2}`}>{selectedEnding.pgn.replace(/\[[^\]]*\]/g, '').trim()}</pre>
-                </>
+                <Viewer
+                  roots={roots}
+                  selectedId={selectedNodeId}
+                  selectedFen={selectedFen}
+                  nodeMap={nodeMap}
+                  onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? INITIAL_FEN) : INITIAL_FEN) }}
+                  onPrev={() => prevNode(roots, selectedNodeId, nodeMap, setSelectedNodeId, setSelectedFen)}
+                  onNext={() => nextNode(roots, selectedNodeId, nodeMap, setSelectedNodeId, setSelectedFen)}
+                />
               ) : <p className={t.text3}>Selecciona un final</p>}
             </div>
           </div>
@@ -146,14 +416,19 @@ export default function Endings() {
           <div>
             <textarea value={practicePgn} onChange={e => setPracticePgn(e.target.value)} className={`w-full h-32 ${t.inputBg} border rounded p-3 text-sm`} placeholder="Pega aquí el PGN del workbook" />
             <button onClick={parsePractice} className="mt-2 px-4 py-2 rounded text-black" style={{ backgroundColor: accentColor }}>Cargar</button>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div>{renderChapterList(practiceChapters, practiceOpen, practiceSelected, setPracticeSelected, (tt) => toggleChapter(tt, true))}</div>
-              <div className={`${t.bg2} ${t.border} border rounded p-4 min-h-[300px]`}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+              <div>{renderChapterList(practiceChapters, practiceOpen, practiceSelected, (e) => {}, (tt) => toggleChapter(tt, true), true)}</div>
+              <div className="md:col-span-2">
                 {practiceSelected ? (
-                  <>
-                    <h3 className={`font-bold mb-2 ${t.text}`}>{practiceSelected.title}</h3>
-                    <pre className={`whitespace-pre-wrap text-sm ${t.text2}`}>{practiceSelected.pgn.replace(/\[[^\]]*\]/g, '').trim()}</pre>
-                  </>
+                  <Viewer
+                    roots={practiceRoots}
+                    selectedId={practiceSelectedNodeId}
+                    selectedFen={practiceSelectedFen}
+                    nodeMap={practiceNodeMap}
+                    onSelect={(id) => { setPracticeSelectedNodeId(id); setPracticeSelectedFen(id != null ? (practiceNodeMap.get(id)?.fen ?? INITIAL_FEN) : INITIAL_FEN) }}
+                    onPrev={() => prevNode(practiceRoots, practiceSelectedNodeId, practiceNodeMap, setPracticeSelectedNodeId, setPracticeSelectedFen)}
+                    onNext={() => nextNode(practiceRoots, practiceSelectedNodeId, practiceNodeMap, setPracticeSelectedNodeId, setPracticeSelectedFen)}
+                  />
                 ) : <p className={t.text3}>Selecciona un final</p>}
               </div>
             </div>
