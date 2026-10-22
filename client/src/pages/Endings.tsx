@@ -191,6 +191,15 @@ function parsePgnToChapters(text: string): Chapter[] {
 function SunIcon() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>) }
 function MoonIcon() { return (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>) }
 
+function normalizeComment(text: string): string {
+  let t = (text || '').replace(/\s+/g, ' ').trim()
+  // ensure space before numbered items like 1)
+  t = t.replace(/(\S)(\d+\))/g, '$1 $2')
+  // separate sentences onto their own lines
+  t = t.replace(/\. /g, '.\n')
+  return t
+}
+
 export default function Endings() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -370,9 +379,9 @@ export default function Endings() {
     )
   }
 
-  function Viewer({ roots, selectedId, selectedFen, nodeMap, onSelect, onPrev, onNext }: {
+  function Viewer({ roots, selectedId, selectedFen, nodeMap, onSelect, onPrevEnding, onNextEnding, startFen, introComment }: {
     roots: EndNode[]; selectedId: number | null; selectedFen: string; nodeMap: Map<number, EndNode>;
-    onSelect: (id: number | null) => void; onPrev: () => void; onNext: () => void;
+    onSelect: (id: number | null) => void; onPrevEnding: () => void; onNextEnding: () => void; startFen: string; introComment: string;
   }) {
     const node = selectedId != null ? nodeMap.get(selectedId) ?? null : null
     return (
@@ -382,15 +391,15 @@ export default function Endings() {
             <Chessboard position={selectedFen} boardOrientation="white" />
           </div>
           <div className="flex gap-2 mt-3 justify-center">
-            <button onClick={onPrev} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>◀</button>
-            <button onClick={() => onSelect(null)} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>Inicio</button>
-            <button onClick={onNext} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>▶</button>
+            <button onClick={onPrevEnding} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>◀</button>
+            <button onClick={() => { onSelect(null) }} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>Inicio</button>
+            <button onClick={onNextEnding} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>▶</button>
           </div>
         </div>
         <div className={`${t.bg2} ${t.border} border rounded p-4`}>
-          <h3 className={`font-bold mb-2 ${t.text}`}>{node ? `${node.moveNumber}. ${node.move} ${node.annotationSymbol}` : 'Posición inicial'}</h3>
-          <div className={`text-sm ${t.text2} whitespace-pre-wrap mb-4`}>{node ? (node.annotationText || 'Sin comentario') : ''}</div>
-          <div className="flex flex-wrap gap-1">{renderMoveLines(roots, selectedId, onSelect, nodeMap)}</div>
+          <h3 className={`font-bold mb-2 ${t.text}`}>{node ? `${getMovePrefix(node)} ${node.move} ${node.annotationSymbol}`.trim() : 'Posición inicial'}</h3>
+          <div className={`text-sm ${t.text2} whitespace-pre-wrap mb-4`}>{normalizeComment(node ? (node.annotationText || 'Sin comentario') : (introComment || ''))}</div>
+          <div>{renderMoveLines(roots, selectedId, onSelect, nodeMap)}</div>
         </div>
       </div>
     )
@@ -458,8 +467,8 @@ export default function Endings() {
                 Volver
               </button>
               <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{selectedEnding.title}</h3>
-              {introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text2} whitespace-pre-wrap`}>{introComment}</div>}
-              <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrev={() => { if (selectedNodeId == null) return; const node = nodeMap.get(selectedNodeId); if (!node || node.parentId == null) { setSelectedNodeId(null); setSelectedFen(startFen) } else { setSelectedNodeId(node.parentId); setSelectedFen(nodeMap.get(node.parentId)?.fen ?? startFen) } }} onNext={() => { if (selectedNodeId == null) { if (roots.length > 0) { setSelectedNodeId(roots[0].id); setSelectedFen(roots[0].fen) } return } const node = nodeMap.get(selectedNodeId); if (node && node.children.length > 0) { setSelectedNodeId(node.children[0].id); setSelectedFen(node.children[0].fen) } }} />
+               {introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text2} whitespace-pre-wrap`}>{normalizeComment(introComment)}</div>}
+              <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} startFen={startFen} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrevEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx > 0) loadEnding(flat[idx-1], false) }} onNextEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], false) }} introComment={introComment} />
             </div>
           ) : (
             <div className="max-w-2xl">{renderChapterList(chapters, openChapters, selectedEnding, (e) => {}, (tt) => toggleChapter(tt, false), false)}</div>
@@ -473,8 +482,8 @@ export default function Endings() {
                 Volver
               </button>
               <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{practiceSelected.title}</h3>
-              {practiceIntroComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text2} whitespace-pre-wrap`}>{practiceIntroComment}</div>}
-              <Viewer roots={practiceRoots} selectedId={practiceSelectedNodeId} selectedFen={practiceSelectedFen} nodeMap={practiceNodeMap} onSelect={(id) => { setPracticeSelectedNodeId(id); setPracticeSelectedFen(id != null ? (practiceNodeMap.get(id)?.fen ?? practiceStartFen) : practiceStartFen) }} onPrev={() => { if (practiceSelectedNodeId == null) return; const node = practiceNodeMap.get(practiceSelectedNodeId); if (!node || node.parentId == null) { setPracticeSelectedNodeId(null); setPracticeSelectedFen(practiceStartFen) } else { setPracticeSelectedNodeId(node.parentId); setPracticeSelectedFen(practiceNodeMap.get(node.parentId)?.fen ?? practiceStartFen) } }} onNext={() => { if (practiceSelectedNodeId == null) { if (practiceRoots.length > 0) { setPracticeSelectedNodeId(practiceRoots[0].id); setPracticeSelectedFen(practiceRoots[0].fen) } return } const node = practiceNodeMap.get(practiceSelectedNodeId); if (node && node.children.length > 0) { setPracticeSelectedNodeId(node.children[0].id); setPracticeSelectedFen(node.children[0].fen) } }} />
+               {practiceIntroComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text2} whitespace-pre-wrap`}>{normalizeComment(practiceIntroComment)}</div>}
+              <Viewer roots={practiceRoots} selectedId={practiceSelectedNodeId} selectedFen={practiceSelectedFen} nodeMap={practiceNodeMap} startFen={practiceStartFen} onSelect={(id) => { setPracticeSelectedNodeId(id); setPracticeSelectedFen(id != null ? (practiceNodeMap.get(id)?.fen ?? practiceStartFen) : practiceStartFen) }} onPrevEnding={() => { const flat = practiceChapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === practiceSelected?.title && e.pgn === practiceSelected?.pgn); if (idx > 0) loadEnding(flat[idx-1], true) }} onNextEnding={() => { const flat = practiceChapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === practiceSelected?.title && e.pgn === practiceSelected?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], true) }} introComment={practiceIntroComment} />
             </div>
           ) : (
             <div>
