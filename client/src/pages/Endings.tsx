@@ -456,7 +456,7 @@ export default function Endings() {
 
   if (screen === 'intro') {
     return (
-      <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300 flex flex-col`}>
+      <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-300 flex flex-col`}>
         <Nav />
         <div className="max-w-3xl mx-auto px-6 py-20">
           <div className="mb-12">
@@ -500,7 +500,7 @@ export default function Endings() {
   }
 
   return (
-    <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300 flex flex-col`}>
+    <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-300 flex flex-col`}>
       <Nav />
       <div className="flex-1 px-6 pt-6 pb-6 max-w-7xl mx-auto w-full">
         <h2 className={`text-2xl font-bold mb-4 ${t.text}`}>♚ Finales</h2>
