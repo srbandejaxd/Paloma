@@ -402,7 +402,7 @@ export default function Endings() {
         </div>
         <div className={`${t.bg2} ${t.border} border rounded p-4`}>
           <h3 className={`font-bold mb-2 ${t.text}`}>{node ? `${getMovePrefix(node)} ${node.move} ${node.annotationSymbol}`.trim() : 'Posición inicial'}</h3>
-          <div className={`text-sm ${t.text2} whitespace-pre-wrap mb-4`}>{normalizeComment(node ? (node.annotationText || 'Sin comentario') : (introComment || ''))}</div>
+          <div className={`text-sm ${t.text2} whitespace-pre-wrap mb-4`}>{normalizeComment(node ? (node.annotationText || 'Sin comentario') : '')}</div>
           <div>{renderMoveLines(roots, selectedId, onSelect, nodeMap)}</div>
         </div>
       </div>
@@ -516,7 +516,7 @@ export default function Endings() {
                 Volver
               </button>
               <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{selectedEnding.title}</h3>
-               {introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text2} whitespace-pre-wrap`}>{normalizeComment(introComment)}</div>}
+               {introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text} whitespace-pre-wrap`}>{normalizeComment(introComment)}</div>}
               <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} startFen={startFen} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrevEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx > 0) loadEnding(flat[idx-1], false) }} onNextEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], false) }} introComment={introComment} />
             </div>
           ) : (
@@ -531,7 +531,7 @@ export default function Endings() {
                 Volver
               </button>
               <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{practiceSelected.title}</h3>
-               {practiceIntroComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text2} whitespace-pre-wrap`}>{normalizeComment(practiceIntroComment)}</div>}
+               {practiceIntroComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text} whitespace-pre-wrap`}>{normalizeComment(practiceIntroComment)}</div>}
               <Viewer roots={practiceRoots} selectedId={practiceSelectedNodeId} selectedFen={practiceSelectedFen} nodeMap={practiceNodeMap} startFen={practiceStartFen} onSelect={(id) => { setPracticeSelectedNodeId(id); setPracticeSelectedFen(id != null ? (practiceNodeMap.get(id)?.fen ?? practiceStartFen) : practiceStartFen) }} onPrevEnding={() => { const flat = practiceChapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === practiceSelected?.title && e.pgn === practiceSelected?.pgn); if (idx > 0) loadEnding(flat[idx-1], true) }} onNextEnding={() => { const flat = practiceChapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === practiceSelected?.title && e.pgn === practiceSelected?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], true) }} introComment={practiceIntroComment} />
             </div>
           ) : (
