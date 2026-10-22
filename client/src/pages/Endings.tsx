@@ -208,6 +208,7 @@ export default function Endings() {
   const navigate = useNavigate()
   const location = useLocation()
   const [dark, setDark] = useState(true)
+  const [screen, setScreen] = useState<'intro' | 'list'>('intro')
   const [tab, setTab] = useState<'teoria' | 'practica'>('teoria')
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [openChapters, setOpenChapters] = useState<Set<string>>(new Set())
@@ -451,6 +452,51 @@ export default function Endings() {
       setSelectedId(node.children[0].id)
       setSelectedFen(node.children[0].fen)
     }
+  }
+
+  if (screen === 'intro') {
+    return (
+      <div className={`min-h-screen ${t.bg} ${t.text} font-mono transition-colors duration-300 flex flex-col`}>
+        <Nav />
+        <div className="max-w-3xl mx-auto px-6 py-20">
+          <div className="mb-12">
+            <p className={`text-sm uppercase tracking-[0.15em] ${t.text3} mb-3`}>100 Finales que hay que saber</p>
+            <h2 className={`text-5xl font-bold ${t.text} leading-none mb-6`} style={{ letterSpacing: '-0.02em' }}>
+              Finales ♚
+            </h2>
+            <p className={`text-lg ${t.text2} leading-relaxed max-w-xl`}>
+              Estudia los finales esenciales del ajedrez: posiciones clave con comentarios y variantes. Teoría para leerlos y Práctica para dominarlos.
+            </p>
+          </div>
+          <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-6`}>
+            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-6`}>Cómo funciona</p>
+            <div className="space-y-6">
+              {[
+                { icon: '📖', title: 'Teoría', desc: 'Explora capítulos y finales. Cada posición incluye comentarios y variantes.' },
+                { icon: '♟', title: 'Tablero', desc: 'Visualiza la posición y navega por los movimientos con las flechas.' },
+                { icon: '💬', title: 'Comentarios', desc: 'Los comentarios se normalizan para leerse con claridad.' },
+                { icon: '➡️', title: 'Navegación', desc: 'Usa las flechas para pasar de un final al siguiente.' },
+              ].map(step => (
+                <div key={step.title} className="flex gap-4">
+                  <div className="text-2xl flex-shrink-0 mt-0.5">{step.icon}</div>
+                  <div>
+                    <p className={`font-bold ${t.text} mb-1`}>{step.title}</p>
+                    <p className={`text-sm ${t.text2} leading-relaxed`}>{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={() => setScreen('list')}
+            className="px-10 py-4 rounded-xl font-bold text-sm tracking-widest uppercase text-white transition-all hover:opacity-90 hover:shadow-lg hover:scale-105"
+            style={{ backgroundColor: accentColor }}
+          >
+            Ver finales
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
