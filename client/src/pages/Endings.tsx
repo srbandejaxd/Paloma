@@ -314,18 +314,60 @@ export default function Endings() {
   }
 
   // render move tree recursively
-  function renderMoveTree(nodes: EndNode[], selectedId: number | null, onSelect: (id: number | null) => void, depth = 0): JSX.Element[] {
-    return nodes.map(n => (
-      <div key={n.id} style={{ marginLeft: depth * 14, borderLeft: depth > 0 ? `2px solid ${dark ? '#38385A' : '#C4BBAA'}` : 'none', paddingLeft: depth > 0 ? 8 : 0, marginBottom: 4 }}>
-        <button
-          onClick={() => onSelect(n.id)}
-          className={`inline-block px-2 py-1 rounded text-sm font-mono transition-all ${selectedId === n.id ? 'bg-[#D4A017] text-black' : `${t.bg3} ${t.text2} hover:${t.text}`}`}
-        >
-          {n.moveNumber}. {n.move}{n.annotationSymbol ? ` ${n.annotationSymbol}` : ''}
-        </button>
-        {n.children.length > 0 && renderMoveTree(n.children, selectedId, onSelect, depth + 1)}
+  function getMovePrefix(n: EndNode): string {
+    if (n.color === 'white') return `${n.moveNumber}.`
+    const parent = n.parentId != null ? nodeMap.get(n.parentId) ?? null : null
+    if (!parent || parent.color === 'black') return `${n.moveNumber}...`
+    return ''
+  }
+
+  function collectLines(startNodes: EndNode[]): { depth: number; nodes: EndNode[] }[] {
+    const lines: { depth: number; nodes: EndNode[] }[] = []
+    function walk(nodes: EndNode[], depth: number) {
+      // main line following first child
+      const line: EndNode[] = []
+      let cur: EndNode | null = nodes[0] ?? null
+      // if multiple roots, handle each
+      // We'll process each root node as start of a line
+    }
+    // Handle possibly multiple roots
+    function buildLine(node: EndNode, depth: number) {
+      const line: EndNode[] = []
+      let cur: EndNode | null = node
+      while (cur) {
+        line.push(cur)
+        cur = cur.children[0] ?? null
+      }
+      lines.push({ depth, nodes: line })
+      for (const n of line) {
+        for (let i = 1; i < n.children.length; i++) {
+          buildLine(n.children[i], depth + 1)
+        }
+      }
+    }
+    for (const r of startNodes) buildLine(r, 0)
+    return lines
+  }
+
+  function renderMoveLines(startNodes: EndNode[], selectedId: number | null, onSelect: (id: number | null) => void, nodeMap: Map<number, EndNode>): JSX.Element {
+    const lines = collectLines(startNodes)
+    return (
+      <div className="space-y-2">
+        {lines.map((line, li) => (
+          <div key={li} style={{ marginLeft: line.depth * 14, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', borderLeft: line.depth > 0 ? `2px solid ${dark ? '#38385A' : '#C4BBAA'}` : 'none', paddingLeft: line.depth > 0 ? 8 : 0 }}>
+            {line.nodes.map(n => (
+              <button
+                key={n.id}
+                onClick={() => onSelect(n.id)}
+                className={`px-2 py-1 rounded text-sm font-mono transition-all ${selectedId === n.id ? 'bg-[#D4A017] text-black' : `${t.bg3} ${t.text2} hover:${t.text}`}`}
+              >
+                {getMovePrefix(n)} {n.move}{n.annotationSymbol ? ` ${n.annotationSymbol}` : ''}
+              </button>
+            ))}
+          </div>
+        ))}
       </div>
-    ))
+    )
   }
 
   function Viewer({ roots, selectedId, selectedFen, nodeMap, onSelect, onPrev, onNext }: {
@@ -348,7 +390,7 @@ export default function Endings() {
         <div className={`${t.bg2} ${t.border} border rounded p-4`}>
           <h3 className={`font-bold mb-2 ${t.text}`}>{node ? `${node.moveNumber}. ${node.move} ${node.annotationSymbol}` : 'Posición inicial'}</h3>
           <div className={`text-sm ${t.text2} whitespace-pre-wrap mb-4`}>{node ? (node.annotationText || 'Sin comentario') : ''}</div>
-          <div className="flex flex-wrap gap-1">{renderMoveTree(roots, selectedId, onSelect)}</div>
+          <div className="flex flex-wrap gap-1">{renderMoveLines(roots, selectedId, onSelect, nodeMap)}</div>
         </div>
       </div>
     )
