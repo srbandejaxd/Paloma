@@ -205,6 +205,9 @@ export default function Endings() {
   const [roots, setRoots] = useState<EndNode[]>([])
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null)
   const [startFen, setStartFen] = useState(INITIAL_FEN)
+  const [practiceStartFen, setPracticeStartFen] = useState(INITIAL_FEN)
+  const [introComment, setIntroComment] = useState('')
+  const [practiceIntroComment, setPracticeIntroComment] = useState('')
   const [selectedFen, setSelectedFen] = useState(INITIAL_FEN)
   const [nodeMap, setNodeMap] = useState<Map<number, EndNode>>(new Map())
 
@@ -215,7 +218,6 @@ export default function Endings() {
   const [practiceSelected, setPracticeSelected] = useState<EndingItem | null>(null)
   const [practiceRoots, setPracticeRoots] = useState<EndNode[]>([])
   const [practiceSelectedNodeId, setPracticeSelectedNodeId] = useState<number | null>(null)
-  const [practiceStartFen, setPracticeStartFen] = useState(INITIAL_FEN)
   const [practiceSelectedFen, setPracticeSelectedFen] = useState(INITIAL_FEN)
   const [practiceNodeMap, setPracticeNodeMap] = useState<Map<number, EndNode>>(new Map())
 
@@ -230,6 +232,8 @@ export default function Endings() {
   function loadEnding(ending: EndingItem, practice: boolean) {
     const fenMatch = ending.pgn.match(/\[FEN "([^"]*)"\]/)
     const sf = fenMatch ? fenMatch[1] : INITIAL_FEN
+    const introMatch = ending.pgn.replace(/\[[^\]]*\]/g, '').trim().match(/^\s*\{([^}]*)\}/)
+    const ic = introMatch ? introMatch[1].trim() : ''
     const { nodes: impNodes, annotationMap } = parsePgnToNodes(ending.pgn)
     const idMap = new Map<string, number>()
     let counter = 1
@@ -256,6 +260,7 @@ export default function Endings() {
       setPracticeSelectedFen(sf)
       setPracticeNodeMap(nm)
       setPracticeStartFen(sf)
+      setPracticeIntroComment(ic)
     } else {
       setSelectedEnding(ending)
       setRoots(r)
@@ -263,6 +268,7 @@ export default function Endings() {
       setSelectedFen(sf)
       setNodeMap(nm)
       setStartFen(sf)
+      setIntroComment(ic)
     }
   }
 
@@ -310,15 +316,15 @@ export default function Endings() {
   // render move tree recursively
   function renderMoveTree(nodes: EndNode[], selectedId: number | null, onSelect: (id: number | null) => void, depth = 0): JSX.Element[] {
     return nodes.map(n => (
-      <span key={n.id} style={{ marginLeft: depth * 12 }}>
+      <div key={n.id} style={{ marginLeft: depth * 14, borderLeft: depth > 0 ? `2px solid ${dark ? '#38385A' : '#C4BBAA'}` : 'none', paddingLeft: depth > 0 ? 8 : 0, marginBottom: 4 }}>
         <button
           onClick={() => onSelect(n.id)}
-          className={`inline-block px-2 py-0.5 rounded text-sm font-mono mx-1 ${selectedId === n.id ? 'bg-[#D4A017] text-black' : `${t.text2} hover:${t.text}`}`}
+          className={`inline-block px-2 py-1 rounded text-sm font-mono transition-all ${selectedId === n.id ? 'bg-[#D4A017] text-black' : `${t.bg3} ${t.text2} hover:${t.text}`}`}
         >
           {n.moveNumber}. {n.move}{n.annotationSymbol ? ` ${n.annotationSymbol}` : ''}
         </button>
         {n.children.length > 0 && renderMoveTree(n.children, selectedId, onSelect, depth + 1)}
-      </span>
+      </div>
     ))
   }
 
@@ -410,6 +416,7 @@ export default function Endings() {
                 Volver
               </button>
               <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{selectedEnding.title}</h3>
+              {introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text2} whitespace-pre-wrap`}>{introComment}</div>}
               <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrev={() => { if (selectedNodeId == null) return; const node = nodeMap.get(selectedNodeId); if (!node || node.parentId == null) { setSelectedNodeId(null); setSelectedFen(startFen) } else { setSelectedNodeId(node.parentId); setSelectedFen(nodeMap.get(node.parentId)?.fen ?? startFen) } }} onNext={() => { if (selectedNodeId == null) { if (roots.length > 0) { setSelectedNodeId(roots[0].id); setSelectedFen(roots[0].fen) } return } const node = nodeMap.get(selectedNodeId); if (node && node.children.length > 0) { setSelectedNodeId(node.children[0].id); setSelectedFen(node.children[0].fen) } }} />
             </div>
           ) : (
@@ -424,6 +431,7 @@ export default function Endings() {
                 Volver
               </button>
               <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{practiceSelected.title}</h3>
+              {practiceIntroComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text2} whitespace-pre-wrap`}>{practiceIntroComment}</div>}
               <Viewer roots={practiceRoots} selectedId={practiceSelectedNodeId} selectedFen={practiceSelectedFen} nodeMap={practiceNodeMap} onSelect={(id) => { setPracticeSelectedNodeId(id); setPracticeSelectedFen(id != null ? (practiceNodeMap.get(id)?.fen ?? practiceStartFen) : practiceStartFen) }} onPrev={() => { if (practiceSelectedNodeId == null) return; const node = practiceNodeMap.get(practiceSelectedNodeId); if (!node || node.parentId == null) { setPracticeSelectedNodeId(null); setPracticeSelectedFen(practiceStartFen) } else { setPracticeSelectedNodeId(node.parentId); setPracticeSelectedFen(practiceNodeMap.get(node.parentId)?.fen ?? practiceStartFen) } }} onNext={() => { if (practiceSelectedNodeId == null) { if (practiceRoots.length > 0) { setPracticeSelectedNodeId(practiceRoots[0].id); setPracticeSelectedFen(practiceRoots[0].fen) } return } const node = practiceNodeMap.get(practiceSelectedNodeId); if (node && node.children.length > 0) { setPracticeSelectedNodeId(node.children[0].id); setPracticeSelectedFen(node.children[0].fen) } }} />
             </div>
           ) : (
