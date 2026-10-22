@@ -193,10 +193,13 @@ function MoonIcon() { return (<svg width="16" height="16" viewBox="0 0 24 24" fi
 
 function normalizeComment(text: string): string {
   let t = (text || '').replace(/\s+/g, ' ').trim()
-  // ensure space before numbered items like 1)
   t = t.replace(/(\S)(\d+\))/g, '$1 $2')
-  // separate sentences onto their own lines
+  t = t.replace(/vs\. /gi, 'vs.\u00A0')
   t = t.replace(/\. /g, '.\n')
+  t = t.replace(/\n /g, '\n')
+  t = t.replace(/ (\d+\))/g, '\n$1')
+  t = t.replace(/vs\.\u00A0/g, 'vs. ')
+  t = t.replace(/\n{2,}/g, '\n')
   return t
 }
 
