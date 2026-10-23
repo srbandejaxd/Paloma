@@ -1,7 +1,10 @@
 {
   "name": "woodpecker",
   "private": true,
-  "workspaces": ["client", "server"],
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
     "build": "cd client && npm install && npm run build",
     "start": "node server/src/index.js"
@@ -11,5 +14,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "stockfish": "^19.0.1"
   }
 }

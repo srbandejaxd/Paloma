@@ -213,6 +213,8 @@ function evaluateBoard(g: Chess): number {
       score += sq.color === 'w' ? v : -v
     }
   }
+  // mobility
+  score += (g.moves().length) * 0.05 * (g.turn() === 'w' ? 1 : -1)
   return score
 }
 
@@ -252,7 +254,7 @@ function bestMoveForBlack(g: Chess): string | null {
   let chosen: string | null = null
   for (const m of moves) {
     g.move(m)
-    const score = minimax(g, 3, -Infinity, Infinity, true)
+    const score = minimax(g, 4, -Infinity, Infinity, true)
     g.undo()
     if (score < best) { best = score; chosen = m }
   }
@@ -268,11 +270,35 @@ function bestMoveForSide(g: Chess, side: 'white' | 'black'): string | null {
   let chosen: string | null = null
   for (const m of moves) {
     g.move(m)
-    const score = minimax(g, 3, -Infinity, Infinity, false)
+    const score = minimax(g, 4, -Infinity, Infinity, false)
     g.undo()
     if (score > best) { best = score; chosen = m }
   }
   return chosen
+}
+
+function getBestMove(fen: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    let worker: Worker
+    try { worker = new Worker('/stockfish/stockfish-19-lite-single.js') } catch { resolve(null); return }
+    const timeout = setTimeout(() => { try { worker.terminate() } catch {} ; resolve(null) }, 15000)
+    worker.onmessage = (e) => {
+      const line = String(e.data || '')
+      if (line === 'uciok') {
+        worker.postMessage('isready')
+      } else if (line === 'readyok') {
+        worker.postMessage(`position fen ${fen}`)
+        worker.postMessage('go depth 12')
+      } else if (line.startsWith('bestmove')) {
+        clearTimeout(timeout)
+        const m = line.match(/bestmove (\S+)/)
+        try { worker.terminate() } catch {}
+        resolve(m ? m[1] : null)
+      }
+    }
+    worker.onerror = () => { clearTimeout(timeout); try { worker.terminate() } catch {} ; resolve(null) }
+    worker.postMessage('uci')
+  })
 }
 
 export default function Endings() {
@@ -331,6 +357,7 @@ export default function Endings() {
   }, [user, navigate])
 
   function loadEnding(ending: EndingItem, practice: boolean) {
+    if (timerRunning) recordResult('derrota')
     const fenMatch = ending.pgn.match(/\[FEN "([^"]*)"\]/)
     const sf = fenMatch ? fenMatch[1] : INITIAL_FEN
     const introMatch = ending.pgn.replace(/\[[^\]]*\]/g, '').trim().match(/^\s*\{([^}]*)\}/)
@@ -384,9 +411,14 @@ export default function Endings() {
     const mc: 'white' | 'black' = uc === 'white' ? 'black' : 'white'
     if (g.turn() === (mc === 'white' ? 'w' : 'b')) {
       setTimeout(() => {
-        const gg = new Chess(g.fen())
-        const bm = bestMoveForSide(gg, mc)
-        if (bm) { try { gg.move(bm) } catch {} ; setPlayGame(gg); setPlayFen(gg.fen()) }
+        getBestMove(g.fen()).then((bm) => {
+          if (bm) {
+            const gg = new Chess(g.fen())
+            try { gg.move(bm) } catch {}
+            setPlayGame(gg); setPlayFen(gg.fen())
+            if (gg.isGameOver()) setTimerRunning(false)
+          }
+        })
       }, 400)
     }
   }
@@ -406,8 +438,14 @@ export default function Endings() {
     setTimeout(() => {
       const gg = new Chess(g.fen())
       if (gg.turn() === (mc === 'white' ? 'w' : 'b')) {
-        const bm = bestMoveForSide(gg, mc)
-        if (bm) { try { gg.move(bm) } catch {} ; setPlayGame(gg); setPlayFen(gg.fen()); if (gg.isGameOver()) setTimerRunning(false) }
+        getBestMove(gg.fen()).then((bm) => {
+          if (bm) {
+            const ggg = new Chess(gg.fen())
+            try { ggg.move(bm) } catch {}
+            setPlayGame(ggg); setPlayFen(ggg.fen())
+            if (ggg.isGameOver()) setTimerRunning(false)
+          }
+        })
       }
     }, 400)
     return true
@@ -671,7 +709,7 @@ export default function Endings() {
         {tab === 'teoria' && (
           selectedEnding ? (
             <div>
-              <button onClick={() => { setSelectedEnding(null); setRoots([]); setSelectedNodeId(null); setSelectedFen(startFen) }} className={`mb-4 flex items-center gap-2 text-sm ${t.text3} hover:${t.text}`}>
+              <button onClick={() => { if (timerRunning) recordResult('derrota'); setSelectedEnding(null); setRoots([]); setSelectedNodeId(null); setSelectedFen(startFen); setMode('estudiar'); setShowComment(false) }} className={`mb-4 flex items-center gap-2 text-sm ${t.text3} hover:${t.text}`}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Volver
               </button>
@@ -717,7 +755,7 @@ export default function Endings() {
         {tab === 'practica' && (
           practiceSelected ? (
             <div>
-              <button onClick={() => { setPracticeSelected(null); setPracticeRoots([]); setPracticeSelectedNodeId(null); setPracticeSelectedFen(practiceStartFen) }} className={`mb-4 flex items-center gap-2 text-sm ${t.text3} hover:${t.text}`}>
+              <button onClick={() => { if (timerRunning) recordResult('derrota'); setPracticeSelected(null); setPracticeRoots([]); setPracticeSelectedNodeId(null); setPracticeSelectedFen(practiceStartFen); setMode('estudiar'); setShowComment(false) }} className={`mb-4 flex items-center gap-2 text-sm ${t.text3} hover:${t.text}`}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Volver
               </button>
