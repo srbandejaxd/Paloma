@@ -320,6 +320,7 @@ export default function Endings() {
   const [introComment, setIntroComment] = useState('')
   const [mode, setMode] = useState<'estudiar' | 'jugar'>('estudiar')
   const [showComment, setShowComment] = useState(false)
+  const [studying, setStudying] = useState(false)
   const [playGame, setPlayGame] = useState<Chess | null>(null)
   const [playFen, setPlayFen] = useState('')
   const [userColor, setUserColor] = useState<'white' | 'black'>('white')
@@ -358,6 +359,7 @@ export default function Endings() {
 
   function loadEnding(ending: EndingItem, practice: boolean) {
     if (timerRunning) recordResult('derrota')
+    setStudying(false)
     const fenMatch = ending.pgn.match(/\[FEN "([^"]*)"\]/)
     const sf = fenMatch ? fenMatch[1] : INITIAL_FEN
     const introMatch = ending.pgn.replace(/\[[^\]]*\]/g, '').trim().match(/^\s*\{([^}]*)\}/)
@@ -577,7 +579,7 @@ export default function Endings() {
             <button onClick={() => { onSelect(null) }} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>Inicio</button>
             <button onClick={onNextEnding} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>▶</button>
           </div>
-          <p className={`text-xs ${t.text3} text-center mt-1`}>Juegan {selectedFen.split(' ')[1] === 'w' ? 'blancas' : 'negras'}</p>
+          <p className={`text-sm ${t.text} font-bold text-center mt-1`}>Juegan {selectedFen.split(' ')[1] === 'w' ? 'blancas' : 'negras'}</p>
         </div>
         <div className={`${t.bg2} ${t.border} border rounded p-4`}>
           <h3 className={`font-bold mb-2 ${t.text}`}>{node ? `${getMovePrefix(node)} ${node.move} ${node.annotationSymbol}`.trim() : 'Posición inicial'}</h3>
@@ -716,22 +718,23 @@ export default function Endings() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-xl font-bold ${t.text}`}>{selectedEnding.title}</h3>
                 <div className="flex gap-2">
-                  <button onClick={() => { setMode('estudiar'); setShowComment(false) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'estudiar' ? 'text-black' : t.bg3}`} style={mode === 'estudiar' ? { backgroundColor: accentColor } : {}}>Estudiar</button>
-                  <button onClick={() => { setMode('jugar'); initPlay(startFen) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'jugar' ? 'text-black' : t.bg3}`} style={mode === 'jugar' ? { backgroundColor: accentColor } : {}}>Jugar</button>
+                  <button onClick={() => { setMode('estudiar'); setStudying(true) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'estudiar' ? 'text-black' : t.bg3}`} style={mode === 'estudiar' ? { backgroundColor: accentColor } : {}}>Estudiar</button>
+                  <button onClick={() => { setMode('jugar'); setStudying(false); initPlay(startFen) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'jugar' ? 'text-black' : t.bg3}`} style={mode === 'jugar' ? { backgroundColor: accentColor } : {}}>Jugar</button>
                 </div>
               </div>
-               {introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text} whitespace-pre-wrap`}>{normalizeComment(introComment)}</div>}
+               {studying && introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text} whitespace-pre-wrap`}>{normalizeComment(introComment)}</div>}
               {mode === 'estudiar' ? (
-                <>
-                  {!showComment && <button onClick={() => setShowComment(true)} className={`mb-3 px-3 py-1.5 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>Mostrar comentario</button>}
-                  <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} startFen={startFen} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrevEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx > 0) loadEnding(flat[idx-1], false) }} onNextEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], false) }} introComment={showComment ? introComment : ''} />
-                </>
+                studying ? (
+                  <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} startFen={startFen} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrevEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx > 0) loadEnding(flat[idx-1], false) }} onNextEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], false) }} introComment={introComment} />
+                ) : (
+                  <p className={t.text3}>Pulsa Estudiar o Jugar para comenzar</p>
+                )
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                   <div className={`${t.bg2} ${t.border} border rounded p-4`}>
                     <div className="aspect-square max-w-[420px] mx-auto">
                       <Chessboard position={playFen || startFen} boardOrientation={userColor} onPieceDrop={handlePlayDrop} />
-                      <p className={`text-sm ${t.text2} text-center mt-2`}>Juegan {playGame && playGame.turn() === 'w' ? 'blancas' : 'negras'}</p>
+                      <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {playGame && playGame.turn() === 'w' ? 'blancas' : 'negras'}</p>
                     </div>
                     <div className="flex gap-2 mt-3 justify-center">
                       <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
