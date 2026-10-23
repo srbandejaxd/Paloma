@@ -727,7 +727,13 @@ export default function Endings() {
                 studying ? (
                   <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} startFen={startFen} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrevEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx > 0) loadEnding(flat[idx-1], false) }} onNextEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], false) }} introComment={introComment} />
                 ) : (
-                  <p className={t.text3}>Pulsa Estudiar o Jugar para comenzar</p>
+                  <div>
+                    <div className={`${t.bg2} ${t.border} border rounded p-4 max-w-[420px]`}>
+                      <Chessboard position={startFen} boardOrientation="white" />
+                      <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {startFen.split(' ')[1] === 'w' ? 'blancas' : 'negras'}</p>
+                    </div>
+                    <p className={`${t.text3} mt-3`}>Pulsa Estudiar o Jugar para comenzar</p>
+                  </div>
                 )
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
