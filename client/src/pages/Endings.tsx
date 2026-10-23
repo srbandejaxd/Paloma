@@ -203,6 +203,78 @@ function normalizeComment(text: string): string {
   return t
 }
 
+function evaluateBoard(g: Chess): number {
+  const pieceVal: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
+  let score = 0
+  for (const row of g.board()) {
+    for (const sq of row) {
+      if (!sq) continue
+      const v = pieceVal[sq.type] || 0
+      score += sq.color === 'w' ? v : -v
+    }
+  }
+  return score
+}
+
+function minimax(g: Chess, depth: number, alpha: number, beta: number, maximizing: boolean): number {
+  if (depth === 0 || g.isGameOver()) {
+    if (g.isCheckmate()) return maximizing ? -100000 : 100000
+    return evaluateBoard(g)
+  }
+  const moves = g.moves()
+  if (maximizing) {
+    let best = -Infinity
+    for (const m of moves) {
+      g.move(m)
+      best = Math.max(best, minimax(g, depth - 1, alpha, beta, false))
+      g.undo()
+      alpha = Math.max(alpha, best)
+      if (beta <= alpha) break
+    }
+    return best
+  } else {
+    let best = Infinity
+    for (const m of moves) {
+      g.move(m)
+      best = Math.min(best, minimax(g, depth - 1, alpha, beta, true))
+      g.undo()
+      beta = Math.min(beta, best)
+      if (beta <= alpha) break
+    }
+    return best
+  }
+}
+
+function bestMoveForBlack(g: Chess): string | null {
+  const moves = g.moves()
+  if (moves.length === 0) return null
+  let best = Infinity
+  let chosen: string | null = null
+  for (const m of moves) {
+    g.move(m)
+    const score = minimax(g, 3, -Infinity, Infinity, true)
+    g.undo()
+    if (score < best) { best = score; chosen = m }
+  }
+  return chosen
+}
+
+function bestMoveForSide(g: Chess, side: 'white' | 'black'): string | null {
+  const moves = g.moves()
+  if (moves.length === 0) return null
+  if (side === 'black') return bestMoveForBlack(g)
+  // white: maximize
+  let best = -Infinity
+  let chosen: string | null = null
+  for (const m of moves) {
+    g.move(m)
+    const score = minimax(g, 3, -Infinity, Infinity, false)
+    g.undo()
+    if (score > best) { best = score; chosen = m }
+  }
+  return chosen
+}
+
 export default function Endings() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -220,6 +292,17 @@ export default function Endings() {
   const [startFen, setStartFen] = useState(INITIAL_FEN)
   const [practiceStartFen, setPracticeStartFen] = useState(INITIAL_FEN)
   const [introComment, setIntroComment] = useState('')
+  const [mode, setMode] = useState<'estudiar' | 'jugar'>('estudiar')
+  const [showComment, setShowComment] = useState(false)
+  const [playGame, setPlayGame] = useState<Chess | null>(null)
+  const [playFen, setPlayFen] = useState('')
+  const [userColor, setUserColor] = useState<'white' | 'black'>('white')
+  const [timer, setTimer] = useState(0)
+  const [timerRunning, setTimerRunning] = useState(false)
+  const [attempts, setAttempts] = useState<{ title: string; result: string; time: number; date: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('endings_history') || '[]') } catch { return [] }
+  })
+  const [showHistory, setShowHistory] = useState(false)
   const [practiceIntroComment, setPracticeIntroComment] = useState('')
   const [selectedFen, setSelectedFen] = useState(INITIAL_FEN)
   const [nodeMap, setNodeMap] = useState<Map<number, EndNode>>(new Map())
@@ -235,6 +318,11 @@ export default function Endings() {
   const [practiceNodeMap, setPracticeNodeMap] = useState<Map<number, EndNode>>(new Map())
 
   useEffect(() => { const saved = localStorage.getItem('wp_theme'); if (saved) setDark(saved === 'dark') }, [])
+  useEffect(() => {
+    if (!timerRunning) return
+    const id = setInterval(() => setTimer(t => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [timerRunning])
   function toggleTheme() { const next = !dark; setDark(next); localStorage.setItem('wp_theme', next ? 'dark' : 'light') }
 
   useEffect(() => {
@@ -282,6 +370,58 @@ export default function Endings() {
       setNodeMap(nm)
       setStartFen(sf)
       setIntroComment(ic)
+    }
+  }
+
+  function initPlay(sf: string) {
+    const g = new Chess(sf)
+    const uc: 'white' | 'black' = g.turn() === 'w' ? 'white' : 'black'
+    setUserColor(uc)
+    setPlayGame(g)
+    setPlayFen(sf)
+    setTimer(0)
+    setTimerRunning(true)
+    const mc: 'white' | 'black' = uc === 'white' ? 'black' : 'white'
+    if (g.turn() === (mc === 'white' ? 'w' : 'b')) {
+      setTimeout(() => {
+        const gg = new Chess(g.fen())
+        const bm = bestMoveForSide(gg, mc)
+        if (bm) { try { gg.move(bm) } catch {} ; setPlayGame(gg); setPlayFen(gg.fen()) }
+      }, 400)
+    }
+  }
+
+  function handlePlayDrop(sourceSquare: string, targetSquare: string): boolean {
+    if (!playGame) return false
+    const g = new Chess(playGame.fen())
+    const turnColor: 'white' | 'black' = g.turn() === 'w' ? 'white' : 'black'
+    if (turnColor !== userColor) return false
+    let move
+    try { move = g.move({ from: sourceSquare, to: targetSquare, promotion: 'q' }) } catch { move = null }
+    if (!move) return false
+    setPlayGame(g)
+    setPlayFen(g.fen())
+    if (g.isGameOver()) { setTimerRunning(false); return true }
+    const mc: 'white' | 'black' = userColor === 'white' ? 'black' : 'white'
+    setTimeout(() => {
+      const gg = new Chess(g.fen())
+      if (gg.turn() === (mc === 'white' ? 'w' : 'b')) {
+        const bm = bestMoveForSide(gg, mc)
+        if (bm) { try { gg.move(bm) } catch {} ; setPlayGame(gg); setPlayFen(gg.fen()); if (gg.isGameOver()) setTimerRunning(false) }
+      }
+    }, 400)
+    return true
+  }
+
+  function recordResult(result: 'victoria' | 'derrota' | 'reintentar') {
+    setTimerRunning(false)
+    const title = selectedEnding?.title || ''
+    const entry = { title, result: result === 'reintentar' ? 'derrota' : result, time: timer, date: new Date().toLocaleString() }
+    const next = [entry, ...attempts]
+    setAttempts(next)
+    try { localStorage.setItem('endings_history', JSON.stringify(next)) } catch {}
+    if (result === 'reintentar' && selectedEnding) {
+      initPlay(startFen)
     }
   }
 
@@ -399,6 +539,7 @@ export default function Endings() {
             <button onClick={() => { onSelect(null) }} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>Inicio</button>
             <button onClick={onNextEnding} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>▶</button>
           </div>
+          <p className={`text-xs ${t.text3} text-center mt-1`}>Juegan {selectedFen.split(' ')[1] === 'w' ? 'blancas' : 'negras'}</p>
         </div>
         <div className={`${t.bg2} ${t.border} border rounded p-4`}>
           <h3 className={`font-bold mb-2 ${t.text}`}>{node ? `${getMovePrefix(node)} ${node.move} ${node.annotationSymbol}`.trim() : 'Posición inicial'}</h3>
@@ -508,6 +649,25 @@ export default function Endings() {
           <button onClick={() => setTab('teoria')} className={`px-4 py-2 rounded ${tab === 'teoria' ? 'text-black' : t.bg3}`} style={tab === 'teoria' ? { backgroundColor: accentColor } : {}}>Teoría</button>
           <button onClick={() => setTab('practica')} className={`px-4 py-2 rounded ${tab === 'practica' ? 'text-black' : t.bg3}`} style={tab === 'practica' ? { backgroundColor: accentColor } : {}}>Práctica</button>
         </div>
+        <button onClick={() => setShowHistory(h => !h)} className={`mb-6 px-4 py-2 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>{showHistory ? 'Ocultar historial' : 'Historial'}</button>
+        {showHistory && (
+          <div className={`${t.bg2} ${t.border} border rounded p-4 mb-6 max-h-60 overflow-y-auto`}>
+            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Intentos</p>
+            {attempts.length === 0 ? <p className={t.text3}>Sin intentos</p> : (
+              <div className="space-y-2">
+                {attempts.map((a, i) => (
+                  <div key={i} className={`text-sm ${t.text2} flex justify-between border-b ${t.border} pb-1`}>
+                    <span>{a.title}</span>
+                    <span className={a.result === 'victoria' ? 'text-green-500' : 'text-red-500'}>{a.result}</span>
+                    <span>{a.time}s</span>
+                    <span className={t.text3}>{a.date}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {attempts.length > 0 && <button onClick={() => { setAttempts([]); localStorage.removeItem('endings_history') }} className={`mt-3 text-xs ${t.text3} hover:${t.text}`}>Limpiar</button>}
+          </div>
+        )}
         {tab === 'teoria' && (
           selectedEnding ? (
             <div>
@@ -515,9 +675,40 @@ export default function Endings() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Volver
               </button>
-              <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{selectedEnding.title}</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-xl font-bold ${t.text}`}>{selectedEnding.title}</h3>
+                <div className="flex gap-2">
+                  <button onClick={() => { setMode('estudiar'); setShowComment(false) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'estudiar' ? 'text-black' : t.bg3}`} style={mode === 'estudiar' ? { backgroundColor: accentColor } : {}}>Estudiar</button>
+                  <button onClick={() => { setMode('jugar'); initPlay(startFen) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'jugar' ? 'text-black' : t.bg3}`} style={mode === 'jugar' ? { backgroundColor: accentColor } : {}}>Jugar</button>
+                </div>
+              </div>
                {introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text} whitespace-pre-wrap`}>{normalizeComment(introComment)}</div>}
-              <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} startFen={startFen} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrevEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx > 0) loadEnding(flat[idx-1], false) }} onNextEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], false) }} introComment={introComment} />
+              {mode === 'estudiar' ? (
+                <>
+                  {!showComment && <button onClick={() => setShowComment(true)} className={`mb-3 px-3 py-1.5 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>Mostrar comentario</button>}
+                  <Viewer roots={roots} selectedId={selectedNodeId} selectedFen={selectedFen} nodeMap={nodeMap} startFen={startFen} onSelect={(id) => { setSelectedNodeId(id); setSelectedFen(id != null ? (nodeMap.get(id)?.fen ?? startFen) : startFen) }} onPrevEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx > 0) loadEnding(flat[idx-1], false) }} onNextEnding={() => { const flat = chapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === selectedEnding?.title && e.pgn === selectedEnding?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], false) }} introComment={showComment ? introComment : ''} />
+                </>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                  <div className={`${t.bg2} ${t.border} border rounded p-4`}>
+                    <div className="aspect-square max-w-[420px] mx-auto">
+                      <Chessboard position={playFen || startFen} boardOrientation={userColor} onPieceDrop={handlePlayDrop} />
+                      <p className={`text-sm ${t.text2} text-center mt-2`}>Juegan {playGame && playGame.turn() === 'w' ? 'blancas' : 'negras'}</p>
+                    </div>
+                    <div className="flex gap-2 mt-3 justify-center">
+                      <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
+                    </div>
+                    <div className="flex gap-2 mt-3 justify-center">
+                      <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
+                      <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
+                      <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
+                    </div>
+                  </div>
+                  <div className={`${t.bg2} ${t.border} border rounded p-4`}>
+                    <p className={`${t.text3} text-sm`}>Modo Jugar: juegas con blancas. Las negras responden automáticamente.</p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="max-w-2xl">{renderChapterList(chapters, openChapters, selectedEnding, (e) => {}, (tt) => toggleChapter(tt, false), false)}</div>
