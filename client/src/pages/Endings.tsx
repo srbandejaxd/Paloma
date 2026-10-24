@@ -730,6 +730,7 @@ export default function Endings() {
                         <div key={i} className={`flex items-center justify-between rounded-lg ${t.bg3} px-3 py-2`}>
                           <span className={`text-base font-bold ${a.result === 'victoria' ? 'text-green-500' : 'text-red-500'}`}>{a.result === 'victoria' ? '✓ Victoria' : '✗ Derrota'}</span>
                           <span className={`text-sm ${t.text2}`}>{a.time}s</span>
+                          <span className={`text-xs ${t.text3}`}>{a.date}</span>
                         </div>
                       ))}
                     </div>
