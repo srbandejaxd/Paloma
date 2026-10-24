@@ -461,7 +461,7 @@ export default function Endings() {
   function recordResult(result: 'victoria' | 'derrota' | 'reintentar') {
     setTimerRunning(false)
     const title = selectedEnding?.title || ''
-    const entry = { title, result: result === 'reintentar' ? 'derrota' : result, time: timer, date: new Date().toLocaleString() }
+    const entry = { title, result: result === 'reintentar' ? 'derrota' : result, time: timer, date: new Date().toLocaleDateString() }
     const next = [entry, ...attempts]
     setAttempts(next)
     try { localStorage.setItem('endings_history', JSON.stringify(next)) } catch {}
@@ -727,10 +727,12 @@ export default function Endings() {
                   {isOpen && (
                     <div className="px-4 pb-3 space-y-2">
                       {atts.length === 0 ? <p className={t.text3}>Sin intentos</p> : atts.map((a, i) => (
-                        <div key={i} className={`flex items-center justify-between rounded-lg ${t.bg3} px-3 py-2`}>
-                          <span className={`text-base font-bold ${a.result === 'victoria' ? 'text-green-500' : 'text-red-500'}`}>{a.result === 'victoria' ? '✓ Victoria' : '✗ Derrota'}</span>
-                          <span className={`text-sm ${t.text2}`}>{a.time}s</span>
-                          <span className={`text-xs ${t.text3}`}>{a.date}</span>
+                        <div key={i} className={`flex items-center justify-between rounded-lg ${t.bg3} px-4 py-3 border-l-4`} style={{ borderLeftColor: a.result === 'victoria' ? '#22c55e' : '#ef4444' }}>
+                          <span className="text-lg font-extrabold" style={{ color: a.result === 'victoria' ? '#22c55e' : '#ef4444' }}>{a.result === 'victoria' ? '✓ Victoria' : '✗ Derrota'}</span>
+                          <div className="flex items-center gap-4">
+                            <span className={`text-sm ${t.text2}`}>{a.time}s</span>
+                            <span className={`text-sm ${t.text}`}>{a.date}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
