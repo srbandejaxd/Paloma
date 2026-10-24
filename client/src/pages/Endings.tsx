@@ -690,8 +690,8 @@ export default function Endings() {
     const endingsInChapter = histChapter ? (chapters.find(c => c.title === histChapter)?.endings || []) : []
     const endingTitles = endingsInChapter.map(e => e.title)
     const selectedEndingObj = endingsInChapter.find(e => e.title === histEnding)
-    const positions = selectedEndingObj ? [selectedEndingObj] : endingsInChapter
-    const visiblePositions = showAllPositions ? chapters.flatMap(c => c.endings) : positions
+    const positions = histEnding ? endingsInChapter.filter(e => e.title === histEnding) : endingsInChapter
+    const visiblePositions = showAllPositions ? endingsInChapter : positions
     return (
       <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-300 flex flex-col`}>
         <Nav />
@@ -710,10 +710,6 @@ export default function Endings() {
               <option value="">Ending</option>
               {endingTitles.map(tl => <option key={tl} value={tl}>{tl}</option>)}
             </select>
-            <select value={histPosition} onChange={e => setHistPosition(e.target.value)} className={`${t.bg3} ${t.border} border rounded px-3 py-2 text-sm`} disabled={!histEnding}>
-              <option value="">Position</option>
-              {positions.map(p => <option key={p.title} value={p.title}>{p.title}</option>)}
-            </select>
           </div>
           <button onClick={() => setShowAllPositions(v => !v)} className={`mb-4 px-4 py-2 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>{showAllPositions ? 'Ocultar todos' : 'Mostrar todos los positions'}</button>
           <div className="space-y-2">
@@ -725,16 +721,15 @@ export default function Endings() {
               return (
                 <div key={e.title} className={`${t.bg2} ${t.border} border rounded`}>
                   <button onClick={() => setHistoryExpanded(isOpen ? null : e.title)} className={`w-full text-left px-4 py-3 flex justify-between ${t.text}`}>
-                    <span>{e.title}</span>
-                    <span className={t.text3}>{atts.length} intentos · {prec}%</span>
+                    <span className="font-semibold">{e.title}</span>
+                    <span className={`text-sm font-bold ${prec >= 50 ? 'text-green-500' : 'text-red-500'}`}>{atts.length} intentos · {prec}%</span>
                   </button>
                   {isOpen && (
-                    <div className="px-4 pb-3 space-y-1">
+                    <div className="px-4 pb-3 space-y-2">
                       {atts.length === 0 ? <p className={t.text3}>Sin intentos</p> : atts.map((a, i) => (
-                        <div key={i} className={`text-sm ${t.text2} flex justify-between border-b ${t.border} pb-1`}>
-                          <span className={a.result === 'victoria' ? 'text-green-500' : 'text-red-500'}>{a.result}</span>
-                          <span>{a.time}s</span>
-                          <span className={t.text3}>{a.date}</span>
+                        <div key={i} className={`flex items-center justify-between rounded-lg ${t.bg3} px-3 py-2`}>
+                          <span className={`text-base font-bold ${a.result === 'victoria' ? 'text-green-500' : 'text-red-500'}`}>{a.result === 'victoria' ? '✓ Victoria' : '✗ Derrota'}</span>
+                          <span className={`text-sm ${t.text2}`}>{a.time}s</span>
                         </div>
                       ))}
                     </div>
