@@ -756,6 +756,7 @@ export default function Endings() {
         <div className="flex gap-2 mb-6">
           <button onClick={() => setTab('teoria')} className={`px-4 py-2 rounded ${tab === 'teoria' ? 'text-black' : t.bg3}`} style={tab === 'teoria' ? { backgroundColor: accentColor } : {}}>Teoría</button>
           <button onClick={() => setTab('practica')} className={`px-4 py-2 rounded ${tab === 'practica' ? 'text-black' : t.bg3}`} style={tab === 'practica' ? { backgroundColor: accentColor } : {}}>Práctica</button>
+           <button onClick={() => setScreen('historial')} className={`px-4 py-2 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>Historial</button>
         </div>
         {tab === 'teoria' && (
           selectedEnding ? (
