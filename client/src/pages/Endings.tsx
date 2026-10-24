@@ -680,6 +680,13 @@ export default function Endings() {
           >
             Ver finales
           </button>
+          <button
+            onClick={() => setScreen('historial')}
+            className={`ml-3 px-6 py-4 rounded-xl font-bold text-sm tracking-widest uppercase transition-all hover:opacity-90`}
+            style={{ backgroundColor: t.bg3, color: t.text.includes('text-[#E8E6E0]') ? '#E8E6E0' : '#1A1814' }}
+          >
+            Historial
+          </button>
         </div>
       </div>
     )
