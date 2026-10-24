@@ -306,7 +306,7 @@ export default function Endings() {
   const navigate = useNavigate()
   const location = useLocation()
   const [dark, setDark] = useState(true)
-  const [screen, setScreen] = useState<'intro' | 'list'>('intro')
+  const [screen, setScreen] = useState<'intro' | 'list' | 'historial'>('intro')
   const [tab, setTab] = useState<'teoria' | 'practica'>('teoria')
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [openChapters, setOpenChapters] = useState<Set<string>>(new Set())
@@ -330,6 +330,7 @@ export default function Endings() {
     try { return JSON.parse(localStorage.getItem('endings_history') || '[]') } catch { return [] }
   })
   const [showHistory, setShowHistory] = useState(false)
+  const [historyExpanded, setHistoryExpanded] = useState<string | null>(null)
   const [practiceIntroComment, setPracticeIntroComment] = useState('')
   const [selectedFen, setSelectedFen] = useState(INITIAL_FEN)
   const [nodeMap, setNodeMap] = useState<Map<number, EndNode>>(new Map())
@@ -680,6 +681,49 @@ export default function Endings() {
     )
   }
 
+  if (screen === 'historial') {
+    const flat = chapters.flatMap(c => c.endings)
+    return (
+      <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-300 flex flex-col`}>
+        <Nav />
+        <div className="max-w-5xl mx-auto px-6 py-8 w-full">
+          <button onClick={() => setScreen('list')} className={`mb-4 flex items-center gap-2 text-sm ${t.text3} hover:${t.text}`}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Volver
+          </button>
+          <h2 className={`text-2xl font-bold mb-4 ${t.text}`}>Historial de Finales</h2>
+          <div className="space-y-2">
+            {flat.map(e => {
+              const atts = attempts.filter(a => a.title === e.title)
+              const correct = atts.filter(a => a.result === 'victoria').length
+              const prec = atts.length ? Math.round((correct / atts.length) * 100) : 0
+              const isOpen = historyExpanded === e.title
+              return (
+                <div key={e.title} className={`${t.bg2} ${t.border} border rounded`}>
+                  <button onClick={() => setHistoryExpanded(isOpen ? null : e.title)} className={`w-full text-left px-4 py-3 flex justify-between ${t.text}`}>
+                    <span>{e.title}</span>
+                    <span className={t.text3}>{atts.length} intentos · {prec}%</span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-3 space-y-1">
+                      {atts.length === 0 ? <p className={t.text3}>Sin intentos</p> : atts.map((a, i) => (
+                        <div key={i} className={`text-sm ${t.text2} flex justify-between border-b ${t.border} pb-1`}>
+                          <span className={a.result === 'victoria' ? 'text-green-500' : 'text-red-500'}>{a.result}</span>
+                          <span>{a.time}s</span>
+                          <span className={t.text3}>{a.date}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-300 flex flex-col`}>
       <Nav />
@@ -690,6 +734,7 @@ export default function Endings() {
           <button onClick={() => setTab('practica')} className={`px-4 py-2 rounded ${tab === 'practica' ? 'text-black' : t.bg3}`} style={tab === 'practica' ? { backgroundColor: accentColor } : {}}>Práctica</button>
         </div>
         <button onClick={() => setShowHistory(h => !h)} className={`mb-6 px-4 py-2 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>{showHistory ? 'Ocultar historial' : 'Historial'}</button>
+        <button onClick={() => setScreen('historial')} className={`mb-6 ml-2 px-4 py-2 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>Ver historial completo</button>
         {showHistory && (
           <div className={`${t.bg2} ${t.border} border rounded p-4 mb-6 max-h-60 overflow-y-auto`}>
             <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Intentos</p>
