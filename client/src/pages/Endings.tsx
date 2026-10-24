@@ -331,6 +331,10 @@ export default function Endings() {
   })
   const [showHistory, setShowHistory] = useState(false)
   const [historyExpanded, setHistoryExpanded] = useState<string | null>(null)
+  const [histChapter, setHistChapter] = useState<string>('')
+  const [histEnding, setHistEnding] = useState<string>('')
+  const [histPosition, setHistPosition] = useState<string>('')
+  const [showAllPositions, setShowAllPositions] = useState(false)
   const [practiceIntroComment, setPracticeIntroComment] = useState('')
   const [selectedFen, setSelectedFen] = useState(INITIAL_FEN)
   const [nodeMap, setNodeMap] = useState<Map<number, EndNode>>(new Map())
@@ -682,7 +686,12 @@ export default function Endings() {
   }
 
   if (screen === 'historial') {
-    const flat = chapters.flatMap(c => c.endings)
+    const chapterList = chapters.map(c => c.title)
+    const endingsInChapter = histChapter ? (chapters.find(c => c.title === histChapter)?.endings || []) : []
+    const endingTitles = endingsInChapter.map(e => e.title)
+    const selectedEndingObj = endingsInChapter.find(e => e.title === histEnding)
+    const positions = selectedEndingObj ? [selectedEndingObj] : endingsInChapter
+    const visiblePositions = showAllPositions ? chapters.flatMap(c => c.endings) : positions
     return (
       <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-300 flex flex-col`}>
         <Nav />
@@ -692,8 +701,23 @@ export default function Endings() {
             Volver
           </button>
           <h2 className={`text-2xl font-bold mb-4 ${t.text}`}>Historial de Finales</h2>
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <select value={histChapter} onChange={e => { setHistChapter(e.target.value); setHistEnding(''); setHistPosition(''); setShowAllPositions(false) }} className={`${t.bg3} ${t.border} border rounded px-3 py-2 text-sm`}>
+              <option value="">Capítulo</option>
+              {chapterList.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={histEnding} onChange={e => { setHistEnding(e.target.value); setHistPosition('') }} className={`${t.bg3} ${t.border} border rounded px-3 py-2 text-sm`} disabled={!histChapter}>
+              <option value="">Ending</option>
+              {endingTitles.map(tl => <option key={tl} value={tl}>{tl}</option>)}
+            </select>
+            <select value={histPosition} onChange={e => setHistPosition(e.target.value)} className={`${t.bg3} ${t.border} border rounded px-3 py-2 text-sm`} disabled={!histEnding}>
+              <option value="">Position</option>
+              {positions.map(p => <option key={p.title} value={p.title}>{p.title}</option>)}
+            </select>
+          </div>
+          <button onClick={() => setShowAllPositions(v => !v)} className={`mb-4 px-4 py-2 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>{showAllPositions ? 'Ocultar todos' : 'Mostrar todos los positions'}</button>
           <div className="space-y-2">
-            {flat.map(e => {
+            {visiblePositions.map(e => {
               const atts = attempts.filter(a => a.title === e.title)
               const correct = atts.filter(a => a.result === 'victoria').length
               const prec = atts.length ? Math.round((correct / atts.length) * 100) : 0
@@ -733,26 +757,6 @@ export default function Endings() {
           <button onClick={() => setTab('teoria')} className={`px-4 py-2 rounded ${tab === 'teoria' ? 'text-black' : t.bg3}`} style={tab === 'teoria' ? { backgroundColor: accentColor } : {}}>Teoría</button>
           <button onClick={() => setTab('practica')} className={`px-4 py-2 rounded ${tab === 'practica' ? 'text-black' : t.bg3}`} style={tab === 'practica' ? { backgroundColor: accentColor } : {}}>Práctica</button>
         </div>
-        <button onClick={() => setShowHistory(h => !h)} className={`mb-6 px-4 py-2 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>{showHistory ? 'Ocultar historial' : 'Historial'}</button>
-        <button onClick={() => setScreen('historial')} className={`mb-6 ml-2 px-4 py-2 rounded text-sm ${t.bg3} ${t.border} border ${t.text2}`}>Ver historial completo</button>
-        {showHistory && (
-          <div className={`${t.bg2} ${t.border} border rounded p-4 mb-6 max-h-60 overflow-y-auto`}>
-            <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Intentos</p>
-            {attempts.length === 0 ? <p className={t.text3}>Sin intentos</p> : (
-              <div className="space-y-2">
-                {attempts.map((a, i) => (
-                  <div key={i} className={`text-sm ${t.text2} flex justify-between border-b ${t.border} pb-1`}>
-                    <span>{a.title}</span>
-                    <span className={a.result === 'victoria' ? 'text-green-500' : 'text-red-500'}>{a.result}</span>
-                    <span>{a.time}s</span>
-                    <span className={t.text3}>{a.date}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {attempts.length > 0 && <button onClick={() => { setAttempts([]); localStorage.removeItem('endings_history') }} className={`mt-3 text-xs ${t.text3} hover:${t.text}`}>Limpiar</button>}
-          </div>
-        )}
         {tab === 'teoria' && (
           selectedEnding ? (
             <div>
