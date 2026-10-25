@@ -326,6 +326,7 @@ export default function Endings() {
   const [userColor, setUserColor] = useState<'white' | 'black'>('white')
   const [timer, setTimer] = useState(0)
   const [timerRunning, setTimerRunning] = useState(false)
+  const [playStarted, setPlayStarted] = useState(false)
   const [attempts, setAttempts] = useState<{ title: string; result: string; time: number; date: string }[]>(() => {
     try { return JSON.parse(localStorage.getItem('endings_history') || '[]') } catch { return [] }
   })
@@ -420,6 +421,7 @@ export default function Endings() {
     setPlayFen(sf)
     setTimer(0)
     setTimerRunning(true)
+    setPlayStarted(true)
     const mc: 'white' | 'black' = uc === 'white' ? 'black' : 'white'
     if (g.turn() === (mc === 'white' ? 'w' : 'b')) {
       setTimeout(() => {
@@ -465,6 +467,7 @@ export default function Endings() {
 
   function recordResult(result: 'victoria' | 'derrota' | 'reintentar') {
     setTimerRunning(false)
+    setPlayStarted(false)
     const title = tab === 'practica' ? (practiceSelected?.title || '') : (selectedEnding?.title || '')
     const entry = { title, result: result === 'reintentar' ? 'derrota' : result, time: timer, date: new Date().toLocaleDateString() }
     const next = [entry, ...attempts]
@@ -788,7 +791,7 @@ export default function Endings() {
                 <h3 className={`text-xl font-bold ${t.text}`}>{selectedEnding.title}</h3>
                 <div className="flex gap-2">
                   <button onClick={() => { setMode('estudiar'); setStudying(true) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'estudiar' ? 'text-black' : t.bg3}`} style={mode === 'estudiar' ? { backgroundColor: accentColor } : {}}>Estudiar</button>
-                  <button onClick={() => { setMode('jugar'); setStudying(false); initPlay(startFen) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'jugar' ? 'text-black' : t.bg3}`} style={mode === 'jugar' ? { backgroundColor: accentColor } : {}}>Jugar</button>
+                  <button onClick={() => { setMode('jugar'); setStudying(false); setPlayStarted(false); setPlayGame(new Chess(startFen)); setPlayFen(startFen); setTimer(0) }} className={`px-3 py-1.5 rounded text-sm ${mode === 'jugar' ? 'text-black' : t.bg3}`} style={mode === 'jugar' ? { backgroundColor: accentColor } : {}}>Jugar</button>
                 </div>
               </div>
                {studying && introComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text} whitespace-pre-wrap`}>{normalizeComment(introComment)}</div>}
@@ -808,16 +811,20 @@ export default function Endings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                   <div className={`${t.bg2} ${t.border} border rounded p-4`}>
                     <div className="aspect-square max-w-[420px] mx-auto">
-                      <Chessboard position={playFen || startFen} boardOrientation={userColor} onPieceDrop={handlePlayDrop} />
-                      <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {playGame && playGame.turn() === 'w' ? 'blancas' : 'negras'}</p>
+                      <Chessboard position={playStarted ? (playFen || startFen) : startFen} boardOrientation={userColor} onPieceDrop={playStarted ? handlePlayDrop : undefined} />
+                      <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {playStarted && playGame ? (playGame.turn() === 'w' ? 'blancas' : 'negras') : (startFen.split(' ')[1] === 'w' ? 'blancas' : 'negras')}</p>
                     </div>
                     <div className="flex gap-2 mt-3 justify-center">
-                      <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
-                    </div>
-                    <div className="flex gap-2 mt-3 justify-center">
-                      <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
-                      <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
-                      <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
+                      {!playStarted ? (
+                        <button onClick={() => initPlay(startFen)} className="px-4 py-2 rounded bg-[#D4A017] text-black text-sm font-bold">Empezar</button>
+                      ) : (
+                        <>
+                          <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
+                          <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
+                          <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
+                          <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className={`${t.bg2} ${t.border} border rounded p-4`}>
@@ -841,11 +848,11 @@ export default function Endings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className={`${t.bg2} ${t.border} border rounded p-4`}>
                     <div className="aspect-square max-w-[420px] mx-auto">
-                      <Chessboard position={mode === 'jugar' ? (playFen || practiceStartFen) : practiceStartFen} boardOrientation={mode === 'jugar' ? userColor : 'white'} onPieceDrop={mode === 'jugar' ? handlePlayDrop : undefined} />
+                      <Chessboard position={mode === 'jugar' && playStarted ? (playFen || practiceStartFen) : practiceStartFen} boardOrientation={mode === 'jugar' ? userColor : 'white'} onPieceDrop={mode === 'jugar' && playStarted ? handlePlayDrop : undefined} />
                     </div>
                     <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {mode === 'jugar' && playGame ? (playGame.turn() === 'w' ? 'blancas' : 'negras') : (practiceStartFen.split(' ')[1] === 'w' ? 'blancas' : 'negras')}</p>
                     <div className="flex gap-2 mt-3 justify-center">
-                      <button onClick={() => { setMode('jugar'); initPlay(practiceStartFen) }} className="px-4 py-2 rounded bg-[#D4A017] text-black text-sm font-bold">Jugar</button>
+                      <button onClick={() => { setMode('jugar'); setPlayStarted(false); setPlayGame(new Chess(practiceStartFen)); setPlayFen(practiceStartFen); setTimer(0) }} className="px-4 py-2 rounded bg-[#D4A017] text-black text-sm font-bold">Jugar</button>
                       <button onClick={() => window.open(`https://lichess.org/analysis/${practiceStartFen.replace(/ /g, '_')}`, '_blank')} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2} text-xs`}>Abrir en Lichess</button>
                     </div>
                   </div>
@@ -854,15 +861,17 @@ export default function Endings() {
                   </div>
                 </div>
                 {mode === 'jugar' && (
-                  <div className="flex gap-2 mt-3 justify-center">
-                    <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
-                  </div>
-                )}
-                {mode === 'jugar' && (
-                  <div className="flex gap-2 mt-3 justify-center">
-                    <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
-                    <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
-                    <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
+                  <div className="flex gap-2 mt-3 justify-center flex-wrap">
+                    {!playStarted ? (
+                      <button onClick={() => initPlay(practiceStartFen)} className="px-4 py-2 rounded bg-[#D4A017] text-black text-sm font-bold">Empezar</button>
+                    ) : (
+                      <>
+                        <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
+                        <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
+                        <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
+                        <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
+                      </>
+                    )}
                   </div>
                 )}
             </div>
