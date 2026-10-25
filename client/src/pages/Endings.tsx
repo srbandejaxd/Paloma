@@ -669,9 +669,21 @@ export default function Endings() {
             <h2 className={`text-5xl font-bold ${t.text} leading-none mb-6`} style={{ letterSpacing: '-0.02em' }}>
               Finales ♚
             </h2>
-            <p className={`text-lg ${t.text2} leading-relaxed max-w-xl`}>
-              "100 Endgames You Must Know" (Jesús de la Villa) reúne los finales esenciales: rey+peón, torre, alfil, caballo, dama y peones. Cada posición con procedimiento y variantes. El workbook añade ejercicios prácticos.
-            </p>
+            <div className={`rounded-xl ${t.bg2} ${t.border} border p-6 mb-6 max-w-2xl`}>
+              <p className={`text-sm ${t.text2} leading-relaxed mb-4`}>
+                El libro parte de una premisa práctica: en lugar de memorizar enciclopedias gigantescas con miles de posiciones teóricas que rara vez ocurren, un ajedrecista competitivo debe dominar únicamente las 100 posiciones y reglas fundamentales que aparecen con mayor frecuencia en las partidas reales.
+              </p>
+              <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-3`}>Organización progresiva</p>
+              <ul className={`space-y-2 text-sm ${t.text2}`}>
+                <li><span className={`font-bold ${t.text}`}>Finales de peones:</span> oposición, casillas clave, regla del cuadrado, triangulación.</li>
+                <li><span className={`font-bold ${t.text}`}>Finales de torre:</span> Lucena, Philidor, Vancura, corte de rey.</li>
+                <li><span className={`font-bold ${t.text}`}>Finales de piezas menores:</span> alfil vs caballo, alfiles de diferente color, pareja de alfiles.</li>
+                <li><span className={`font-bold ${t.text}`}>Finales de damas y combinaciones:</span> ahogado, perpetuo, coordinación de piezas.</li>
+              </ul>
+              <p className={`text-sm ${t.text2} leading-relaxed mt-4`}>
+                El workbook añade ejercicios prácticos para dominar cada posición.
+              </p>
+            </div>
           </div>
           <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-6`}>
             <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-6`}>Cómo funciona</p>
