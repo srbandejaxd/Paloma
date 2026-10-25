@@ -841,11 +841,12 @@ export default function Endings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className={`${t.bg2} ${t.border} border rounded p-4`}>
                     <div className="aspect-square max-w-[420px] mx-auto">
-                      <Chessboard position={practiceStartFen} boardOrientation="white" />
+                      <Chessboard position={mode === 'jugar' ? (playFen || practiceStartFen) : practiceStartFen} boardOrientation={mode === 'jugar' ? userColor : 'white'} onPieceDrop={mode === 'jugar' ? handlePlayDrop : undefined} />
                     </div>
-                    <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {practiceStartFen.split(' ')[1] === 'w' ? 'blancas' : 'negras'}</p>
+                    <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {mode === 'jugar' && playGame ? (playGame.turn() === 'w' ? 'blancas' : 'negras') : (practiceStartFen.split(' ')[1] === 'w' ? 'blancas' : 'negras')}</p>
                     <div className="flex gap-2 mt-3 justify-center">
                       <button onClick={() => { setMode('jugar'); initPlay(practiceStartFen) }} className="px-4 py-2 rounded bg-[#D4A017] text-black text-sm font-bold">Jugar</button>
+                      <button onClick={() => window.open(`https://lichess.org/analysis/${practiceStartFen.replace(/ /g, '_')}`, '_blank')} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2} text-xs`}>Abrir en Lichess</button>
                     </div>
                   </div>
                   <div className={`${t.bg2} ${t.border} border rounded p-4`}>
@@ -853,21 +854,15 @@ export default function Endings() {
                   </div>
                 </div>
                 {mode === 'jugar' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                    <div className={`${t.bg2} ${t.border} border rounded p-4`}>
-                      <div className="aspect-square max-w-[420px] mx-auto">
-                        <Chessboard position={playFen || practiceStartFen} boardOrientation={userColor} onPieceDrop={handlePlayDrop} />
-                      </div>
-                      <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {playGame && playGame.turn() === 'w' ? 'blancas' : 'negras'}</p>
-                      <div className="flex gap-2 mt-3 justify-center">
-                        <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
-                      </div>
-                      <div className="flex gap-2 mt-3 justify-center">
-                        <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
-                        <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
-                        <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
-                      </div>
-                    </div>
+                  <div className="flex gap-2 mt-3 justify-center">
+                    <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
+                  </div>
+                )}
+                {mode === 'jugar' && (
+                  <div className="flex gap-2 mt-3 justify-center">
+                    <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
+                    <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
+                    <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
                   </div>
                 )}
             </div>
