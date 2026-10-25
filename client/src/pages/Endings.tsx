@@ -670,17 +670,17 @@ export default function Endings() {
               Finales ♚
             </h2>
             <p className={`text-lg ${t.text2} leading-relaxed max-w-xl`}>
-              Estudia los finales esenciales del ajedrez: posiciones clave con comentarios y variantes. Teoría para leerlos y Práctica para dominarlos.
+              Teoría: el libro "100 finales que hay que saber" con posiciones, comentarios y variantes. Práctica: el workbook del mismo libro con ejercicios para dominarlos.
             </p>
           </div>
           <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-6`}>
             <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-6`}>Cómo funciona</p>
             <div className="space-y-6">
               {[
-                { icon: '📖', title: 'Teoría', desc: 'Explora capítulos y finales. Cada posición incluye comentarios y variantes.' },
-                { icon: '♟', title: 'Tablero', desc: 'Visualiza la posición y navega por los movimientos con las flechas.' },
-                { icon: '💬', title: 'Comentarios', desc: 'Los comentarios se normalizan para leerse con claridad.' },
-                { icon: '➡️', title: 'Navegación', desc: 'Usa las flechas para pasar de un final al siguiente.' },
+                { icon: '📖', title: 'Teoría', desc: 'El libro de los 100 finales: capítulos, posiciones, comentarios y variantes.' },
+                { icon: '✏️', title: 'Práctica', desc: 'El workbook: ejercicios con pregunta y respuesta. Juega contra Stockfish.' },
+                { icon: '♟', title: 'Tablero', desc: 'Visualiza la posición, navega movimientos y abre en Lichess.' },
+                { icon: '🏆', title: 'Historial', desc: 'Intentos, precisión y tiempo por posición.' },
               ].map(step => (
                 <div key={step.title} className="flex gap-4">
                   <div className="text-2xl flex-shrink-0 mt-0.5">{step.icon}</div>
