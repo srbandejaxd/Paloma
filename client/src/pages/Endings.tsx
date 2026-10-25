@@ -332,6 +332,7 @@ export default function Endings() {
   const [showHistory, setShowHistory] = useState(false)
   const [historyExpanded, setHistoryExpanded] = useState<string | null>(null)
   const [histChapter, setHistChapter] = useState<string>('')
+  const [histSource, setHistSource] = useState<'teoria' | 'practica'>('teoria')
   const [histEnding, setHistEnding] = useState<string>('')
   const [histPosition, setHistPosition] = useState<string>('')
   const [showAllPositions, setShowAllPositions] = useState(false)
@@ -464,7 +465,7 @@ export default function Endings() {
 
   function recordResult(result: 'victoria' | 'derrota' | 'reintentar') {
     setTimerRunning(false)
-    const title = selectedEnding?.title || ''
+    const title = tab === 'practica' ? (practiceSelected?.title || '') : (selectedEnding?.title || '')
     const entry = { title, result: result === 'reintentar' ? 'derrota' : result, time: timer, date: new Date().toLocaleDateString() }
     const next = [entry, ...attempts]
     setAttempts(next)
@@ -589,6 +590,9 @@ export default function Endings() {
             <button onClick={onNextEnding} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2}`}>▶</button>
           </div>
           <p className={`text-sm ${t.text} font-bold text-center mt-1`}>Juegan {selectedFen.split(' ')[1] === 'w' ? 'blancas' : 'negras'}</p>
+          <div className="flex justify-center mt-2">
+            <button onClick={() => window.open(`https://lichess.org/analysis/${startFen.replace(/ /g, '_')}`, '_blank')} className={`px-3 py-1.5 rounded ${t.bg3} ${t.border} border ${t.text2} text-xs`}>Abrir en Lichess</button>
+          </div>
         </div>
         <div className={`${t.bg2} ${t.border} border rounded p-4`}>
           <h3 className={`font-bold mb-2 ${t.text}`}>{node ? `${getMovePrefix(node)} ${node.move} ${node.annotationSymbol}`.trim() : 'Posición inicial'}</h3>
@@ -698,8 +702,9 @@ export default function Endings() {
   }
 
   if (screen === 'historial') {
-    const chapterList = chapters.map(c => c.title)
-    const endingsInChapter = histChapter ? (chapters.find(c => c.title === histChapter)?.endings || []) : []
+    const sourceChapters = histSource === 'teoria' ? chapters : practiceChapters
+    const chapterList = sourceChapters.map(c => c.title)
+    const endingsInChapter = histChapter ? (sourceChapters.find(c => c.title === histChapter)?.endings || []) : []
     const endingTitles = endingsInChapter.map(e => e.title)
     const selectedEndingObj = endingsInChapter.find(e => e.title === histEnding)
     const positions = histEnding ? endingsInChapter.filter(e => e.title === histEnding) : endingsInChapter
@@ -714,6 +719,10 @@ export default function Endings() {
           </button>
           <h2 className={`text-2xl font-bold mb-4 ${t.text}`}>Historial de Finales</h2>
           <div className="flex gap-3 mb-4 flex-wrap">
+            <select value={histSource} onChange={e => { setHistSource(e.target.value as 'teoria' | 'practica'); setHistChapter(''); setHistEnding(''); setShowAllPositions(false) }} className={`${t.bg3} ${t.border} border rounded px-3 py-2 text-sm`}>
+              <option value="teoria">Teoría</option>
+              <option value="practica">Práctica</option>
+            </select>
             <select value={histChapter} onChange={e => { setHistChapter(e.target.value); setHistEnding(''); setHistPosition(''); setShowAllPositions(false) }} className={`${t.bg3} ${t.border} border rounded px-3 py-2 text-sm`}>
               <option value="">Capítulo</option>
               {chapterList.map(c => <option key={c} value={c}>{c}</option>)}
@@ -828,16 +837,42 @@ export default function Endings() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Volver
               </button>
-              <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{practiceSelected.title}</h3>
-               {practiceIntroComment && <div className={`${t.bg3} ${t.border} border rounded p-3 mb-4 text-sm ${t.text} whitespace-pre-wrap`}>{normalizeComment(practiceIntroComment)}</div>}
-              <Viewer roots={practiceRoots} selectedId={practiceSelectedNodeId} selectedFen={practiceSelectedFen} nodeMap={practiceNodeMap} startFen={practiceStartFen} onSelect={(id) => { setPracticeSelectedNodeId(id); setPracticeSelectedFen(id != null ? (practiceNodeMap.get(id)?.fen ?? practiceStartFen) : practiceStartFen) }} onPrevEnding={() => { const flat = practiceChapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === practiceSelected?.title && e.pgn === practiceSelected?.pgn); if (idx > 0) loadEnding(flat[idx-1], true) }} onNextEnding={() => { const flat = practiceChapters.flatMap(c => c.endings); const idx = flat.findIndex(e => e.title === practiceSelected?.title && e.pgn === practiceSelected?.pgn); if (idx >= 0 && idx < flat.length - 1) loadEnding(flat[idx+1], true) }} introComment={practiceIntroComment} />
+                <h3 className={`text-xl font-bold mb-4 ${t.text}`}>{practiceSelected.title}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className={`${t.bg2} ${t.border} border rounded p-4`}>
+                    <div className="aspect-square max-w-[420px] mx-auto">
+                      <Chessboard position={practiceStartFen} boardOrientation="white" />
+                    </div>
+                    <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {practiceStartFen.split(' ')[1] === 'w' ? 'blancas' : 'negras'}</p>
+                    <div className="flex gap-2 mt-3 justify-center">
+                      <button onClick={() => { setMode('jugar'); initPlay(practiceStartFen) }} className="px-4 py-2 rounded bg-[#D4A017] text-black text-sm font-bold">Jugar</button>
+                    </div>
+                  </div>
+                  <div className={`${t.bg2} ${t.border} border rounded p-4`}>
+                    {(() => { const isEx = /example/i.test(practiceSelected.title); if (isEx) return <p className={t.text3}>Ejemplo ilustrativo</p>; const qm = practiceSelected.pgn.replace(/\[[^\]]*\]/g, '').trim().match(/^\s*\{([^}]*)\}/); const q = qm ? qm[1].trim() : ''; const sm = practiceSelected.pgn.match(/See Ending (\d+)/); const see = sm ? `See Ending ${sm[1]}` : ''; return (<><p className={`${t.text} text-sm whitespace-pre-wrap`}>{q}</p>{see && <p className={`${t.text3} text-sm mt-2`}>{see}</p>}</>) })()}
+                  </div>
+                </div>
+                {mode === 'jugar' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div className={`${t.bg2} ${t.border} border rounded p-4`}>
+                      <div className="aspect-square max-w-[420px] mx-auto">
+                        <Chessboard position={playFen || practiceStartFen} boardOrientation={userColor} onPieceDrop={handlePlayDrop} />
+                      </div>
+                      <p className={`text-sm ${t.text} font-bold text-center mt-2`}>Juegan {playGame && playGame.turn() === 'w' ? 'blancas' : 'negras'}</p>
+                      <div className="flex gap-2 mt-3 justify-center">
+                        <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
+                      </div>
+                      <div className="flex gap-2 mt-3 justify-center">
+                        <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
+                        <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
+                        <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
           ) : (
-            <div>
-              <textarea value={practicePgn} onChange={e => setPracticePgn(e.target.value)} className={`w-full h-32 ${t.inputBg} border rounded p-3 text-sm`} placeholder="Pega aquí el PGN del workbook" />
-              <button onClick={parsePractice} className="mt-2 px-4 py-2 rounded text-black" style={{ backgroundColor: accentColor }}>Cargar</button>
-              <div className="mt-4 max-w-2xl">{renderChapterList(practiceChapters, practiceOpen, practiceSelected, (e) => {}, (tt) => toggleChapter(tt, true), true)}</div>
-            </div>
+            <div className="max-w-2xl">{renderChapterList(practiceChapters, practiceOpen, practiceSelected, (e) => {}, (tt) => toggleChapter(tt, true), true)}</div>
           )
         )}
       </div>
