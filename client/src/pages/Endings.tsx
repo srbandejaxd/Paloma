@@ -730,8 +730,8 @@ export default function Endings() {
                         <div key={i} className={`flex items-center justify-between rounded-lg ${t.bg3} px-4 py-3 border-l-4`} style={{ borderLeftColor: a.result === 'victoria' ? '#22c55e' : '#ef4444' }}>
                           <span className="text-lg font-extrabold" style={{ color: a.result === 'victoria' ? '#22c55e' : '#ef4444' }}>{a.result === 'victoria' ? '✓ Victoria' : '✗ Derrota'}</span>
                           <div className="flex items-center gap-4">
-                            <span className={`text-sm ${t.text2}`}>{a.time}s</span>
-                            <span className={`text-sm ${t.text}`}>{a.date}</span>
+                            <span className={`text-lg font-bold ${t.text}`}>{a.time}s</span>
+                            <span className={`text-sm ${t.text2}`}>{String(a.date).split(',')[0].replace(/\/(\d{4})$/, (m,y) => '/' + y.slice(2))}</span>
                           </div>
                         </div>
                       ))}
