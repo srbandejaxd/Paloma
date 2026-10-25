@@ -677,10 +677,13 @@ export default function Endings() {
             <p className={`text-xs uppercase tracking-widest ${t.text3} font-semibold mb-6`}>Cómo funciona</p>
             <div className="space-y-6">
               {[
-                { icon: '📖', title: 'Teoría', desc: 'El libro de los 100 finales: capítulos, posiciones, comentarios y variantes.' },
-                { icon: '✏️', title: 'Práctica', desc: 'El workbook: ejercicios con pregunta y respuesta. Juega contra Stockfish.' },
-                { icon: '♟', title: 'Tablero', desc: 'Visualiza la posición, navega movimientos y abre en Lichess.' },
-                { icon: '🏆', title: 'Historial', desc: 'Intentos, precisión y tiempo por posición.' },
+                { icon: '📚', title: 'Estructura', desc: 'Capítulos → Endings (posiciones) → movimientos y variantes. Navega con ◀ ▶.' },
+                { icon: '📖', title: 'Teoría', desc: 'Lee el libro: posición inicial, comentarios por jugada y variantes indentadas.' },
+                { icon: '✏️', title: 'Práctica', desc: 'Workbook: pregunta + respuesta (See Ending X). Juega la posición.' },
+                { icon: '♟', title: 'Estudiar', desc: 'Muestra comentarios y jugadas. Ocultos hasta que pulses Estudiar.' },
+                { icon: '🎮', title: 'Jugar', desc: 'Pulsa Jugar → Empezar. Juegas tu color; Stockfish responde. Victoria/Derrota registra.' },
+                { icon: '♟', title: 'Lichess', desc: 'Abrir en Lichess carga el FEN inicial en el análisis web.' },
+                { icon: '🏆', title: 'Historial', desc: 'Intentos, precisión y tiempo por posición. Filtra por capítulo/ending.' },
               ].map(step => (
                 <div key={step.title} className="flex gap-4">
                   <div className="text-2xl flex-shrink-0 mt-0.5">{step.icon}</div>
