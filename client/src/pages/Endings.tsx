@@ -178,7 +178,7 @@ function parsePgnToChapters(text: string): Chapter[] {
   const map = new Map<string, EndingItem[]>()
   const order: string[] = []
   for (const p of parts) {
-    const st = p.match(/\[SourceTitle "([^"]*)"\]/)?.[1] ?? 'Sin capítulo'
+    const st = p.match(/\[SourceTitle "([^"]*)"\]/)?.[1] ?? p.match(/\[White "([^"]*)"\]/)?.[1] ?? 'Sin capítulo'
     const white = p.match(/\[White "([^"]*)"\]/)?.[1] ?? ''
     const black = p.match(/\[Black "([^"]*)"\]/)?.[1] ?? ''
     const title = ([white, black].filter(v => v && v !== '?').join(' ').trim()) || (p.match(/\[Event "([^"]*)"\]/)?.[1] ?? 'Final')
@@ -361,6 +361,10 @@ export default function Endings() {
     if (!user) { navigate('/'); return }
     fetch('/endings.pgn').then(r => r.text()).then(text => setChapters(parsePgnToChapters(text))).catch(() => {})
   }, [user, navigate])
+  useEffect(() => {
+    if (!user) return
+    fetch('/workbook.pgn').then(r => r.text()).then(text => { if (!practicePgn) setPracticeChapters(parsePgnToChapters(text)) }).catch(() => {})
+  }, [user])
 
   function loadEnding(ending: EndingItem, practice: boolean) {
     if (timerRunning) recordResult('derrota')
@@ -604,11 +608,19 @@ export default function Endings() {
           </button>
           {openSet.has(ch.title) && (
             <div className="px-4 pb-3 space-y-1">
-              {ch.endings.map((e, i) => (
-                <button key={i} onClick={() => { onSelectEnding(e); loadEnding(e, practice) }} className={`block w-full text-left text-sm px-3 py-1.5 rounded ${selected?.title === e.title && selected?.pgn === e.pgn ? t.bg3 : ''} ${t.text2} hover:${t.text}`}>
-                  {e.title}
-                </button>
-              ))}
+              {ch.endings.map((e, i) => {
+                const qMatch = e.pgn.replace(/\[[^\]]*\]/g, '').trim().match(/^\s*\{([^}]*)\}/)
+                const question = qMatch ? qMatch[1].trim().slice(0, 80) : ''
+                const seeMatch = e.pgn.match(/See Ending (\d+)/)
+                const see = seeMatch ? `See Ending ${seeMatch[1]}` : ''
+                return (
+                  <button key={i} onClick={() => { onSelectEnding(e); loadEnding(e, practice) }} className={`block w-full text-left text-sm px-3 py-1.5 rounded ${selected?.title === e.title && selected?.pgn === e.pgn ? t.bg3 : ''} ${t.text2} hover:${t.text}`}>
+                    <div className="font-semibold">{i + 1}. {e.title}</div>
+                    {question && <div className={`text-xs ${t.text3} mt-0.5`}>Question: {question}</div>}
+                    {see && <div className={`text-xs ${t.text3}`}>{see}</div>}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
