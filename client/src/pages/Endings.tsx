@@ -822,7 +822,6 @@ export default function Endings() {
                           <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
                           <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
                           <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
-                          <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
                         </>
                       )}
                     </div>
@@ -869,7 +868,6 @@ export default function Endings() {
                         <span className={`text-sm ${t.text2}`}>⏱ {timer}s</span>
                         <button onClick={() => recordResult('victoria')} className="px-3 py-1.5 rounded bg-green-600 text-white text-sm">Victoria</button>
                         <button onClick={() => recordResult('derrota')} className="px-3 py-1.5 rounded bg-red-600 text-white text-sm">Derrota</button>
-                        <button onClick={() => recordResult('reintentar')} className="px-3 py-1.5 rounded bg-yellow-600 text-white text-sm">Reintentar</button>
                       </>
                     )}
                   </div>
