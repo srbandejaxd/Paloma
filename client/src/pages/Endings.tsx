@@ -670,7 +670,7 @@ export default function Endings() {
               Finales ♚
             </h2>
             <p className={`text-lg ${t.text2} leading-relaxed max-w-xl`}>
-              Teoría: el libro "100 finales que hay que saber" con posiciones, comentarios y variantes. Práctica: el workbook del mismo libro con ejercicios para dominarlos.
+              "100 Endgames You Must Know" (Jesús de la Villa) reúne los finales esenciales: rey+peón, torre, alfil, caballo, dama y peones. Cada posición con procedimiento y variantes. El workbook añade ejercicios prácticos.
             </p>
           </div>
           <div className={`rounded-xl ${t.bg2} ${t.border} border p-8 mb-6`}>
